@@ -133,8 +133,12 @@ const $=id=>document.getElementById(id);
 function brl(n){return (n||0).toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2})}
 
 async function boot(){
-  const {data:{session}}=await sb.auth.getSession();
-  if(session){await afterLogin(session);} 
+  try{
+    const {data:{session}}=await sb.auth.getSession();
+    if(session){await afterLogin(session);return;}
+  }catch(e){}
+  // modo teste: entra direto no catalogo como visitante
+  role='visitante'; enterApp();
 }
 $('loginbtn').onclick=async()=>{
   $('err').style.display='none';
