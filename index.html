@@ -41,9 +41,10 @@ a{color:inherit;text-decoration:none}
 .bar{display:flex;align-items:center;justify-content:space-between;gap:18px;flex-wrap:wrap}
 .title{font-size:30px;font-weight:600}
 .fx{font-size:12px;color:var(--muted);text-align:right;line-height:1.6}.fx b{color:var(--ink);font-weight:600}
-.search{display:flex;align-items:center;gap:10px;background:var(--paper);border:1px solid var(--line);border-radius:13px;padding:12px 15px;margin:20px 0 8px;max-width:430px}
-.search input{border:0;outline:0;font-family:inherit;font-size:15px;width:100%;background:transparent}
-.count{font-size:12.5px;color:var(--muted);margin:12px 2px 18px}
+.search{display:flex;align-items:center;gap:12px;background:var(--paper);border:2px solid var(--line);border-radius:15px;padding:16px 20px;margin:22px 0 8px;max-width:600px;transition:.15s}
+.search:focus-within{border-color:var(--orange);box-shadow:0 4px 18px -8px rgba(255,77,28,.3)}
+.search input{border:0;outline:0;font-family:inherit;font-size:16px;width:100%;background:transparent}
+.count{font-size:13.5px;color:var(--ink);font-weight:600;margin:14px 2px 18px}
 .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:18px}
 .card{background:var(--paper);border:1px solid var(--line);border-radius:16px;overflow:hidden;cursor:pointer;display:flex;flex-direction:column;transition:.16s}
 .card:hover{transform:translateY(-3px);box-shadow:0 14px 30px -16px rgba(20,18,12,.25)}
@@ -116,7 +117,7 @@ a{color:inherit;text-decoration:none}
   <div class="listing" id="listing">
    <div class="bar"><div class="title" id="ttl">Produtos</div>
      <div class="fx">Câmbio <b id="fxlabel">1 RMB = R$ 0,79</b><br>Preço Brasil = <b>RMB × 2</b> · faixa ±10%</div></div>
-   <div class="search"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#8A857A" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="m20 20-3-3"/></svg><input id="q" placeholder="Buscar..."/></div>
+   <div class="search"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#FF4D1C" stroke-width="2.2"><circle cx="11" cy="11" r="7"/><path d="m20 20-3-3"/></svg><input id="q" placeholder="Buscar produto: colar, brinco, capinha, chaveiro..."/></div>
    <div class="count" id="count"></div>
    <div id="listroot"><div class="loading">Carregando catálogo...</div></div>
   </div>
@@ -130,6 +131,15 @@ const SB_ANON="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJl
 const sb=supabase.createClient(SB_URL,SB_ANON);
 let mode='prod', role='visitante', PROD=[], SUPP={}, curDetail=null;
 const $=id=>document.getElementById(id);
+
+function limpaNome(n){
+  if(!n) return '';
+  let x=n.replace(/\b(cross[- ]?border|foreign trade|europe and america|european and american|factory direct( sales| supply)?|in stock|new arrival|hot selling|tiktok same style|internet celebrity|wish|amazon|aliexpress|drop ?shipping|source manufacturer|direct supply)\b/gi,'');
+  x=x.replace(/\s+/g,' ').replace(/^[\s,\-]+/,'').trim();
+  x=x.charAt(0).toUpperCase()+x.slice(1);
+  return x||n;
+}
+
 function brl(n){return (n||0).toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2})}
 
 async function boot(){
@@ -164,9 +174,15 @@ function enterApp(){
 }
 
 async function loadData(){
-  // produtos (todos podem ler)
-  const {data:prods}=await sb.from('produtos').select('*').limit(2000);
-  PROD=prods||[];
+  // produtos COMPLETOS: com foto no storage e preço > 0 (esconde cards quebrados)
+  let all=[];
+  for(let off=0; off<8000; off+=1000){
+    const {data:chunk}=await sb.from('produtos').select('*').gt('rmb',0).like('imgs->>0','%storage%').range(off,off+999);
+    if(!chunk||!chunk.length) break;
+    all=all.concat(chunk);
+    if(chunk.length<1000) break;
+  }
+  PROD=all;
   // fornecedores: funcionario le tabela cheia; senao, view publica (sem nome)
   if(role==='funcionario'){
     const {data:sup}=await sb.from('fornecedores').select('*').limit(3000);
@@ -184,7 +200,7 @@ function setMode(m){mode=m;
   closeD();$('q').value='';apply();
 }
 function apply(){const t=$('q').value.trim().toLowerCase();
-  if(mode==='prod'){renderProducts(PROD.filter(p=>!t||(p.name||'').toLowerCase().includes(t)));}
+  if(mode==='prod'){renderProducts(PROD.filter(p=>!t||limpaNome(p.name).toLowerCase().includes(t)||(p.name||'').toLowerCase().includes(t)));}
   else{renderSuppliers(Object.values(SUPP).filter(s=>!t||(s.name||'').toLowerCase().includes(t)).sort((a,b)=>(b.score||0)-(a.score||0)));}
 }
 function renderProducts(L){
@@ -192,7 +208,7 @@ function renderProducts(L){
   $('listroot').innerHTML=L.map(p=>{const s=SUPP[p.shop_code]||{};return `
    <article class="card" onclick="openProd('${p.id}')">
      <div class="thumb"><img loading="lazy" src="${(p.imgs&&p.imgs[0])||''}"></div>
-     <div class="cb"><div class="subtag">${p.subcategoria||'Distrito 1'}</div><div class="name">${p.name||''}</div>
+     <div class="cb"><div class="subtag">${p.subcategoria||'Distrito 1'}</div><div class="name">${limpaNome(p.name)}</div>
        <div class="brl">R$ ${brl(p.brl)}</div><div class="range">R$ ${brl(p.brl_min)} a R$ ${brl(p.brl_max)}</div><div class="rmb">origem ¥ ${p.rmb}</div>
        <div class="vf"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#1F7A4D" stroke-width="2"><path d="M20 6 9 17l-5-5"/></svg>Fornecedor verificado${s.years?' · '+s.years+' anos':''}</div>
      </div></article>`}).join('')||'<div class="loading">Nenhum produto.</div>';
@@ -209,7 +225,7 @@ function renderSuppliers(L){
 function openProd(id){const p=PROD.find(x=>x.id===id);const s=SUPP[p.shop_code]||{};curDetail=id;
   $('detail').innerHTML=`<div class="back" onclick="closeD()">← Voltar</div><div class="dwrap">
     <div><div class="gmain"><img src="${(p.imgs&&p.imgs[0])||''}"></div></div>
-    <div><div class="dcat">${p.subcategoria||'Distrito 1'} · Yiwu</div><div class="dname">${p.name||''}</div>
+    <div><div class="dcat">${p.subcategoria||'Distrito 1'} · Yiwu</div><div class="dname">${limpaNome(p.name)}</div>
       <div class="dp"><div class="big">R$ ${brl(p.brl)}</div><div class="rg">faixa R$ ${brl(p.brl_min)} a R$ ${brl(p.brl_max)}</div><div class="or">origem ¥ ${p.rmb} · ×2</div></div>
       <div class="specs"><div class="sp"><span>Origem</span><span>Distrito 1, Yiwu</span></div><div class="sp"><span>Fornecedor</span><span>Verificado${s.years?' · '+s.years+' anos':''}</span></div><div class="sp"><span>Preço origem</span><span>¥ ${p.rmb}</span></div></div>
       ${role==='funcionario'?supBox(s,p.chat_url):''}
