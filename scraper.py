@@ -51,17 +51,19 @@ def parse_shopdetail(h,shop_code):
     out=[]
     for m in re.finditer(r'/product/detail/(\d+)\.html"[^>]*title="([^"]{5,})"[^<]*</a>\s*<p class="cpprice">\s*CN¥\s*([\d]+)(?:<font>\.?(\d+)</font>)?',h):
         pid,title,i,d=m.groups();rmb=float(f"{i}.{d or 0}")
-        pre=h[max(0,m.start()-600):m.start()]
-        img=re.search(r'(https?://ywgimg\.yiwugo\.com/product/[^"\'\s]+\.(?:jpg|png))',pre)
+        pre=h[max(0,m.start()-700):m.start()]
+        img=re.search(r'((?:https?:)?//(?:img1|img2|img3|ywgimg)\.yiwugo\.com/[^"\'\s]+\.(?:jpg|png))',pre)
+        iu=img.group(1) if img else None
+        if iu and iu.startswith("//"): iu="https:"+iu
         brl=rmb*FX*MULT
         out.append({"id":pid,"name":cn(title),"rmb":rmb,"brl":round(brl,2),"brl_min":round(brl*.9,2),
-          "brl_max":round(brl*1.1,2),"imgs":[img.group(1).split("?")[0]] if img else [],
+          "brl_max":round(brl*1.1,2),"imgs":[iu.split("?")[0]] if iu else [],
           "subcategoria":"Distrito 1","shop_code":shop_code})
     return out
 
 def products_for_pending(budget):
     t=time.time(); total=0
-    sup=requests.get(f"{URL}/rest/v1/fornecedores?select=code,shop_id,map_url&product_count=is.null&order=years.desc&limit=40",headers=RH,timeout=30).json()
+    sup=requests.get(f"{URL}/rest/v1/fornecedores?select=code,shop_id,map_url&or=(product_count.is.null,product_count.eq.0)&order=years.desc&limit=40",headers=RH,timeout=30).json()
     for s in sup:
         if time.time()-t>budget or timeleft()<90: break
         sid=None
@@ -110,9 +112,43 @@ def discover(budget):
         time.sleep(0.3)
     print(f"[descoberta] +{newsup} lojas novas (stubs)",flush=True)
 
+
+IMGRE=re.compile(r'((?:https?:)?//(?:img1|img2|img3|ywgimg)\.yiwugo\.com/[^"\'\s]+\.(?:jpg|png))')
+def backfill_photos(budget):
+    t=time.time(); done=0; empty=0
+    def bf(p):
+        pid=p["id"]
+        try:
+            h=S.get(f"https://en.yiwugo.com/product/detail/{pid}.html",timeout=14).text
+            cand=[x for x in IMGRE.findall(h) if 'blank' not in x and 'logo' not in x and 'icon' not in x]
+            if not cand: return 0
+            src=cand[0]; src="https:"+src if src.startswith("//") else src
+            r=S.get(src,timeout=12)
+            if r.status_code!=200 or len(r.content)<800: return 0
+            im=Image.open(io.BytesIO(r.content)).convert("RGB");im.thumbnail((600,600))
+            buf=io.BytesIO();im.save(buf,"JPEG",quality=82)
+            up=requests.post(f"{URL}/storage/v1/object/produtos/{pid}.jpg",headers=IMGH,data=buf.getvalue(),timeout=25)
+            if up.status_code>=300: return 0
+            requests.patch(f"{URL}/rest/v1/produtos?id=eq.{pid}",headers=PH,json={"imgs":[PUB+pid+'.jpg']},timeout=12)
+            return 1
+        except: return 0
+    while time.time()-t<budget and timeleft()>60:
+        p=requests.get(f"{URL}/rest/v1/produtos?select=id&imgs=eq.[]&limit=80",headers=RH,timeout=30).json()
+        if not p: break
+        ok=0
+        with ThreadPoolExecutor(max_workers=6) as ex:
+            for f in as_completed([ex.submit(bf,x) for x in p]): ok+=f.result()
+        done+=ok
+        if ok==0:
+            empty+=1
+            if empty>=2: break
+        else: empty=0
+    print(f"[backfill foto] +{done}",flush=True)
+
 if __name__=="__main__":
     print(f"== rodada garimpo (orcamento {RUN_SECONDS}s) ==",flush=True)
-    migrate_images(RUN_SECONDS*0.4)
-    products_for_pending(RUN_SECONDS*0.4)
-    discover(RUN_SECONDS*0.2)
+    migrate_images(RUN_SECONDS*0.25)
+    backfill_photos(RUN_SECONDS*0.35)
+    products_for_pending(RUN_SECONDS*0.25)
+    discover(RUN_SECONDS*0.15)
     print("== fim da rodada ==",flush=True)
