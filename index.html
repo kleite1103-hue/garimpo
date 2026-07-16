@@ -50,6 +50,7 @@ input,textarea,select{font-family:inherit}
 .cat{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:10px 12px;border-radius:9px;cursor:pointer;font-weight:500;font-size:13px;color:#2b2a28}
 .cat:hover{background:var(--bg)}.cat.on{background:var(--orangebg);color:var(--orange);font-weight:600}
 .cat .num{font-family:"Space Mono",monospace;font-size:10px;color:var(--faint)}.cat.on .num{color:var(--orange)}
+.cat.sub{padding:8px 12px 8px 28px;font-size:12.5px;color:var(--soft)}
 .crumbs{font-size:12.5px;color:var(--soft);margin-bottom:12px}.crumbs b{color:var(--ink)}
 .toolbar{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:9px 13px;display:flex;align-items:center;gap:8px;margin-bottom:14px;flex-wrap:wrap}
 .sp{font-size:12.5px;font-weight:500;padding:7px 12px;border-radius:8px;border:1px solid var(--line);background:var(--panel);color:#3a3936;cursor:pointer}
@@ -226,7 +227,7 @@ input,textarea,select{font-family:inherit}
 <script>
 const CFG=window.GARIMPO_CONFIG;
 const sb=supabase.createClient(CFG.SUPABASE_URL,CFG.SUPABASE_ANON);
-let USER=null,PERFIL=null,PROD=[],CART=[],curCat="todas",curSort="vendas",cadastro=false;
+let USER=null,PERFIL=null,PROD=[],CART=[],curCat="todas",curSub=null,curSort="vendas",cadastro=false;
 const $=id=>document.getElementById(id);
 const brl=n=>(n||0).toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2});
 const vnum=v=>{if(!v)return 0;const m=(""+v).match(/[\d.]+/);let x=m?parseFloat(m[0]):0;if((""+v).includes("万"))x*=10000;if((""+v).toLowerCase().includes("mil"))x*=1000;return x;};
@@ -273,18 +274,27 @@ async function carregaCatalogo(){
   }
   PROD=all;renderCats();render();
 }
+function esc(x){return (x||'').replace(/'/g,"\\'");}
 function renderCats(){
-  const c={};PROD.forEach(p=>c[p.categoria]=(c[p.categoria]||0)+1);
+  const tree={};
+  PROD.forEach(p=>{const c=p.categoria||"Outros",s=p.subcategoria||"Geral";tree[c]=tree[c]||{n:0,subs:{}};tree[c].n++;tree[c].subs[s]=(tree[c].subs[s]||0)+1;});
   let h=`<div class="cat ${curCat==='todas'?'on':''}" onclick="setCat('todas')"><span>Todas</span><span class="num">${PROD.length}</span></div>`;
-  Object.keys(c).sort((a,b)=>c[b]-c[a]).forEach(k=>{h+=`<div class="cat ${curCat===k?'on':''}" onclick="setCat('${(k||'').replace(/'/g,"\\'")}')"><span>${k}</span><span class="num">${c[k]}</span></div>`;});
+  Object.keys(tree).sort((a,b)=>tree[b].n-tree[a].n).forEach(k=>{
+    const on=curCat===k;
+    h+=`<div class="cat ${on&&!curSub?'on':''}" onclick="setCat('${esc(k)}')"><span>${k}</span><span class="num">${tree[k].n}</span></div>`;
+    if(on){Object.keys(tree[k].subs).sort((a,b)=>tree[k].subs[b]-tree[k].subs[a]).forEach(s=>{
+      h+=`<div class="cat sub ${curSub===s?'on':''}" onclick="setSub('${esc(k)}','${esc(s)}')"><span>${s}</span><span class="num">${tree[k].subs[s]}</span></div>`;});}
+  });
   $("cats").innerHTML=h;
 }
-function setCat(k){curCat=k;$("q").value="";renderCats();render();irCatalogo();}
+function setCat(k){curCat=k;curSub=null;$("q").value="";renderCats();render();irCatalogo();}
+function setSub(k,s){curCat=k;curSub=s;$("q").value="";renderCats();render();irCatalogo();}
 function setSort(el){document.querySelectorAll('.sp').forEach(x=>x.classList.remove('on'));el.classList.add('on');curSort=el.dataset.s;render();}
 function filtered(){
   const t=$("q").value.trim().toLowerCase();
   let L=PROD.slice();
   if(curCat!=="todas")L=L.filter(p=>p.categoria===curCat);
+  if(curSub)L=L.filter(p=>(p.subcategoria||"Geral")===curSub);
   if(t)L=L.filter(p=>(p.nome||"").toLowerCase().includes(t)||(p.subcategoria||"").toLowerCase().includes(t));
   if(curSort==="menor")L.sort((a,b)=>a.brl-b.brl);
   else if(curSort==="maior")L.sort((a,b)=>b.brl-a.brl);
@@ -305,7 +315,7 @@ function card(p){
 }
 function render(){
   const L=filtered();
-  $("crumbs").innerHTML=curCat==="todas"?"<b>Todas as categorias</b>":`Categorias / <b>${curCat}</b>`;
+  $("crumbs").innerHTML=curCat==="todas"?"<b>Todas as categorias</b>":(curSub?`Categorias / ${curCat} / <b>${curSub}</b>`:`Categorias / <b>${curCat}</b>`);
   $("count").innerHTML=`<b>${L.length}</b> produtos`;
   $("grid").innerHTML=L.length?L.map(card).join(""):`<div class="empty"><b>Catálogo em carga.</b><br>Os produtos entram aqui automaticamente conforme o robô alimenta a base.</div>`;
 }
