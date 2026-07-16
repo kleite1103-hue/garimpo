@@ -241,60 +241,12 @@ async function entrar(){
     if(cadastro){
       const {data,error}=await sb.auth.signUp({email,password:pw});
       if(error)throw error;
-      if(data.session){USER=data.user;await sb.from("perfis").update({nome:$("inNome").value.trim()}).eq("id",USER.id);await 
-let toastT=null;
-function showToast(msg){$("toastMsg").textContent=msg;$("toast").classList.add("show");clearTimeout(toastT);toastT=setTimeout(()=>$("toast").classList.remove("show"),2200);}
-let pmProd=null;
-function abreProd(id){
-  const p=PROD.find(x=>x.offer_id===id);if(!p)return;pmProd=p;
-  $("pmImg").src=p.img||"";$("pmNome").textContent=p.nome;
-  $("pmBrl").textContent="R$ "+brl(p.brl);
-  $("pmBadges").innerHTML=`<span class="pb hot">▲ ${p.vendas||"—"} vendas</span><span class="pb ver">✓ Fornecedor verificado</span>${p.certificacao?`<span class="pb warn">⚠ Exige ${p.certificacao} pra importar</span>`:""}`;
-  $("pmTiers").innerHTML=(p.faixas_brl&&p.faixas_brl.length?p.faixas_brl:[{faixa:"qualquer quantidade",brl:p.brl}]).map(f=>`<div class="ptr"><span>${f.faixa||"qualquer"}</span><b>R$ ${brl(f.brl)}/un</b></div>`).join("");
-  $("pmForn").textContent=(p.forn_anos?p.forn_anos+(p.forn_anos>1?" anos":" ano")+" de operação · ":"")+(p.vendas||"")+" vendas · avaliado pela nossa curadoria";
-  $("pmMoq").textContent=p.moq||1;$("pmQty").value=p.moq||1;
-  $("pmodal").classList.add("show");
-}
-function fechaProd(){$("pmodal").classList.remove("show");}
-function pmQ(d){const i=$("pmQty");let v=(parseInt(i.value)||pmProd.moq)+d*(pmProd.moq||1);if(v<pmProd.moq)v=pmProd.moq;i.value=v;}
-function addDoModal(){
-  if(!pmProd)return;
-  const q=Math.max(pmProd.moq||1,parseInt($("pmQty").value)||1);
-  const ex=CART.find(x=>x.offer_id===pmProd.offer_id);
-  if(ex)ex.qtd+=q;else CART.push({offer_id:pmProd.offer_id,nome:pmProd.nome,img:pmProd.img,moq:pmProd.moq||1,qtd:q,brl:pmProd.brl});
-  updCart();fechaProd();showToast("Adicionado à sua cotação");
-}
-
-boot();}
+      if(data.session){USER=data.user;await sb.from("perfis").update({nome:$("inNome").value.trim()}).eq("id",USER.id);await boot();}
       else{$("lgOk").textContent="Conta criada! Confirme no seu e-mail e volte pra entrar.";$("lgOk").style.display="block";modoCadastro(false);}
     }else{
       const {data,error}=await sb.auth.signInWithPassword({email,password:pw});
       if(error)throw error;
-      USER=data.user;await 
-let toastT=null;
-function showToast(msg){$("toastMsg").textContent=msg;$("toast").classList.add("show");clearTimeout(toastT);toastT=setTimeout(()=>$("toast").classList.remove("show"),2200);}
-let pmProd=null;
-function abreProd(id){
-  const p=PROD.find(x=>x.offer_id===id);if(!p)return;pmProd=p;
-  $("pmImg").src=p.img||"";$("pmNome").textContent=p.nome;
-  $("pmBrl").textContent="R$ "+brl(p.brl);
-  $("pmBadges").innerHTML=`<span class="pb hot">▲ ${p.vendas||"—"} vendas</span><span class="pb ver">✓ Fornecedor verificado</span>${p.certificacao?`<span class="pb warn">⚠ Exige ${p.certificacao} pra importar</span>`:""}`;
-  $("pmTiers").innerHTML=(p.faixas_brl&&p.faixas_brl.length?p.faixas_brl:[{faixa:"qualquer quantidade",brl:p.brl}]).map(f=>`<div class="ptr"><span>${f.faixa||"qualquer"}</span><b>R$ ${brl(f.brl)}/un</b></div>`).join("");
-  $("pmForn").textContent=(p.forn_anos?p.forn_anos+(p.forn_anos>1?" anos":" ano")+" de operação · ":"")+(p.vendas||"")+" vendas · avaliado pela nossa curadoria";
-  $("pmMoq").textContent=p.moq||1;$("pmQty").value=p.moq||1;
-  $("pmodal").classList.add("show");
-}
-function fechaProd(){$("pmodal").classList.remove("show");}
-function pmQ(d){const i=$("pmQty");let v=(parseInt(i.value)||pmProd.moq)+d*(pmProd.moq||1);if(v<pmProd.moq)v=pmProd.moq;i.value=v;}
-function addDoModal(){
-  if(!pmProd)return;
-  const q=Math.max(pmProd.moq||1,parseInt($("pmQty").value)||1);
-  const ex=CART.find(x=>x.offer_id===pmProd.offer_id);
-  if(ex)ex.qtd+=q;else CART.push({offer_id:pmProd.offer_id,nome:pmProd.nome,img:pmProd.img,moq:pmProd.moq||1,qtd:q,brl:pmProd.brl});
-  updCart();fechaProd();showToast("Adicionado à sua cotação");
-}
-
-boot();
+      USER=data.user;await boot();
     }
   }catch(e){$("lgErr").textContent="Não deu: "+(e.message||e);$("lgErr").style.display="block";}
 }
@@ -437,7 +389,6 @@ async function decidir(id,st,valor){
   }
   carregaMinhas();
 }
-
 let toastT=null;
 function showToast(msg){$("toastMsg").textContent=msg;$("toast").classList.add("show");clearTimeout(toastT);toastT=setTimeout(()=>$("toast").classList.remove("show"),2200);}
 let pmProd=null;
@@ -460,7 +411,6 @@ function addDoModal(){
   if(ex)ex.qtd+=q;else CART.push({offer_id:pmProd.offer_id,nome:pmProd.nome,img:pmProd.img,moq:pmProd.moq||1,qtd:q,brl:pmProd.brl});
   updCart();fechaProd();showToast("Adicionado à sua cotação");
 }
-
 boot();
 </script>
 
