@@ -1,0 +1,454 @@
+<!DOCTYPE html>
+<html lang="pt-BR"><head>
+<meta charset="utf-8"/><meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>Garimpo · Painel do Time</title>
+<link rel="stylesheet" href="assets/fonts.css"/>
+<script src="assets/js/supabase.min.js"></script>
+<script src="config.js"></script>
+<style>
+:root{--bg:#F4F5F7;--panel:#FFF;--ink:#161514;--soft:#6C6A66;--faint:#9C9995;--line:#E7E7E9;--line2:#EFEFF1;--orange:#FF4D1C;--orangebg:#FFF1EC;--gold:#C4933B;--goldbg:#FBF3E3;--green:#1F8A4C;--greenbg:#E7F6ED;--warn:#B26B00;--warnbg:#FFF6E5;--blue:#2563C9;--bluebg:#EAF1FD;--red:#C0392B;--redbg:#FDECEA}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--bg);color:var(--ink);font-family:"Outfit",system-ui,sans-serif;font-size:14px}
+.mono{font-family:"Space Mono",monospace}
+button{font-family:inherit;cursor:pointer}
+input,select,textarea{font-family:inherit}
+.hidden{display:none!important}
+.top{background:var(--panel);border-bottom:1px solid var(--line);position:sticky;top:0;z-index:30}
+.topin{max-width:1340px;margin:0 auto;padding:12px 20px;display:flex;align-items:center;gap:14px}
+.logo{display:flex;flex-direction:column;line-height:1}
+.logo .ev{font-family:"Space Mono",monospace;font-size:9px;letter-spacing:.26em;text-transform:uppercase;color:var(--faint)}
+.logo .g{font-family:"Bebas Neue",sans-serif;font-size:26px;margin-top:2px}.logo .g i{color:var(--orange);font-style:normal}
+.adm{font-family:"Space Mono",monospace;font-size:10px;color:var(--faint);letter-spacing:.15em}
+.uchip{margin-left:auto;display:flex;align-items:center;gap:8px;font-size:12.5px;color:var(--soft)}
+.uav{width:26px;height:26px;border-radius:50%;background:linear-gradient(135deg,#C9DCF2,#9BB6E8);display:grid;place-items:center;font-size:10.5px;font-weight:700;color:#274B7A}
+.sair{font-size:11.5px;color:var(--orange);cursor:pointer;font-weight:600}
+.layout{display:grid;grid-template-columns:192px 1fr;max-width:1340px;margin:0 auto;min-height:calc(100vh - 56px)}
+.aside{background:var(--panel);border-right:1px solid var(--line);padding:14px 10px}
+.al{display:flex;align-items:center;gap:9px;padding:10px 12px;border-radius:9px;font-size:13px;font-weight:500;color:#3a3936;cursor:pointer;margin-bottom:2px}
+.al:hover{background:var(--bg)}.al.on{background:var(--orangebg);color:var(--orange);font-weight:600}
+.al .bd{margin-left:auto;background:var(--orange);color:#fff;font-size:10px;font-weight:700;border-radius:10px;padding:2px 7px}
+.amain{padding:20px 24px}
+.ahead{display:flex;align-items:center;gap:12px;margin-bottom:14px;flex-wrap:wrap}
+.ahead h2{font-family:"Bebas Neue",sans-serif;font-size:28px}
+.ahead .sub{font-size:12px;color:var(--faint)}
+.kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:14px}
+.kpi{background:var(--panel);border:1px solid var(--line);border-radius:13px;padding:14px 16px}
+.kpi .k{font-size:11px;color:var(--faint);font-weight:600}
+.kpi .v{font-size:24px;font-weight:800;margin-top:3px}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:13px}
+.panel{background:var(--panel);border:1px solid var(--line);border-radius:14px}
+.ph2{padding:14px 17px;border-bottom:1px solid var(--line);font-weight:700;font-size:14px;display:flex;align-items:center;gap:8px}
+.mrow{display:flex;align-items:center;gap:10px;padding:10px 16px;border-bottom:1px solid var(--line2);font-size:12.5px}
+.mrow:last-child{border-bottom:0}
+.mrow .rk{font-family:"Space Mono",monospace;font-size:10.5px;color:var(--faint);width:16px}
+.mrow .nm{flex:1;font-weight:500;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.mrow .n2{font-weight:700}
+.tabs{display:flex;gap:5px;background:var(--panel);border:1px solid var(--line);border-radius:11px;padding:4px;margin-bottom:13px;width:fit-content;flex-wrap:wrap}
+.tab{font-size:12px;font-weight:600;padding:7px 13px;border-radius:8px;cursor:pointer;color:var(--soft)}
+.tab.on{background:var(--ink);color:#fff}
+table{width:100%;border-collapse:collapse;background:var(--panel);border:1px solid var(--line);border-radius:14px;overflow:hidden}
+th{font-family:"Space Mono",monospace;font-size:9px;letter-spacing:.09em;text-transform:uppercase;color:var(--faint);text-align:left;padding:10px 12px;border-bottom:1px solid var(--line);background:#FAFAFB}
+td{padding:11px 12px;border-bottom:1px solid var(--line2);font-size:12.5px;vertical-align:middle}
+tr:last-child td{border-bottom:0}
+tr.click{cursor:pointer}tr.click:hover{background:#FAFAFB}
+.st{font-size:10px;font-weight:700;padding:4px 8px;border-radius:7px;white-space:nowrap}
+.st.nova{background:var(--orangebg);color:var(--orange)}.st.em_cotacao{background:var(--bluebg);color:var(--blue)}.st.respondida{background:var(--greenbg);color:var(--green)}.st.aceita{background:var(--ink);color:#fff}.st.recusada{background:var(--redbg);color:var(--red)}.st.expirada,.st.fechada{background:var(--line2);color:var(--soft)}
+.btn{border:0;border-radius:10px;padding:11px 16px;font-size:13px;font-weight:700}
+.btn.p{background:var(--orange);color:#fff}.btn.g{background:var(--green);color:#fff}.btn.s{background:var(--panel);border:1.5px solid var(--ink)}.btn.ghost{background:transparent;border:1.5px solid var(--line);color:var(--soft)}
+.btn.sm{padding:7px 11px;font-size:11.5px;border-radius:8px}
+.detail{margin-top:16px;display:grid;grid-template-columns:1fr 330px;gap:16px;align-items:start}
+.solic{display:flex;gap:14px;padding:13px 17px;flex-wrap:wrap;border-bottom:1px solid var(--line2)}
+.solic .f{min-width:130px}
+.solic .k{font-size:9.5px;letter-spacing:.07em;text-transform:uppercase;color:var(--faint);font-family:"Space Mono",monospace}
+.solic .v{font-size:13px;font-weight:600;margin-top:2px}
+.ditem{padding:14px 17px;border-bottom:1px solid var(--line2);display:flex;gap:12px}
+.ditem:last-child{border-bottom:0}
+.ditem img{width:60px;height:60px;border-radius:9px;object-fit:cover;flex-shrink:0}
+.ditem .nm{font-size:13px;font-weight:600}
+.ditem .meta{font-size:11.5px;color:var(--soft);margin-top:2px}
+.supfull{margin-top:8px;background:#F1F7F3;border:1px solid #CDE6D9;border-radius:10px;padding:10px 12px}
+.supfull .sl{font-family:"Space Mono",monospace;font-size:9px;letter-spacing:.09em;text-transform:uppercase;color:var(--green);font-weight:700;margin-bottom:6px}
+.sfrow{display:flex;justify-content:space-between;gap:8px;font-size:11.5px;padding:2px 0}
+.sfrow span:first-child{color:#6B9A82}.sfrow span:last-child{font-weight:600;text-align:right;overflow:hidden;text-overflow:ellipsis}
+.sfrow a{color:var(--green);font-weight:700;text-decoration:none}
+.calc{padding:12px 17px}
+.crow{display:flex;justify-content:space-between;align-items:center;font-size:12.5px;padding:6px 0;color:var(--soft);gap:8px}
+.crow b{color:var(--ink)}
+.crow input{width:86px;border:1.5px solid var(--line);border-radius:8px;padding:7px 9px;font-size:12.5px;font-weight:700;text-align:right;outline:0}
+.crow input:focus{border-color:var(--orange)}
+.cfinal{display:flex;justify-content:space-between;align-items:baseline;border-top:1px solid var(--line);margin-top:6px;padding-top:10px;font-weight:700}
+.cfinal .v{font-size:20px;color:var(--green)}
+.acts{padding:0 17px 15px;display:flex;flex-direction:column;gap:8px}
+.selrow{display:flex;gap:8px;padding:0 17px 12px}
+.selrow select,.selrow input{flex:1;border:1.5px solid var(--line);border-radius:9px;padding:9px;font-size:12.5px;outline:0;background:var(--panel)}
+.tog{width:36px;height:20px;border-radius:12px;background:var(--line);position:relative;cursor:pointer;display:inline-block;vertical-align:middle;flex-shrink:0}
+.tog::after{content:"";position:absolute;width:16px;height:16px;border-radius:50%;background:#fff;top:2px;left:2px;transition:.15s;box-shadow:0 1px 3px rgba(0,0,0,.2)}
+.tog.on{background:var(--green)}.tog.on::after{left:18px}
+.star{cursor:pointer;font-size:16px;color:#D8D4CC}.star.on{color:var(--gold)}
+.thumb-sm{width:36px;height:36px;border-radius:8px;object-fit:cover;display:block;background:var(--bg)}
+.searchmini{border:1.5px solid var(--line);border-radius:10px;padding:9px 12px;font-size:13px;outline:0;width:240px}
+.cfg .crow2{display:flex;justify-content:space-between;align-items:center;padding:12px 17px;border-bottom:1px solid var(--line2);font-size:13px;gap:10px}
+.cfg .crow2:last-child{border-bottom:0}
+.cfg .hint{font-size:10.5px;color:var(--faint);margin-top:2px}
+.cfg input{border:1.5px solid var(--line);border-radius:8px;padding:8px 10px;font-size:12.5px;font-weight:600;text-align:right;outline:0;width:110px;background:var(--panel)}
+.loading{padding:38px;text-align:center;color:var(--soft)}
+.gate{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:26px}
+.gatebox{background:var(--panel);border:1px solid var(--line);border-radius:18px;padding:34px 30px;max-width:380px;width:100%}
+.gatebox p{font-size:13px;color:var(--soft);margin:8px 0 18px;line-height:1.5}
+.f{margin-bottom:11px}.f label{font-size:11.5px;font-weight:600;color:var(--soft);display:block;margin-bottom:5px}
+.f input{width:100%;border:1px solid var(--line);border-radius:10px;padding:11px 13px;font-size:13.5px;outline:0}
+.err{background:var(--redbg);color:var(--red);font-size:12px;padding:9px 11px;border-radius:9px;margin-bottom:10px;display:none}
+.etapasbtns{display:flex;gap:5px;flex-wrap:wrap}
+.eb{font-size:10px;font-weight:700;padding:5px 8px;border-radius:7px;border:1px solid var(--line);background:var(--panel);cursor:pointer;color:var(--soft)}
+.eb.cur{background:var(--orange);color:#fff;border-color:var(--orange)}
+.eb.done{background:var(--greenbg);color:var(--green);border-color:#CDE6D9}
+@media(max-width:920px){.layout{grid-template-columns:1fr}.aside{display:flex;overflow:auto;border-right:0;border-bottom:1px solid var(--line)}.kpis{grid-template-columns:repeat(2,1fr)}.grid2,.detail{grid-template-columns:1fr}}
+</style></head>
+<body>
+
+<div id="gate" class="gate">
+  <div class="gatebox">
+    <div class="logo"><span class="ev">Efeito Vendas</span><span class="g" style="font-size:34px">Garimpo<i>.</i></span></div>
+    <p><b>Painel do time.</b> Entre com sua conta de equipe ou admin.</p>
+    <div class="err" id="gErr"></div>
+    <div class="f"><label>E-mail</label><input id="gEmail" type="email"/></div>
+    <div class="f"><label>Senha</label><input id="gPw" type="password"/></div>
+    <button class="btn p" style="width:100%" onclick="gateEntrar()">Entrar no painel</button>
+  </div>
+</div>
+
+<div id="app" class="hidden">
+<div class="top"><div class="topin">
+  <div class="logo"><span class="ev">Efeito Vendas</span><span class="g">Garimpo<i>.</i></span></div>
+  <span class="adm">PAINEL DO TIME</span>
+  <div class="uchip"><span class="uav" id="uAv">?</span><span id="uNome"></span><span class="sair" onclick="sair()">sair</span></div>
+</div></div>
+<div class="layout">
+  <aside class="aside">
+    <div class="al on" data-v="geral" onclick="nav(this)">▦ Visão geral</div>
+    <div class="al" data-v="cot" onclick="nav(this)">🛒 Cotações<span class="bd hidden" id="bdCot">0</span></div>
+    <div class="al" data-v="ped" onclick="nav(this)">📦 Pedidos</div>
+    <div class="al" data-v="cat" onclick="nav(this)">▤ Catálogo</div>
+    <div class="al" data-v="cfg" onclick="nav(this)">⚙ Configurações</div>
+  </aside>
+  <main class="amain">
+
+    <!-- GERAL -->
+    <div id="vGeral">
+      <div class="ahead"><h2>Visão geral</h2><span class="sub">últimos 7 dias</span></div>
+      <div class="kpis">
+        <div class="kpi"><div class="k">Cotações (7d)</div><div class="v" id="kCot">—</div></div>
+        <div class="kpi"><div class="k">Viraram pedido</div><div class="v" id="kConv">—</div></div>
+        <div class="kpi"><div class="k">Valor em pedidos</div><div class="v" id="kVal">—</div></div>
+        <div class="kpi"><div class="k">Aguardando resposta</div><div class="v" id="kPend">—</div></div>
+      </div>
+      <div class="grid2">
+        <div class="panel"><div class="ph2">Produtos mais cotados</div><div id="topProd"><div class="loading">—</div></div></div>
+        <div class="panel"><div class="ph2">Quem mais cota</div><div id="topUser"><div class="loading">—</div></div></div>
+      </div>
+    </div>
+
+    <!-- COTACOES -->
+    <div id="vCot" class="hidden">
+      <div class="ahead"><h2>Cotações</h2></div>
+      <div class="tabs" id="cotTabs">
+        <span class="tab on" data-f="todas" onclick="cotFiltro(this)">Todas</span>
+        <span class="tab" data-f="nova" onclick="cotFiltro(this)">Novas</span>
+        <span class="tab" data-f="em_cotacao" onclick="cotFiltro(this)">Em cotação</span>
+        <span class="tab" data-f="respondida" onclick="cotFiltro(this)">Respondidas</span>
+        <span class="tab" data-f="aceita" onclick="cotFiltro(this)">Aceitas</span>
+      </div>
+      <div id="cotList"><div class="loading">Carregando…</div></div>
+      <div id="cotDetail"></div>
+    </div>
+
+    <!-- PEDIDOS -->
+    <div id="vPed" class="hidden">
+      <div class="ahead"><h2>Pedidos</h2><span class="sub">clique na etapa pra atualizar o rastreio do aluno</span></div>
+      <div id="pedList"><div class="loading">Carregando…</div></div>
+    </div>
+
+    <!-- CATALOGO -->
+    <div id="vCat" class="hidden">
+      <div class="ahead"><h2>Catálogo</h2><span class="sub" id="catSub"></span>
+        <input class="searchmini" id="catQ" placeholder="Buscar produto…" oninput="renderCat()" style="margin-left:auto"/></div>
+      <div id="catList"><div class="loading">Carregando…</div></div>
+    </div>
+
+    <!-- CONFIG -->
+    <div id="vCfg" class="hidden">
+      <div class="ahead"><h2>Configurações</h2><span class="sub">salva direto na fundação</span></div>
+      <div class="grid2">
+        <div class="panel cfg"><div class="ph2">Preço e câmbio</div><div id="cfgPreco"></div></div>
+        <div class="panel cfg"><div class="ph2">Cotação</div><div id="cfgCot"></div></div>
+      </div>
+    </div>
+
+  </main>
+</div>
+</div>
+
+<script>
+const CFG=window.GARIMPO_CONFIG;
+const sb=supabase.createClient(CFG.SUPABASE_URL,CFG.SUPABASE_ANON);
+let USER=null,PAPEL=null,COTS=[],PEDS=[],CATP=[],CFGS={},FX=0.77,curFiltro="todas",selCot=null;
+const $=id=>document.getElementById(id);
+const brl=n=>(Number(n)||0).toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2});
+const stLab={nova:"Nova",em_cotacao:"Em cotação",respondida:"Respondida",aceita:"Aceita ✓",recusada:"Recusada",expirada:"Expirada",fechada:"Fechada"};
+
+async function gateEntrar(){
+  $("gErr").style.display="none";
+  try{
+    const {data,error}=await sb.auth.signInWithPassword({email:$("gEmail").value.trim(),password:$("gPw").value});
+    if(error)throw error;
+    await boot();
+  }catch(e){$("gErr").textContent=e.message||e;$("gErr").style.display="block";}
+}
+async function sair(){await sb.auth.signOut();location.reload();}
+async function boot(){
+  const {data:{session}}=await sb.auth.getSession();
+  if(!session)return;
+  USER=session.user;
+  const {data:p}=await sb.from("perfis").select("*").eq("id",USER.id).single();
+  PAPEL=(p||{}).papel;
+  if(PAPEL!=="equipe"&&PAPEL!=="admin"){
+    $("gErr").textContent="Sua conta não tem acesso ao painel (papel: "+(PAPEL||"?")+"). Peça pra admin te promover.";
+    $("gErr").style.display="block";await sb.auth.signOut();return;
+  }
+  $("gate").classList.add("hidden");$("app").classList.remove("hidden");
+  const nome=(p&&p.nome)||USER.email.split("@")[0];
+  $("uNome").textContent=nome+" · "+PAPEL;$("uAv").textContent=nome.slice(0,2).toUpperCase();
+  try{FX=(await (await fetch("https://api.frankfurter.app/latest?from=CNY&to=BRL")).json()).rates.BRL;}catch(e){}
+  await Promise.all([loadCots(),loadPeds(),loadCfg()]);
+  renderGeral();
+}
+function nav(el){
+  document.querySelectorAll(".al").forEach(a=>a.classList.remove("on"));el.classList.add("on");
+  ["Geral","Cot","Ped","Cat","Cfg"].forEach(v=>$("v"+v).classList.add("hidden"));
+  const v=el.dataset.v;
+  $("v"+v.charAt(0).toUpperCase()+v.slice(1)).classList.remove("hidden");
+  if(v==="cat"&&!CATP.length)loadCat();
+}
+// ---------- LOADS ----------
+async function loadCots(){
+  const {data}=await sb.from("cotacoes").select("*, cotacao_itens(*)").order("criado_em",{ascending:false});
+  COTS=data||[];
+  const novas=COTS.filter(c=>c.status==="nova").length;
+  $("bdCot").textContent=novas;$("bdCot").classList.toggle("hidden",!novas);
+  renderCots();
+}
+async function loadPeds(){
+  const {data}=await sb.from("pedidos").select("*").order("criado_em",{ascending:false});
+  PEDS=data||[];renderPeds();
+}
+async function loadCfg(){
+  const {data}=await sb.from("config").select("*");
+  CFGS={};(data||[]).forEach(c=>CFGS[c.chave]=c.valor);
+  renderCfg();
+}
+async function loadCat(){
+  let all=[],off=0;
+  while(true){
+    const {data}=await sb.from("catalogo").select("offer_id,nome,categoria,brl,vendas,img,certificacao,visivel,destaque").range(off,off+999);
+    if(!data||!data.length)break;all=all.concat(data);off+=1000;if(data.length<1000)break;
+  }
+  CATP=all;renderCat();
+}
+// ---------- GERAL ----------
+function renderGeral(){
+  const s7=Date.now()-7*864e5;
+  const c7=COTS.filter(c=>new Date(c.criado_em).getTime()>s7);
+  $("kCot").textContent=c7.length;
+  const ace=c7.filter(c=>c.status==="aceita").length;
+  $("kConv").innerHTML=ace+` <span style="font-size:13px;color:var(--faint)">(${c7.length?Math.round(ace/c7.length*100):0}%)</span>`;
+  const val=PEDS.reduce((s,p)=>s+(Number(p.valor_total)||0),0);
+  $("kVal").textContent="R$ "+brl(val);
+  $("kPend").textContent=COTS.filter(c=>["nova","em_cotacao"].includes(c.status)).length;
+  const cnt={},usr={};
+  COTS.forEach(c=>{(c.cotacao_itens||[]).forEach(i=>cnt[i.nome]=(cnt[i.nome]||0)+1);usr[c.user_id]=(usr[c.user_id]||0)+1;});
+  const top=Object.entries(cnt).sort((a,b)=>b[1]-a[1]).slice(0,6);
+  $("topProd").innerHTML=top.length?top.map(([n,q],i)=>`<div class="mrow"><span class="rk">${i+1}</span><span class="nm">${n}</span><span class="n2">${q}</span></div>`).join(""):`<div class="loading">Sem cotações ainda.</div>`;
+  const topu=Object.entries(usr).sort((a,b)=>b[1]-a[1]).slice(0,6);
+  $("topUser").innerHTML=topu.length?topu.map(([u,q],i)=>`<div class="mrow"><span class="rk">${i+1}</span><span class="nm mono" style="font-size:11px">${u.slice(0,8)}…</span><span class="n2">${q} cotações</span></div>`).join(""):`<div class="loading">Sem cotações ainda.</div>`;
+}
+// ---------- COTACOES ----------
+function cotFiltro(el){document.querySelectorAll("#cotTabs .tab").forEach(t=>t.classList.remove("on"));el.classList.add("on");curFiltro=el.dataset.f;renderCots();}
+function renderCots(){
+  let L=COTS;
+  if(curFiltro!=="todas")L=L.filter(c=>c.status===curFiltro);
+  $("cotList").innerHTML=L.length?`<table><tr><th>Pedido</th><th>Itens</th><th>Total est.</th><th>Total firme</th><th>Status</th><th>Data</th></tr>`+
+    L.map(c=>{
+      const nIt=(c.cotacao_itens||[]).length,un=(c.cotacao_itens||[]).reduce((s,i)=>s+i.qtd,0);
+      return `<tr class="click" onclick="abreCot(${c.id})"><td class="mono">${c.numero}</td><td>${nIt} produto${nIt!==1?'s':''} · ${un} un</td><td>R$ ${brl(c.total_estimado)}</td><td>${c.total_firme?'<b>R$ '+brl(c.total_firme)+'</b>':'—'}</td><td><span class="st ${c.status}">${stLab[c.status]||c.status}</span></td><td>${new Date(c.criado_em).toLocaleDateString('pt-BR')}</td></tr>`;
+    }).join("")+`</table>`:`<div class="panel"><div class="loading">Nenhuma cotação ${curFiltro==='todas'?'ainda':'neste status'}. Quando um aluno enviar, aparece aqui.</div></div>`;
+  $("cotDetail").innerHTML="";
+}
+async function abreCot(id){
+  selCot=COTS.find(c=>c.id===id);if(!selCot)return;
+  const c=selCot;
+  // dados do solicitante
+  let perfil={};try{const {data}=await sb.from("perfis").select("*").eq("id",c.user_id).single();perfil=data||{};}catch(e){}
+  // origem + fornecedor de cada item (cofre — so equipe le)
+  const oids=(c.cotacao_itens||[]).map(i=>i.offer_id).filter(Boolean);
+  let origem={},forn={};
+  if(oids.length){
+    const {data:og}=await sb.from("catalogo_origem").select("*").in("offer_id",oids);
+    (og||[]).forEach(o=>origem[o.offer_id]=o);
+    const mids=[...new Set((og||[]).map(o=>o.member_id).filter(Boolean))];
+    if(mids.length){const {data:fs}=await sb.from("fornecedores_origem").select("*").in("member_id",mids);(fs||[]).forEach(f=>forn[f.member_id]=f);}
+  }
+  const custoRmb=(c.cotacao_itens||[]).reduce((s,i)=>{const o=origem[i.offer_id];return s+(o?Number(o.rmb)*i.qtd:0);},0);
+  const custoBrl=custoRmb*FX;
+  const frete=Number((CFGS.frete_padrao||{}).brl_un||0.73)*(c.cotacao_itens||[]).reduce((s,i)=>s+i.qtd,0);
+  const marg=Number((CFGS.margem_time||{}).pct||35);
+  $("cotDetail").innerHTML=`<div class="detail">
+    <div class="panel">
+      <div class="ph2">Detalhe ${c.numero}<span style="margin-left:auto;font-weight:400;font-size:11px;color:var(--faint)">${new Date(c.criado_em).toLocaleString('pt-BR')}</span></div>
+      <div class="solic">
+        <div class="f2"><div class="k">Solicitante</div><div class="v">${perfil.nome||'—'}</div></div>
+        <div class="f2"><div class="k">WhatsApp</div><div class="v">${perfil.whatsapp||'—'}</div></div>
+        <div class="f2"><div class="k">Perfil</div><div class="v">${perfil.papel||'aluno'}${perfil.turma?' · '+perfil.turma:''}</div></div>
+        ${c.obs_aluno?`<div class="f2" style="min-width:100%"><div class="k">Observação do aluno</div><div class="v" style="font-weight:500">${c.obs_aluno}</div></div>`:''}
+      </div>
+      ${(c.cotacao_itens||[]).map(i=>{
+        const o=origem[i.offer_id]||{};const f=forn[o.member_id]||{};
+        return `<div class="ditem"><img src="${i.img||''}"/><div style="flex:1;min-width:0">
+          <div class="nm">${i.nome}</div>
+          <div class="meta">Qtd <b>${i.qtd}</b> · MOQ ${i.moq} · estimado R$ ${brl(i.brl_estimado_un)}/un${o.rmb?` · origem ×${o.rmb}`:''}</div>
+          ${o.rmb?`<div class="supfull"><div class="sl">🔒 Fornecedor · só o time vê</div>
+            <div class="sfrow"><span>Empresa</span><span>${f.empresa_pt||f.empresa||'—'}</span></div>
+            <div class="sfrow"><span>Plataforma</span><span>${f.anos||'?'} anos · ${f.vendas_total||'?'} vendas${f.eh_fabrica?' · Fábrica':''}</span></div>
+            <div class="sfrow"><span>Loja de origem</span><span>${f.url_loja?`<a href="${f.url_loja}" target="_blank">abrir ↗</a>`:'—'}</span></div>
+            ${o.url_origem?`<div class="sfrow"><span>Produto na origem</span><span><a href="${o.url_origem}" target="_blank">abrir ↗</a></span></div>`:''}
+          </div>`:''}
+        </div></div>`;
+      }).join("")}
+    </div>
+    <div>
+      <div class="panel">
+        <div class="ph2">Fechar preço</div>
+        <div class="calc">
+          <div class="crow"><span>Custo de origem</span><b>¥ ${custoRmb.toFixed(2)} · R$ ${brl(custoBrl)}</b></div>
+          <div class="crow"><span>Frete estimado</span><input id="cFrete" value="${frete.toFixed(2)}" oninput="calcFirme()"/></div>
+          <div class="crow"><span>Margem do time %</span><input id="cMarg" value="${marg}" oninput="calcFirme()"/></div>
+          <div class="cfinal"><span>Preço firme ao aluno</span><span class="v" id="cFinal">R$ —</span></div>
+        </div>
+        <div class="selrow">
+          <input id="cPrazo" placeholder="Prazo (ex.: 35–45 dias)" value="${c.prazo_estimado||''}"/>
+        </div>
+        <div class="selrow">
+          <select id="cStatus">${Object.keys(stLab).map(s=>`<option value="${s}" ${c.status===s?'selected':''}>${stLab[s]}</option>`).join("")}</select>
+          <input id="cResp" placeholder="Responsável" value="${c.responsavel||''}"/>
+        </div>
+        <div class="acts">
+          <button class="btn p" onclick="responder()">Responder com preço firme</button>
+          <button class="btn ghost" onclick="salvarStatus()">Salvar status/responsável</button>
+        </div>
+      </div>
+    </div>
+  </div>`;
+  window._custoBrl=custoBrl;calcFirme();
+  $("cotDetail").scrollIntoView({behavior:"smooth"});
+}
+function calcFirme(){
+  const f=parseFloat(($("cFrete").value||"0").replace(",","."))||0;
+  const m=parseFloat(($("cMarg").value||"0").replace(",","."))||0;
+  const v=(window._custoBrl+f)*(1+m/100);
+  window._firme=Math.round(v*100)/100;
+  $("cFinal").textContent="R$ "+brl(window._firme);
+}
+async function responder(){
+  const dias=Number((CFGS.validade_preco||{}).dias||5);
+  const validade=new Date(Date.now()+dias*864e5).toISOString().slice(0,10);
+  const {error}=await sb.from("cotacoes").update({
+    status:"respondida",total_firme:window._firme,prazo_estimado:$("cPrazo").value.trim()||null,
+    frete_estimado:parseFloat(($("cFrete").value||"0").replace(",","."))||null,
+    margem_pct:parseFloat(($("cMarg").value||"0").replace(",","."))||null,
+    validade,responsavel:$("cResp").value.trim()||null,respondido_em:new Date().toISOString()
+  }).eq("id",selCot.id);
+  if(error){alert("Erro: "+error.message);return;}
+  alert("Respondida! O aluno já vê o preço firme (válido "+dias+" dias) em Minhas Cotações.");
+  await loadCots();renderGeral();
+}
+async function salvarStatus(){
+  const {error}=await sb.from("cotacoes").update({status:$("cStatus").value,responsavel:$("cResp").value.trim()||null}).eq("id",selCot.id);
+  if(error){alert("Erro: "+error.message);return;}
+  await loadCots();renderGeral();
+}
+// ---------- PEDIDOS ----------
+const ETAPAS=["confirmado","producao","embarcado","no_brasil","entregue"];
+const ELAB={confirmado:"Confirmado",producao:"Em produção",embarcado:"Embarcado",no_brasil:"No Brasil",entregue:"Entregue"};
+function renderPeds(){
+  $("pedList").innerHTML=PEDS.length?`<table><tr><th>Pedido</th><th>Valor</th><th>Etapas do rastreio</th><th>Criado</th></tr>`+
+    PEDS.map(p=>{
+      const idx=ETAPAS.indexOf(p.etapa);
+      return `<tr><td class="mono">${p.numero}</td><td><b>R$ ${brl(p.valor_total)}</b></td>
+        <td><div class="etapasbtns">${ETAPAS.map((e,i)=>`<span class="eb ${i<idx?'done':i===idx?'cur':''}" onclick="setEtapa(${p.id},'${e}')">${ELAB[e]}</span>`).join("")}</div></td>
+        <td>${new Date(p.criado_em).toLocaleDateString('pt-BR')}</td></tr>`;
+    }).join("")+`</table>`:`<div class="panel"><div class="loading">Nenhum pedido ainda. Quando um aluno aceitar uma cotação, ele nasce aqui.</div></div>`;
+}
+async function setEtapa(id,etapa){
+  const p=PEDS.find(x=>x.id===id);
+  const datas=p.etapas_datas||{};datas[etapa]=new Date().toISOString().slice(0,10);
+  const {error}=await sb.from("pedidos").update({etapa,etapas_datas:datas}).eq("id",id);
+  if(error){alert("Erro: "+error.message);return;}
+  await loadPeds();
+}
+// ---------- CATALOGO ----------
+function renderCat(){
+  const q=($("catQ").value||"").toLowerCase();
+  let L=CATP;
+  if(q)L=L.filter(p=>(p.nome||"").toLowerCase().includes(q)||(p.categoria||"").toLowerCase().includes(q));
+  $("catSub").textContent=`${CATP.length} produtos · ${CATP.filter(p=>p.visivel).length} visíveis`;
+  $("catList").innerHTML=`<table><tr><th></th><th>Produto</th><th>Categoria</th><th>Chegada</th><th>Vendas</th><th>Cert.</th><th>Destaque</th><th>Visível</th></tr>`+
+    L.slice(0,300).map(p=>`<tr style="${p.visivel?'':'opacity:.5'}">
+      <td><img class="thumb-sm" loading="lazy" src="${p.img||''}"/></td>
+      <td><b>${p.nome}</b></td><td>${p.categoria||''}</td><td><b>R$ ${brl(p.brl)}</b></td><td>${p.vendas||''}</td>
+      <td>${p.certificacao?'⚠ '+p.certificacao:'—'}</td>
+      <td><span class="star ${p.destaque?'on':''}" onclick="togDestaque('${p.offer_id}',${!p.destaque})">★</span></td>
+      <td><span class="tog ${p.visivel?'on':''}" onclick="togVisivel('${p.offer_id}',${!p.visivel})"></span></td>
+    </tr>`).join("")+`</table>${L.length>300?'<div class="loading">Mostrando 300 de '+L.length+' — use a busca pra achar o resto.</div>':''}`;
+}
+async function togVisivel(id,v){
+  await sb.from("catalogo").update({visivel:v}).eq("offer_id",id);
+  const p=CATP.find(x=>x.offer_id===id);if(p)p.visivel=v;renderCat();
+}
+async function togDestaque(id,v){
+  await sb.from("catalogo").update({destaque:v}).eq("offer_id",id);
+  const p=CATP.find(x=>x.offer_id===id);if(p)p.destaque=v;renderCat();
+}
+// ---------- CONFIG ----------
+function cfgField(chave,campo,label,hint,sufixo=""){
+  const v=(CFGS[chave]||{})[campo];
+  return `<div class="crow2"><div><div>${label}</div><div class="hint">${hint}</div></div>
+    <input value="${v??''}" onchange="salvaCfg('${chave}','${campo}',this.value)"/>${sufixo}</div>`;
+}
+function renderCfg(){
+  $("cfgPreco").innerHTML=
+    cfgField("multiplicador","fator","Multiplicador de chegada","origem × câmbio × este fator")+
+    cfgField("margem_seguranca","pct","Margem de segurança %","estimativa sempre pra cima")+
+    cfgField("frete_padrao","brl_un","Frete padrão R$/un","usado na calculadora")+
+    cfgField("margem_time","pct","Margem do time %","sugerida ao responder");
+  $("cfgCot").innerHTML=
+    `<div class="crow2"><div><div>Cobrança por cotação</div><div class="hint">quando ligar, aluno paga pelo preço firme</div></div>
+      <span class="tog ${(CFGS.cobranca_cotacao||{}).ativa?'on':''}" onclick="togCobranca(this)"></span></div>`+
+    cfgField("cobranca_cotacao","valor_brl","Valor por cotação R$","defina quando ligar a cobrança")+
+    cfgField("cobranca_cotacao","gratis_por_aluno","Cotações grátis por aluno","as primeiras, pra experimentar")+
+    cfgField("validade_preco","dias","Validade do preço firme (dias)","depois disso, expira")+
+    cfgField("meta_resposta","texto","Meta de resposta","aparece pro aluno");
+}
+async function salvaCfg(chave,campo,valor){
+  const v=CFGS[chave]||{};
+  const num=parseFloat((valor||"").toString().replace(",","."));
+  v[campo]=isNaN(num)||/[a-zA-Z]/.test(valor)?valor:num;
+  CFGS[chave]=v;
+  await sb.from("config").update({valor:v,atualizado_em:new Date().toISOString()}).eq("chave",chave);
+}
+async function togCobranca(el){
+  const v=CFGS.cobranca_cotacao||{};v.ativa=!v.ativa;CFGS.cobranca_cotacao=v;
+  await sb.from("config").update({valor:v}).eq("chave","cobranca_cotacao");
+  el.classList.toggle("on",v.ativa);
+}
+boot();
+</script>
+</body></html>
