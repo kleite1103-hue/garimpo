@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <html lang="pt-BR"><head>
-<meta charset="utf-8"/><meta name="viewport" content="width=device-width, initial-scale=1"/>
+<meta charset="utf-8"/><meta name="referrer" content="no-referrer"/><meta name="viewport" content="width=device-width, initial-scale=1"/>
 <title>Garimpo · Efeito Vendas</title>
 <link rel="stylesheet" href="assets/fonts.css"/>
 <script src="assets/js/supabase.min.js"></script>
@@ -121,6 +121,34 @@ input,textarea,select{font-family:inherit}
 .tstep.done .tlab,.tstep.cur .tlab{color:var(--ink)}
 .loading{padding:44px;text-align:center;color:var(--soft)}
 @media(max-width:840px){.shell,.cotgrid{grid-template-columns:1fr}.side{position:static}}
+
+.toast{position:fixed;bottom:26px;left:50%;transform:translateX(-50%) translateY(80px);background:var(--ink);color:#fff;font-size:13.5px;font-weight:600;padding:13px 22px;border-radius:12px;box-shadow:0 10px 30px rgba(0,0,0,.25);z-index:99;transition:transform .25s;display:flex;align-items:center;gap:9px}
+.toast.show{transform:translateX(-50%) translateY(0)}
+.toast .tk{color:#7CFFA8}
+/* modal produto */
+.pmodal{position:fixed;inset:0;background:rgba(15,14,13,.55);z-index:80;display:none;align-items:flex-start;justify-content:center;padding:30px 16px;overflow:auto}
+.pmodal.show{display:flex}
+.pbox{background:var(--panel);border-radius:18px;max-width:880px;width:100%;display:grid;grid-template-columns:380px 1fr;gap:0;overflow:hidden;position:relative}
+.pclose{position:absolute;top:12px;right:12px;width:34px;height:34px;border-radius:50%;background:var(--panel);border:1px solid var(--line);font-size:16px;z-index:2}
+.pimg{aspect-ratio:1;background:var(--bg)}
+.pimg img{width:100%;height:100%;object-fit:cover;display:block}
+.pinfo{padding:24px 26px}
+.pinfo h2{font-size:19px;font-weight:600;line-height:1.3}
+.pbadges{display:flex;gap:7px;margin:11px 0;flex-wrap:wrap}
+.pb{font-size:10.5px;font-weight:700;padding:5px 9px;border-radius:7px}
+.pb.hot{background:var(--ink);color:#fff}.pb.warn{background:var(--warnbg);color:var(--warn)}.pb.ver{background:var(--greenbg);color:var(--green)}
+.pprice{background:var(--bg);border:1px solid var(--line);border-radius:13px;padding:14px 16px;margin:12px 0}
+.pprice .row1{display:flex;align-items:baseline;gap:8px}
+.pprice .big{font-size:27px;font-weight:800}
+.pprice .lab{font-size:11px;color:var(--faint)}
+.pprice .aviso{font-size:11px;color:var(--soft);margin-top:5px}.pprice .aviso b{color:var(--warn)}
+.ptiers{background:var(--goldbg);border:1px solid #F0E2C4;border-radius:11px;padding:11px 13px;margin:12px 0}
+.ptiers .th{font-family:"Space Mono",monospace;font-size:9.5px;letter-spacing:.07em;text-transform:uppercase;color:var(--gold);margin-bottom:6px}
+.ptr{display:flex;justify-content:space-between;font-size:13px;padding:2.5px 0;color:#5c5646}.ptr b{color:#2e2a20}
+.pforn{display:flex;align-items:center;gap:11px;background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:12px 14px;margin:12px 0;font-size:12.5px}
+.pqty{display:flex;gap:12px;align-items:center;margin:14px 0 10px}
+.pnote{font-size:11px;color:var(--faint);text-align:center;margin-top:8px}
+@media(max-width:760px){.pbox{grid-template-columns:1fr}}
 </style></head>
 <body>
 
@@ -213,12 +241,60 @@ async function entrar(){
     if(cadastro){
       const {data,error}=await sb.auth.signUp({email,password:pw});
       if(error)throw error;
-      if(data.session){USER=data.user;await sb.from("perfis").update({nome:$("inNome").value.trim()}).eq("id",USER.id);await boot();}
+      if(data.session){USER=data.user;await sb.from("perfis").update({nome:$("inNome").value.trim()}).eq("id",USER.id);await 
+let toastT=null;
+function showToast(msg){$("toastMsg").textContent=msg;$("toast").classList.add("show");clearTimeout(toastT);toastT=setTimeout(()=>$("toast").classList.remove("show"),2200);}
+let pmProd=null;
+function abreProd(id){
+  const p=PROD.find(x=>x.offer_id===id);if(!p)return;pmProd=p;
+  $("pmImg").src=p.img||"";$("pmNome").textContent=p.nome;
+  $("pmBrl").textContent="R$ "+brl(p.brl);
+  $("pmBadges").innerHTML=`<span class="pb hot">▲ ${p.vendas||"—"} vendas</span><span class="pb ver">✓ Fornecedor verificado</span>${p.certificacao?`<span class="pb warn">⚠ Exige ${p.certificacao} pra importar</span>`:""}`;
+  $("pmTiers").innerHTML=(p.faixas_brl&&p.faixas_brl.length?p.faixas_brl:[{faixa:"qualquer quantidade",brl:p.brl}]).map(f=>`<div class="ptr"><span>${f.faixa||"qualquer"}</span><b>R$ ${brl(f.brl)}/un</b></div>`).join("");
+  $("pmForn").textContent=(p.forn_anos?p.forn_anos+(p.forn_anos>1?" anos":" ano")+" de operação · ":"")+(p.vendas||"")+" vendas · avaliado pela nossa curadoria";
+  $("pmMoq").textContent=p.moq||1;$("pmQty").value=p.moq||1;
+  $("pmodal").classList.add("show");
+}
+function fechaProd(){$("pmodal").classList.remove("show");}
+function pmQ(d){const i=$("pmQty");let v=(parseInt(i.value)||pmProd.moq)+d*(pmProd.moq||1);if(v<pmProd.moq)v=pmProd.moq;i.value=v;}
+function addDoModal(){
+  if(!pmProd)return;
+  const q=Math.max(pmProd.moq||1,parseInt($("pmQty").value)||1);
+  const ex=CART.find(x=>x.offer_id===pmProd.offer_id);
+  if(ex)ex.qtd+=q;else CART.push({offer_id:pmProd.offer_id,nome:pmProd.nome,img:pmProd.img,moq:pmProd.moq||1,qtd:q,brl:pmProd.brl});
+  updCart();fechaProd();showToast("Adicionado à sua cotação");
+}
+
+boot();}
       else{$("lgOk").textContent="Conta criada! Confirme no seu e-mail e volte pra entrar.";$("lgOk").style.display="block";modoCadastro(false);}
     }else{
       const {data,error}=await sb.auth.signInWithPassword({email,password:pw});
       if(error)throw error;
-      USER=data.user;await boot();
+      USER=data.user;await 
+let toastT=null;
+function showToast(msg){$("toastMsg").textContent=msg;$("toast").classList.add("show");clearTimeout(toastT);toastT=setTimeout(()=>$("toast").classList.remove("show"),2200);}
+let pmProd=null;
+function abreProd(id){
+  const p=PROD.find(x=>x.offer_id===id);if(!p)return;pmProd=p;
+  $("pmImg").src=p.img||"";$("pmNome").textContent=p.nome;
+  $("pmBrl").textContent="R$ "+brl(p.brl);
+  $("pmBadges").innerHTML=`<span class="pb hot">▲ ${p.vendas||"—"} vendas</span><span class="pb ver">✓ Fornecedor verificado</span>${p.certificacao?`<span class="pb warn">⚠ Exige ${p.certificacao} pra importar</span>`:""}`;
+  $("pmTiers").innerHTML=(p.faixas_brl&&p.faixas_brl.length?p.faixas_brl:[{faixa:"qualquer quantidade",brl:p.brl}]).map(f=>`<div class="ptr"><span>${f.faixa||"qualquer"}</span><b>R$ ${brl(f.brl)}/un</b></div>`).join("");
+  $("pmForn").textContent=(p.forn_anos?p.forn_anos+(p.forn_anos>1?" anos":" ano")+" de operação · ":"")+(p.vendas||"")+" vendas · avaliado pela nossa curadoria";
+  $("pmMoq").textContent=p.moq||1;$("pmQty").value=p.moq||1;
+  $("pmodal").classList.add("show");
+}
+function fechaProd(){$("pmodal").classList.remove("show");}
+function pmQ(d){const i=$("pmQty");let v=(parseInt(i.value)||pmProd.moq)+d*(pmProd.moq||1);if(v<pmProd.moq)v=pmProd.moq;i.value=v;}
+function addDoModal(){
+  if(!pmProd)return;
+  const q=Math.max(pmProd.moq||1,parseInt($("pmQty").value)||1);
+  const ex=CART.find(x=>x.offer_id===pmProd.offer_id);
+  if(ex)ex.qtd+=q;else CART.push({offer_id:pmProd.offer_id,nome:pmProd.nome,img:pmProd.img,moq:pmProd.moq||1,qtd:q,brl:pmProd.brl});
+  updCart();fechaProd();showToast("Adicionado à sua cotação");
+}
+
+boot();
     }
   }catch(e){$("lgErr").textContent="Não deu: "+(e.message||e);$("lgErr").style.display="block";}
 }
@@ -266,13 +342,13 @@ function filtered(){
 function card(p){
   const fx=(p.faixas_brl||[]).slice(0,2).map(f=>`<div class="trow"><span>${f.faixa||'qualquer'}</span><b>R$ ${brl(f.brl)}</b></div>`).join("")||`<div class="trow"><span>unidade</span><b>R$ ${brl(p.brl)}</b></div>`;
   const w=p.certificacao?`<span class="warnb">⚠ ${p.certificacao}</span>`:"";
-  return `<article class="card"><div class="thumb"><img loading="lazy" src="${p.img}" alt=""/><span class="bdg">▲ ${p.vendas||''}</span>${w}</div>
+  return `<article class="card" onclick="abreProd(\'${p.offer_id}\')" style="cursor:pointer"><div class="thumb"><img loading="lazy" src="${p.img}" alt=""/><span class="bdg">▲ ${p.vendas||''}</span>${w}</div>
    <div class="cbody"><div class="pname">${p.nome}</div>
     <div class="chegada"><span class="big">R$ ${brl(p.brl)}</span><span class="lab">chegada/un*</span></div>
     <div class="tiers"><div class="th">Preço por quantidade</div>${fx}</div>
     <div class="metarow"><span class="moq">MOQ <b>${p.moq} un</b></span><span class="sales">▲ ${p.vendas||'—'}</span></div>
     <div class="forn">✓ Fornecedor verificado${p.forn_anos?' · '+p.forn_anos+(p.forn_anos>1?' anos':' ano'):''}</div>
-    <button class="addbtn" onclick="add('${p.offer_id}')">+ Adicionar à cotação</button>
+    <button class="addbtn" onclick="event.stopPropagation();add('${p.offer_id}')">+ Adicionar à cotação</button>
    </div></article>`;
 }
 function render(){
@@ -286,7 +362,7 @@ function add(id){
   const p=PROD.find(x=>x.offer_id===id);if(!p)return;
   const ex=CART.find(x=>x.offer_id===id);
   if(ex)ex.qtd+=p.moq||1;else CART.push({offer_id:id,nome:p.nome,img:p.img,moq:p.moq||1,qtd:p.moq||1,brl:p.brl});
-  updCart();
+  updCart();showToast("Adicionado à sua cotação");
 }
 function updCart(){$("cartN").textContent=CART.length;}
 function irCarrinho(){$("pCat").classList.add("hidden");$("pMinhas").classList.add("hidden");$("pCart").classList.remove("hidden");renderCart();scrollTo(0,0);}
@@ -361,6 +437,52 @@ async function decidir(id,st,valor){
   }
   carregaMinhas();
 }
+
+let toastT=null;
+function showToast(msg){$("toastMsg").textContent=msg;$("toast").classList.add("show");clearTimeout(toastT);toastT=setTimeout(()=>$("toast").classList.remove("show"),2200);}
+let pmProd=null;
+function abreProd(id){
+  const p=PROD.find(x=>x.offer_id===id);if(!p)return;pmProd=p;
+  $("pmImg").src=p.img||"";$("pmNome").textContent=p.nome;
+  $("pmBrl").textContent="R$ "+brl(p.brl);
+  $("pmBadges").innerHTML=`<span class="pb hot">▲ ${p.vendas||"—"} vendas</span><span class="pb ver">✓ Fornecedor verificado</span>${p.certificacao?`<span class="pb warn">⚠ Exige ${p.certificacao} pra importar</span>`:""}`;
+  $("pmTiers").innerHTML=(p.faixas_brl&&p.faixas_brl.length?p.faixas_brl:[{faixa:"qualquer quantidade",brl:p.brl}]).map(f=>`<div class="ptr"><span>${f.faixa||"qualquer"}</span><b>R$ ${brl(f.brl)}/un</b></div>`).join("");
+  $("pmForn").textContent=(p.forn_anos?p.forn_anos+(p.forn_anos>1?" anos":" ano")+" de operação · ":"")+(p.vendas||"")+" vendas · avaliado pela nossa curadoria";
+  $("pmMoq").textContent=p.moq||1;$("pmQty").value=p.moq||1;
+  $("pmodal").classList.add("show");
+}
+function fechaProd(){$("pmodal").classList.remove("show");}
+function pmQ(d){const i=$("pmQty");let v=(parseInt(i.value)||pmProd.moq)+d*(pmProd.moq||1);if(v<pmProd.moq)v=pmProd.moq;i.value=v;}
+function addDoModal(){
+  if(!pmProd)return;
+  const q=Math.max(pmProd.moq||1,parseInt($("pmQty").value)||1);
+  const ex=CART.find(x=>x.offer_id===pmProd.offer_id);
+  if(ex)ex.qtd+=q;else CART.push({offer_id:pmProd.offer_id,nome:pmProd.nome,img:pmProd.img,moq:pmProd.moq||1,qtd:q,brl:pmProd.brl});
+  updCart();fechaProd();showToast("Adicionado à sua cotação");
+}
+
 boot();
 </script>
+
+<div class="toast" id="toast"><span class="tk">✓</span><span id="toastMsg"></span></div>
+<div class="pmodal" id="pmodal" onclick="if(event.target===this)fechaProd()">
+  <div class="pbox">
+    <button class="pclose" onclick="fechaProd()">✕</button>
+    <div class="pimg"><img id="pmImg" src=""/></div>
+    <div class="pinfo">
+      <h2 id="pmNome"></h2>
+      <div class="pbadges" id="pmBadges"></div>
+      <div class="pprice"><div class="row1"><span style="font-size:11px;color:var(--faint)">a partir de</span><span class="big" id="pmBrl"></span><span class="lab">/un · chegada no Brasil</span></div>
+        <div class="aviso"><b>*Estimativa</b> com câmbio do dia. O preço firme vem na resposta da sua cotação.</div></div>
+      <div class="ptiers"><div class="th">Preço por quantidade (estimado)</div><div id="pmTiers"></div></div>
+      <div class="pforn">🛡️ <div><b>Fornecedor verificado</b><div style="font-size:11px;color:var(--soft)" id="pmForn"></div></div></div>
+      <div class="pqty">
+        <div class="stepper"><button onclick="pmQ(-1)">−</button><input id="pmQty" value="1"/><button onclick="pmQ(1)">+</button></div>
+        <span style="font-size:12px;color:var(--soft)">mínimo <b id="pmMoq">1</b> un</span>
+      </div>
+      <button class="btn p full" onclick="addDoModal()">+ Adicionar à minha cotação</button>
+      <div class="pnote">Sem compromisso. Você monta a lista, envia, e nosso time responde com o preço firme.</div>
+    </div>
+  </div>
+</div>
 </body></html>
