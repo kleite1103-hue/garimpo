@@ -504,7 +504,7 @@ async function buscaFoto(){
     let n=0;
     fPoll=setInterval(async()=>{
       n++;
-      const rc=await fetch(CFG.SUPABASE_URL+"/functions/v1/buscafoto",{method:"POST",headers:hd,body:JSON.stringify({action:"check",runId:j.runId})});
+      const rc=await fetch(CFG.SUPABASE_URL+"/functions/v1/buscafoto",{method:"POST",headers:hd,body:JSON.stringify({action:"check",runId:j.runId,fx:FX,mult:(CFGS.multiplicador||{}).fator||1.8,seg:1+((CFGS.margem_seguranca||{}).pct||8)/100})});
       const jc=await rc.json();
       if(jc.status==="rodando"){if(n>40){clearInterval(fPoll);$("fStatus").innerHTML="Demorou demais. Tenta de novo.";}return;}
       clearInterval(fPoll);$("fStatus").style.display="none";

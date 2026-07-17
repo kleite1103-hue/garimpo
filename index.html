@@ -202,6 +202,7 @@ input,textarea,select{font-family:inherit}
   <div class="logo" onclick="irCatalogo()"><span class="ev">Efeito Vendas</span><span class="g">Garimpo<i>.</i></span></div>
   <div class="searchbar"><input id="q" placeholder="Buscar produto…" oninput="render()"/><button onclick="render()">Buscar</button></div>
   <div class="navbtns">
+    <a class="nb hidden" id="btnAdmin" href="admin.html" style="text-decoration:none;background:var(--orangebg);border-color:var(--orange);color:var(--orange)">⚙ Painel do time</a>
     <div class="nb" onclick="irMinhas()">Minhas cotações</div>
     <div class="nb dark" onclick="irCarrinho()">Cotação<span class="n" id="cartN">0</span></div>
     <div class="uchip"><span class="uav" id="uAv">?</span><span id="uNome"></span><span class="sair" onclick="sair()">sair</span></div>
@@ -289,6 +290,7 @@ async function boot(){
   $("vLogin").classList.add("hidden");$("vApp").classList.remove("hidden");
   const nome=PERFIL.nome||USER.email.split("@")[0];
   $("uNome").textContent=nome;$("uAv").textContent=nome.slice(0,2).toUpperCase();
+  if(PERFIL&&(PERFIL.papel==="admin"||PERFIL.papel==="equipe"))$("btnAdmin").classList.remove("hidden");
   await carregaCatalogo();
 }
 // ---------- CATALOGO ----------
