@@ -318,6 +318,9 @@ async function abreCot(id){
     const mids=[...new Set((og||[]).map(o=>o.member_id).filter(Boolean))];
     if(mids.length){const {data:fs}=await sb.from("fornecedores_origem").select("*").in("member_id",mids);(fs||[]).forEach(f=>forn[f.member_id]=f);}
   }
+  let vols={};
+  if(oids.length){const {data:vv}=await sb.from("catalogo").select("offer_id,volume_l").in("offer_id",oids);(vv||[]).forEach(v=>vols[v.offer_id]=Number(v.volume_l)||0);}
+  const totalL=(c.cotacao_itens||[]).reduce((s,i)=>s+(vols[i.offer_id]||0)*i.qtd,0);
   const custoRmb=(c.cotacao_itens||[]).reduce((s,i)=>{const o=origem[i.offer_id];return s+(o?Number(o.rmb)*i.qtd:0);},0);
   const custoBrl=custoRmb*FX;
   const frete=Number((CFGS.frete_padrao||{}).brl_un||0.73)*(c.cotacao_itens||[]).reduce((s,i)=>s+i.qtd,0);
@@ -370,7 +373,8 @@ async function abreCot(id){
       </div>
     </div>
   </div>`;
-  window._custoBrl=custoBrl;calcFirme();
+  window._custoBrl=custoBrl;
+  if(totalL>0){$("cVol").value=totalL.toFixed(1);calcVol();}else{calcFirme();}
   $("cotDetail").scrollIntoView({behavior:"smooth"});
 }
 function calcVol(){
@@ -481,7 +485,28 @@ async function togCobranca(el){
 }
 
 let fotoData=null,fPoll=null;
-function abreFoto(){$("fmodal").classList.add("show");}
+function abreFoto(){$("fmodal").classList.add("show");carregaHist();}
+let HISTS={};
+async function carregaHist(){
+  try{
+    const {data}=await sb.from("buscas_foto").select("id,foto_url,status,criado_em,resultados").order("criado_em",{ascending:false}).limit(15);
+    HISTS={};(data||[]).forEach(h=>HISTS[h.id]=h);
+    const L=data||[];
+    $("fHist").innerHTML=L.length?`<div style="font-family:'Space Mono',monospace;font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:var(--faint);margin-bottom:8px">Buscas anteriores (reabrir é grátis)</div>`+
+      L.map(h=>`<div class="fitem" style="cursor:pointer" onclick="reabrirBusca(${h.id})">
+        <img src="${h.foto_url}"/>
+        <div class="fi"><div class="fn">${new Date(h.criado_em).toLocaleString('pt-BR')}</div>
+        <div class="fm">${h.status==='ok'?((h.resultados||[]).length+' fornecedores achados'):h.status}</div></div>
+        <span style="font-size:11px;font-weight:700;color:var(--orange)">reabrir ›</span>
+      </div>`).join(""):"";
+  }catch(e){}
+}
+function reabrirBusca(id){
+  const h=HISTS[id];if(!h||h.status!=="ok")return;
+  renderFotoRes({resultados:h.resultados||[]});
+  $("fRes").scrollIntoView({behavior:"smooth"});
+}
+
 function fechaFoto(){$("fmodal").classList.remove("show");clearInterval(fPoll);}
 function fotoEscolhida(inp){if(inp.files&&inp.files[0])compFoto(inp.files[0]);}
 document.addEventListener("paste",e=>{
@@ -519,7 +544,7 @@ async function buscaFoto(){
       if(jc.status==="rodando"){if(n>40){clearInterval(fPoll);$("fStatus").innerHTML="Demorou demais. Tenta de novo.";}return;}
       clearInterval(fPoll);$("fStatus").style.display="none";
       if(jc.status!=="ok"){$("fStatus").style.display="block";$("fStatus").innerHTML="A busca falhou. Tenta outra foto.";return;}
-      renderFotoRes(jc);
+      renderFotoRes(jc);carregaHist();
     },6000);
   }catch(e){$("fStatus").innerHTML="Erro: "+(e.message||e);}
 }
@@ -554,6 +579,7 @@ boot();
     <div class="fdrop" onclick="$('fInput').click()"><div id="fDropIn">📷<br><b>Clique pra escolher a foto</b><br><span style="font-size:11.5px;color:var(--faint)">ou cole um print (Ctrl+V)</span></div></div>
     <div id="fStatus" class="fstatus" style="display:none"></div>
     <div id="fRes" style="margin-top:14px"></div>
+    <div id="fHist" style="margin-top:16px"></div>
   </div>
 </div>
 </body></html>
