@@ -103,6 +103,25 @@ tr.click{cursor:pointer}tr.click:hover{background:#FAFAFB}
 .eb.cur{background:var(--orange);color:#fff;border-color:var(--orange)}
 .eb.done{background:var(--greenbg);color:var(--green);border-color:#CDE6D9}
 @media(max-width:920px){.layout{grid-template-columns:1fr}.aside{display:flex;overflow:auto;border-right:0;border-bottom:1px solid var(--line)}.kpis{grid-template-columns:repeat(2,1fr)}.grid2,.detail{grid-template-columns:1fr}}
+
+.fmodal{position:fixed;inset:0;background:rgba(15,14,13,.55);z-index:85;display:none;align-items:flex-start;justify-content:center;padding:30px 16px;overflow:auto}
+.fmodal.show{display:flex}
+.fbox{background:var(--panel);border-radius:18px;max-width:760px;width:100%;padding:24px;position:relative}
+.fdrop{border:2px dashed var(--line);border-radius:14px;padding:26px;text-align:center;cursor:pointer}
+.fdrop:hover{border-color:var(--orange);background:var(--orangebg)}
+.fdrop img{max-height:170px;border-radius:10px}
+.fstatus{text-align:center;padding:20px;color:var(--soft);font-size:13.5px}
+.fspin{width:26px;height:26px;border:3px solid var(--line);border-top-color:var(--orange);border-radius:50%;margin:0 auto 12px;animation:spin 1s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.fitem{display:flex;gap:12px;align-items:center;border:1px solid var(--line);border-radius:12px;padding:11px 13px;margin-bottom:9px}
+.fitem img{width:56px;height:56px;border-radius:9px;object-fit:cover;flex-shrink:0}
+.fitem .fi{flex:1;min-width:0}
+.fitem .fn{font-size:12.5px;font-weight:600;line-height:1.3}
+.fitem .fm{font-size:11px;color:var(--soft);margin-top:3px}
+.fitem .fp{text-align:right}
+.fitem .fp .v2{font-size:15px;font-weight:800}
+.fitem .fp .l2{font-size:9.5px;color:var(--faint)}
+.fclose{position:absolute;top:12px;right:12px;width:32px;height:32px;border-radius:50%;background:var(--panel);border:1px solid var(--line);font-size:15px}
 </style></head>
 <body>
 
@@ -130,6 +149,7 @@ tr.click{cursor:pointer}tr.click:hover{background:#FAFAFB}
     <div class="al" data-v="ped" onclick="nav(this)">📦 Pedidos</div>
     <div class="al" data-v="cat" onclick="nav(this)">▤ Catálogo</div>
     <div class="al" data-v="cfg" onclick="nav(this)">⚙ Configurações</div>
+    <div class="al" onclick="abreFoto()">📷 Busca por foto</div>
   </aside>
   <main class="amain">
 
@@ -449,6 +469,81 @@ async function togCobranca(el){
   await sb.from("config").update({valor:v}).eq("chave","cobranca_cotacao");
   el.classList.toggle("on",v.ativa);
 }
+
+let fotoData=null,fPoll=null;
+function abreFoto(){$("fmodal").classList.add("show");}
+function fechaFoto(){$("fmodal").classList.remove("show");clearInterval(fPoll);}
+function fotoEscolhida(inp){if(inp.files&&inp.files[0])compFoto(inp.files[0]);}
+document.addEventListener("paste",e=>{
+  const fm=$("fmodal");if(!fm||!fm.classList.contains("show"))return;
+  const it=[...(e.clipboardData||{}).items||[]].find(i=>i.type.startsWith("image"));
+  if(it)compFoto(it.getAsFile());
+});
+function compFoto(file){
+  const img=new Image();
+  img.onload=()=>{
+    const mx=800,sc=Math.min(1,mx/Math.max(img.width,img.height));
+    const cv=document.createElement("canvas");cv.width=img.width*sc;cv.height=img.height*sc;
+    cv.getContext("2d").drawImage(img,0,0,cv.width,cv.height);
+    fotoData=cv.toDataURL("image/jpeg",.85);
+    $("fDropIn").innerHTML=`<img src="${fotoData}"/><br><span style="font-size:12px;color:var(--soft)">Trocar foto</span>`;
+    buscaFoto();
+  };
+  img.src=URL.createObjectURL(file);
+}
+async function buscaFoto(){
+  if(!fotoData)return;
+  $("fRes").innerHTML="";$("fStatus").style.display="block";
+  $("fStatus").innerHTML=`<div class="fspin"></div>Vasculhando os fornecedores… (1 a 3 min)`;
+  const {data:{session}}=await sb.auth.getSession();
+  const hd={"Content-Type":"application/json","Authorization":"Bearer "+session.access_token,"apikey":CFG.SUPABASE_ANON};
+  try{
+    const r=await fetch(CFG.SUPABASE_URL+"/functions/v1/buscafoto",{method:"POST",headers:hd,body:JSON.stringify({action:"start",image:fotoData})});
+    const j=await r.json();
+    if(!j.runId)throw new Error(j.error||"não iniciou");
+    let n=0;
+    fPoll=setInterval(async()=>{
+      n++;
+      const rc=await fetch(CFG.SUPABASE_URL+"/functions/v1/buscafoto",{method:"POST",headers:hd,body:JSON.stringify({action:"check",runId:j.runId})});
+      const jc=await rc.json();
+      if(jc.status==="rodando"){if(n>40){clearInterval(fPoll);$("fStatus").innerHTML="Demorou demais. Tenta de novo.";}return;}
+      clearInterval(fPoll);$("fStatus").style.display="none";
+      if(jc.status!=="ok"){$("fStatus").style.display="block";$("fStatus").innerHTML="A busca falhou. Tenta outra foto.";return;}
+      renderFotoRes(jc);
+    },6000);
+  }catch(e){$("fStatus").innerHTML="Erro: "+(e.message||e);}
+}
+async function renderFotoRes(jc){
+  const L=jc.resultados||[];
+  if(!L.length){$("fRes").innerHTML=`<div class="fstatus">Nenhum fornecedor confiável pra essa foto.</div>`;return;}
+  // origem (¥ e link) — só o time enxerga estas tabelas
+  let org={};
+  try{
+    const {data}=await sb.from("catalogo_origem").select("offer_id,rmb,url_origem").in("offer_id",L.map(p=>p.offer_id));
+    (data||[]).forEach(o=>org[o.offer_id]=o);
+  }catch(e){}
+  $("fRes").innerHTML=`<div style="font-size:13.5px;font-weight:700;margin-bottom:10px">Encontrado em <span style="color:var(--green)">${L.length} fornecedores confiáveis</span> · do mais barato pro mais caro</div>`+
+   L.map(p=>{const o=org[p.offer_id]||{};
+    return `<div class="fitem"><img src="${p.img}"/>
+     <div class="fi"><div class="fn">${p.nome}</div>
+     <div class="fm">¥ ${o.rmb??"?"} na origem · MOQ ${p.moq} · ${p.anos} anos${p.fabrica?" · Fábrica":""}${p.vendas90?` · ${p.vendas90}/90d`:""}</div></div>
+     <div class="fp"><div class="v2">R$ ${brl(p.brl)}</div><div class="l2">chegada/un</div></div>
+     ${o.url_origem?`<a class="btn sm s" style="text-decoration:none" href="${o.url_origem}" target="_blank">origem ↗</a>`:""}
+   </div>`}).join("");
+}
+
 boot();
 </script>
+
+<div class="fmodal" id="fmodal" onclick="if(event.target===this)fechaFoto()">
+  <div class="fbox">
+    <button class="fclose" onclick="fechaFoto()">✕</button>
+    <h3 style="font-size:17px;font-weight:700">Busca por foto <span style="font-family:'Space Mono',monospace;font-size:10px;color:var(--faint)">FERRAMENTA DO TIME</span></h3>
+    <div style="font-size:12.5px;color:var(--soft);margin:4px 0 14px">Foto ou print do produto → encontra nos fornecedores confiáveis, com origem aberta pro time.</div>
+    <input type="file" id="fInput" accept="image/*" style="display:none" onchange="fotoEscolhida(this)"/>
+    <div class="fdrop" onclick="$('fInput').click()"><div id="fDropIn">📷<br><b>Clique pra escolher a foto</b><br><span style="font-size:11.5px;color:var(--faint)">ou cole um print (Ctrl+V)</span></div></div>
+    <div id="fStatus" class="fstatus" style="display:none"></div>
+    <div id="fRes" style="margin-top:14px"></div>
+  </div>
+</div>
 </body></html>
