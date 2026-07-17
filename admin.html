@@ -239,6 +239,7 @@ async function boot(){
   const nome=(p&&p.nome)||USER.email.split("@")[0];
   $("uNome").textContent=nome+" · "+PAPEL;$("uAv").textContent=nome.slice(0,2).toUpperCase();
   try{FX=(await (await fetch("https://api.frankfurter.app/latest?from=CNY&to=BRL")).json()).rates.BRL;}catch(e){}
+  try{window._USD=(await (await fetch("https://api.frankfurter.app/latest?from=USD&to=BRL")).json()).rates.BRL;}catch(e){window._USD=5.4;}
   await Promise.all([loadCots(),loadPeds(),loadCfg()]);
   renderGeral();
 }
@@ -349,7 +350,9 @@ async function abreCot(id){
         <div class="ph2">Fechar preço</div>
         <div class="calc">
           <div class="crow"><span>Custo de origem</span><b>¥ ${custoRmb.toFixed(2)} · R$ ${brl(custoBrl)}</b></div>
-          <div class="crow"><span>Frete estimado</span><input id="cFrete" value="${frete.toFixed(2)}" oninput="calcFirme()"/></div>
+          <div class="crow"><span>Volume do pedido (litros)</span><input id="cVol" placeholder="ex.: 12" oninput="calcVol()"/></div>
+          <div class="crow"><span>Frete China→BR (rateio m³)</span><input id="cFrete" value="${frete.toFixed(2)}" oninput="calcFirme()"/></div>
+          <div style="font-size:10px;color:var(--faint);padding:2px 0 4px">Custo do canal: US$ ${((CFGS.custo_m3||{}).usd||900)} /m³ all-in · digite os litros que o frete calcula sozinho</div>
           <div class="crow"><span>Margem do time %</span><input id="cMarg" value="${marg}" oninput="calcFirme()"/></div>
           <div class="cfinal"><span>Preço firme ao aluno</span><span class="v" id="cFinal">R$ —</span></div>
         </div>
@@ -369,6 +372,12 @@ async function abreCot(id){
   </div>`;
   window._custoBrl=custoBrl;calcFirme();
   $("cotDetail").scrollIntoView({behavior:"smooth"});
+}
+function calcVol(){
+  const L=parseFloat(($("cVol").value||"0").replace(",","."))||0;
+  const m3brl=(((CFGS.custo_m3||{}).usd)||900)*(window._USD||5.4);
+  if(L>0){$("cFrete").value=(L/1000*m3brl).toFixed(2);}
+  calcFirme();
 }
 function calcFirme(){
   const f=parseFloat(($("cFrete").value||"0").replace(",","."))||0;
@@ -447,7 +456,8 @@ function renderCfg(){
   $("cfgPreco").innerHTML=
     cfgField("multiplicador","fator","Multiplicador de chegada","origem × câmbio × este fator")+
     cfgField("margem_seguranca","pct","Margem de segurança %","estimativa sempre pra cima")+
-    cfgField("frete_padrao","brl_un","Frete padrão R$/un","usado na calculadora")+
+    cfgField("custo_m3","usd","Custo China→BR US$/m³","all-in do seu canal (frete+imposto)")+
+    cfgField("frete_padrao","brl_un","Frete fallback R$/un","usado se o volume não for informado")+
     cfgField("margem_time","pct","Margem do time %","sugerida ao responder");
   $("cfgCot").innerHTML=
     `<div class="crow2"><div><div>Cobrança por cotação</div><div class="hint">quando ligar, aluno paga pelo preço firme</div></div>
