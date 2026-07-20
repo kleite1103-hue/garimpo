@@ -447,7 +447,7 @@ function abreProd(id){
   $("pmTiers").innerHTML=(p.faixas_brl&&p.faixas_brl.length?p.faixas_brl:[{faixa:"qualquer quantidade",brl:p.brl}]).map(f=>`<div class="ptr"><span>${f.faixa||"qualquer"}</span><b>R$ ${brl(f.brl)}/un</b></div>`).join("");
   document.querySelectorAll(".grupo-opcoes").forEach(e=>e.remove());
   const og=opcoesGrupo(p);if(og){const d=document.createElement("div");d.className="grupo-opcoes";d.innerHTML=og;document.querySelector("#pmodal .ptiers").after(d);}
-  $("pmForn").textContent=(p.forn_anos?p.forn_anos+(p.forn_anos>1?" anos":" ano")+" de operação · ":"")+(p.vendas||"")+" vendas · avaliado pela nossa curadoria";
+  $("pmForn").textContent=(p.forn_nome?p.forn_nome+" · ":"")+(p.forn_anos?p.forn_anos+(p.forn_anos>1?" anos":" ano")+" de operação · ":"")+(p.vendas||"")+" vendas · avaliado pela nossa curadoria";
   $("pmMoq").textContent=p.moq||1;$("pmQty").value=p.moq||1;
   $("pmodal").classList.add("show");
 }
