@@ -343,7 +343,15 @@ function card(p){
    </div></article>`;
 }
 function render(){
-  const L=filtered();
+  let L=filtered();
+  // colapsa grupos: mostra so o mais barato de cada, com contagem
+  const seen={};const out=[];
+  for(const p of L){
+    if(!p.grupo_id){out.push(p);continue;}
+    if(seen[p.grupo_id]!==undefined){out[seen[p.grupo_id]]._nforn++;if(p.brl<out[seen[p.grupo_id]].brl){p._nforn=out[seen[p.grupo_id]]._nforn;out[seen[p.grupo_id]]=p;}continue;}
+    p._nforn=1;seen[p.grupo_id]=out.length;out.push(p);
+  }
+  L=out;
   $("crumbs").innerHTML=curCat==="todas"?"<b>Todas as categorias</b>":(curSub?`Categorias / ${curCat} / <b>${curSub}</b>`:`Categorias / <b>${curCat}</b>`);
   $("count").innerHTML=`<b>${L.length}</b> produtos`;
   $("grid").innerHTML=L.length?L.map(card).join(""):`<div class="empty"><b>Catálogo em carga.</b><br>Os produtos entram aqui automaticamente conforme o robô alimenta a base.</div>`;
@@ -437,6 +445,8 @@ function abreProd(id){
   $("pmBrl").textContent="R$ "+brl(p.brl);
   $("pmBadges").innerHTML=`<span class="pb hot">▲ ${p.vendas||"—"} vendas</span><span class="pb ver">✓ Fornecedor verificado</span>${p.certificacao?`<span class="pb warn">⚠ Exige ${p.certificacao} pra importar</span>`:""}`;
   $("pmTiers").innerHTML=(p.faixas_brl&&p.faixas_brl.length?p.faixas_brl:[{faixa:"qualquer quantidade",brl:p.brl}]).map(f=>`<div class="ptr"><span>${f.faixa||"qualquer"}</span><b>R$ ${brl(f.brl)}/un</b></div>`).join("");
+  document.querySelectorAll(".grupo-opcoes").forEach(e=>e.remove());
+  const og=opcoesGrupo(p);if(og){const d=document.createElement("div");d.className="grupo-opcoes";d.innerHTML=og;document.querySelector("#pmodal .ptiers").after(d);}
   $("pmForn").textContent=(p.forn_anos?p.forn_anos+(p.forn_anos>1?" anos":" ano")+" de operação · ":"")+(p.vendas||"")+" vendas · avaliado pela nossa curadoria";
   $("pmMoq").textContent=p.moq||1;$("pmQty").value=p.moq||1;
   $("pmodal").classList.add("show");
@@ -511,6 +521,17 @@ function addFoto(p){
   if(ex)ex.qtd+=p.moq||1;else CART.push({offer_id:p.offer_id,nome:p.nome,img:p.img,moq:p.moq||1,qtd:p.moq||1,brl:p.brl});
   updCart();showToast("Adicionado à sua cotação");
 }
+
+
+function opcoesGrupo(p){
+  if(!p.grupo_id)return "";
+  const membros=PROD.filter(x=>x.grupo_id===p.grupo_id).sort((a,b)=>a.brl-b.brl);
+  if(membros.length<2)return "";
+  const letras="ABCDEFGHIJ";
+  return `<div class="ptiers" style="background:#F1F7F3;border-color:#CDE6D9"><div class="th" style="color:var(--green)">Este produto em ${membros.length} fornecedores, escolha o seu</div>`+
+    membros.map((m,i)=>`<div class="ptr" style="align-items:center"><span>Fornecedor ${letras[i]}${m.forn_fabrica?" · Fábrica":""}${m.forn_anos?` · ${m.forn_anos} anos`:""}</span><b>R$ ${brl(m.brl)}/un</b> <button class="addbtn" style="width:auto;padding:6px 10px;font-size:11px;margin-left:8px" onclick="pmTroca('${m.offer_id}')">${m.offer_id===pmProd.offer_id?'✓ este':'ver'}</button></div>`).join("")+`</div>`;
+}
+function pmTroca(id){abreProd(id);}
 
 boot();
 </script>
