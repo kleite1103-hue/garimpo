@@ -449,7 +449,7 @@ function renderCat(){
   $("catList").innerHTML=`<table><tr><th></th><th>Produto</th><th>Categoria</th><th>Chegada</th><th>Vendas</th><th>Cert.</th><th>Destaque</th><th>Visível</th></tr>`+
     L.slice(0,300).map(p=>`<tr style="${p.visivel?'':'opacity:.5'}">
       <td><img class="thumb-sm" loading="lazy" src="${p.img||''}"/></td>
-      <td><b>${p.nome}</b></td><td>${p.categoria||''}</td><td><b>R$ ${brl(p.brl)}</b></td><td>${p.vendas||''}</td>
+      <td><b>${p.nome}</b></td><td>${p.categoria||''}</td><td><b>R$ ${brl(p.brl)}</b></td><td>${fmtV(p.vendas)||''}</td>
       <td>${p.certificacao?'⚠ '+p.certificacao:'—'}</td>
       <td><span class="star ${p.destaque?'on':''}" onclick="togDestaque('${p.offer_id}',${!p.destaque})">★</span></td>
       <td><span class="tog ${p.visivel?'on':''}" onclick="togVisivel('${p.offer_id}',${!p.visivel})"></span></td>
@@ -593,7 +593,7 @@ function renderCur(){
   $("curList").innerHTML=CURP.length?CURP.map(p=>`<div class="fitem">
     <img src="${p.img||''}"/>
     <div class="fi"><div class="fn">${p.nome}</div>
-    <div class="fm">${p.categoria} / ${p.subcategoria} · R$ ${brl(p.brl)} · ${p.vendas||''} vendas · nota IA ${p.nota_ia??'—'}</div></div>
+    <div class="fm">${p.categoria} / ${p.subcategoria} · R$ ${brl(p.brl)} · ${fmtV(p.vendas)||''} vendas · nota IA ${p.nota_ia??'—'}</div></div>
     ${curF==='ia_vetou'?`
       <button class="btn sm g" onclick="curJulga('${p.offer_id}',true)">👍 Resgatar</button>
       <button class="btn sm ghost" onclick="curJulga('${p.offer_id}',false)">👎 Confirmar veto</button>`:
@@ -610,6 +610,9 @@ async function curVolta(id){
   await sb.from("catalogo").update({curadoria:"ia_vetou",visivel:false}).eq("offer_id",id);
   CURP=CURP.filter(p=>p.offer_id!==id);renderCur();
 }
+
+
+function fmtV(v){if(!v)return "";const s=String(v);const m=s.match(/([\d.]+)\s*万/);if(m){const n=parseFloat(m[1])*10000;return (n>=1e6?(n/1e6).toLocaleString('pt-BR',{maximumFractionDigits:1})+" mi":Math.round(n/1000)+" mil")+"+";}return s;}
 
 boot();
 </script>

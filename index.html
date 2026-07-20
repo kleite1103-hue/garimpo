@@ -443,11 +443,11 @@ function abreProd(id){
   const p=PROD.find(x=>x.offer_id===id);if(!p)return;pmProd=p;
   $("pmImg").src=p.img||"";$("pmNome").textContent=p.nome;
   $("pmBrl").textContent="R$ "+brl(p.brl);
-  $("pmBadges").innerHTML=`<span class="pb hot">▲ ${p.vendas||"—"} vendas</span><span class="pb ver">✓ Fornecedor verificado</span>${p.certificacao?`<span class="pb warn">⚠ Exige ${p.certificacao} pra importar</span>`:""}`;
+  $("pmBadges").innerHTML=`<span class="pb hot">▲ ${fmtV(p.vendas)||"—"} vendas</span><span class="pb ver">✓ Fornecedor verificado</span>${p.certificacao?`<span class="pb warn">⚠ Exige ${p.certificacao} pra importar</span>`:""}`;
   $("pmTiers").innerHTML=(p.faixas_brl&&p.faixas_brl.length?p.faixas_brl:[{faixa:"qualquer quantidade",brl:p.brl}]).map(f=>`<div class="ptr"><span>${f.faixa||"qualquer"}</span><b>R$ ${brl(f.brl)}/un</b></div>`).join("");
   document.querySelectorAll(".grupo-opcoes").forEach(e=>e.remove());
   const og=opcoesGrupo(p);if(og){const d=document.createElement("div");d.className="grupo-opcoes";d.innerHTML=og;document.querySelector("#pmodal .ptiers").after(d);}
-  $("pmForn").textContent=(p.forn_nome?p.forn_nome+" · ":"")+(p.forn_anos?p.forn_anos+(p.forn_anos>1?" anos":" ano")+" de operação · ":"")+(p.vendas||"")+" vendas · avaliado pela nossa curadoria";
+  $("pmForn").textContent=(p.forn_nome?p.forn_nome+" · ":"")+(p.forn_anos?p.forn_anos+(p.forn_anos>1?" anos":" ano")+" de operação · ":"")+(fmtV(p.vendas)||"")+" vendas · avaliado pela nossa curadoria";
   $("pmMoq").textContent=p.moq||1;$("pmQty").value=p.moq||1;
   $("pmodal").classList.add("show");
 }
@@ -529,9 +529,12 @@ function opcoesGrupo(p){
   if(membros.length<2)return "";
   const letras="ABCDEFGHIJ";
   return `<div class="ptiers" style="background:#F1F7F3;border-color:#CDE6D9"><div class="th" style="color:var(--green)">Este produto em ${membros.length} fornecedores, escolha o seu</div>`+
-    membros.map((m,i)=>`<div class="ptr" style="align-items:center"><span>Fornecedor ${letras[i]}${m.forn_fabrica?" · Fábrica":""}${m.forn_anos?` · ${m.forn_anos} anos`:""}</span><b>R$ ${brl(m.brl)}/un</b> <button class="addbtn" style="width:auto;padding:6px 10px;font-size:11px;margin-left:8px" onclick="pmTroca('${m.offer_id}')">${m.offer_id===pmProd.offer_id?'✓ este':'ver'}</button></div>`).join("")+`</div>`;
+    membros.map((m,i)=>`<div class="ptr" style="align-items:center"><span>${m.forn_nome||("Fornecedor "+letras[i])}${m.forn_fabrica?" · Fábrica":""}${m.forn_anos?` · ${m.forn_anos} anos`:""}</span><b>R$ ${brl(m.brl)}/un</b> <button class="addbtn" style="width:auto;padding:6px 10px;font-size:11px;margin-left:8px" onclick="pmTroca('${m.offer_id}')">${m.offer_id===pmProd.offer_id?'✓ este':'ver'}</button></div>`).join("")+`</div>`;
 }
 function pmTroca(id){abreProd(id);}
+
+
+function fmtV(v){if(!v)return "";const s=String(v);const m=s.match(/([\d.]+)\s*万/);if(m){const n=parseFloat(m[1])*10000;return (n>=1e6?(n/1e6).toLocaleString('pt-BR',{maximumFractionDigits:1})+" mi":Math.round(n/1000)+" mil")+"+";}return s;}
 
 boot();
 </script>
