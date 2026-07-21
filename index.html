@@ -202,6 +202,8 @@ input,textarea,select{font-family:inherit}
   <div class="logo" onclick="irCatalogo()"><span class="ev">Efeito Vendas</span><span class="g">Garimpo<i>.</i></span></div>
   <div class="searchbar"><input id="q" placeholder="Buscar produto…" oninput="render()"/><button onclick="render()">Buscar</button></div>
   <div class="navbtns">
+    <div class="nb" onclick="abreFoto()">📷 Achar por foto</div>
+    <div class="nb" onclick="abreMeus()">📦 Amostras</div>
     <a class="nb hidden" id="btnAdmin" href="admin.html" style="text-decoration:none;background:var(--orangebg);border-color:var(--orange);color:var(--orange)">⚙ Painel do time</a>
     <div class="nb" onclick="irMinhas()">Minhas cotações</div>
     <div class="nb dark" onclick="irCarrinho()">Cotação<span class="n" id="cartN">0</span></div>
@@ -485,36 +487,36 @@ function compFoto(file){
 async function buscaFoto(){
   if(!fotoData)return;
   $("fRes").innerHTML="";$("fStatus").style.display="block";
-  $("fStatus").innerHTML=`<div class="fspin"></div>Enviando a foto e vasculhando os fornecedores…<br><span style="font-size:11px;color:var(--faint)">isso leva 1 a 3 minutos</span>`;
+  $("fStatus").innerHTML=`<div class="fspin"></div>Procurando no catálogo Garimpo…`;
   const {data:{session}}=await sb.auth.getSession();
   const hd={"Content-Type":"application/json","Authorization":"Bearer "+session.access_token,"apikey":CFG.SUPABASE_ANON};
   try{
-    const r=await fetch(CFG.SUPABASE_URL+"/functions/v1/buscafoto",{method:"POST",headers:hd,body:JSON.stringify({action:"start",image:fotoData})});
+    const r=await fetch(CFG.SUPABASE_URL+"/functions/v1/buscafoto",{method:"POST",headers:hd,body:JSON.stringify({action:"solicitar",image:fotoData})});
     const j=await r.json();
-    if(!j.runId)throw new Error(j.error||"não iniciou");
-    let n=0;
-    fPoll=setInterval(async()=>{
-      n++;
-      const rc=await fetch(CFG.SUPABASE_URL+"/functions/v1/buscafoto",{method:"POST",headers:hd,body:JSON.stringify({action:"check",runId:j.runId})});
-      const jc=await rc.json();
-      if(jc.status==="rodando"){if(n>40){clearInterval(fPoll);$("fStatus").innerHTML="Demorou demais. Tenta de novo em instantes.";}return;}
-      clearInterval(fPoll);$("fStatus").style.display="none";
-      if(jc.status!=="ok"){$("fStatus").style.display="block";$("fStatus").innerHTML="A busca falhou. Tenta outra foto (produto bem visível ajuda).";return;}
-      renderFotoRes(jc);
-    },6000);
+    if(j.error)throw new Error(j.error);
+    window._fotoUrl=j.foto_url;
+    $("fStatus").style.display="none";
+    const M=j.matches||[];
+    $("fRes").innerHTML=(M.length?`<div class="fhead2">Encontramos <b>${M.length} parecidos</b> no Garimpo:</div>`+
+      M.map(p=>`<div class="fitem" style="cursor:pointer" onclick="fechaFoto();abreProd('${p.offer_id}')">
+        <img src="${p.img||''}"/><div class="fi"><div class="fn">${p.nome}</div>
+        <div class="fm">${p.subcategoria||''}</div></div>
+        <div class="fp"><div class="v2">R$ ${brl(p.brl)}</div><div class="l2">chegada/un*</div></div>
+      </div>`).join(""):`<div class="fstatus">Não achamos esse produto no catálogo ainda.</div>`)+
+      `<div style="margin-top:12px">
+        <textarea id="fObs" placeholder="Descreve o que você procura (cor, tamanho, uso)…" style="width:100%;border:1.5px solid var(--line);border-radius:10px;padding:10px;font-size:13px;font-family:inherit;min-height:64px"></textarea>
+        <button class="btn p full" style="margin-top:8px" onclick="abrirOrcamento()">${M.length?'Não é nenhum desses, pedir orçamento':'Pedir orçamento pro nosso time garimpar'}</button>
+        <div class="pnote">Nosso time recebe sua foto, garimpa nos fornecedores confiáveis e te responde aqui.</div>
+      </div>`;
   }catch(e){$("fStatus").innerHTML="Erro: "+(e.message||e);}
 }
-function renderFotoRes(jc){
-  const L=jc.resultados||[];
-  if(!L.length){$("fRes").innerHTML=`<div class="fstatus">Nenhum fornecedor confiável achado pra essa foto. Tenta uma imagem mais nítida do produto.</div>`;return;}
-  $("fRes").innerHTML=`<div class="fhead2">Encontrado em <b>${L.length} fornecedores confiáveis</b> · do mais barato pro mais caro</div>`+
-   L.map(p=>`<div class="fitem"><img src="${p.img}"/>
-     <div class="fi"><div class="fn">${p.nome}</div>
-     <div class="fm">MOQ ${p.moq} un · fornecedor ${p.anos} anos${p.fabrica?" · Fábrica":""}${p.vendas90?` · ${p.vendas90} vendas/90d`:""}</div></div>
-     <div class="fp"><div class="v2">R$ ${brl(p.brl)}</div><div class="l2">chegada/un*</div></div>
-     <button class="fadd" onclick='addFoto(${JSON.stringify(p).replace(/'/g,"&#39;")})'>+ Cotar</button>
-   </div>`).join("")+
-   `<div style="font-size:10.5px;color:var(--faint);text-align:center;margin-top:8px">*Estimativa com câmbio do dia. O preço firme vem na resposta da cotação.</div>`;
+async function abrirOrcamento(){
+  const {data:{session}}=await sb.auth.getSession();
+  const hd={"Content-Type":"application/json","Authorization":"Bearer "+session.access_token,"apikey":CFG.SUPABASE_ANON};
+  const r=await fetch(CFG.SUPABASE_URL+"/functions/v1/buscafoto",{method:"POST",headers:hd,body:JSON.stringify({action:"abrir_orcamento",foto_url:window._fotoUrl,obs:($("fObs")||{}).value||""})});
+  const j=await r.json();
+  if(j.error){alert(j.error);return;}
+  fechaFoto();showToast("Pedido de orçamento enviado ao time");
 }
 function addFoto(p){
   const ex=CART.find(x=>x.offer_id===p.offer_id);
@@ -536,6 +538,36 @@ function pmTroca(id){abreProd(id);}
 
 function fmtV(v){if(!v)return "";const s=String(v);const m=s.match(/([\d.]+)\s*万/);if(m){const n=parseFloat(m[1])*10000;return (n>=1e6?(n/1e6).toLocaleString('pt-BR',{maximumFractionDigits:1})+" mi":Math.round(n/1000)+" mil")+"+";}return s;}
 
+
+async function pedirAmostra(){
+  if(!pmProd)return;
+  let taxa=97;try{const {data}=await sb.from("config").select("valor").eq("chave","amostra").single();taxa=Number((data.valor||{}).taxa_brl)||97;}catch(e){}
+  const total=taxa+Number(pmProd.brl||0);
+  if(!confirm(`Amostra real de "${pmProd.nome}"\n\nTaxa do serviço: R$ ${brl(taxa)}\nProduto (1 un): R$ ${brl(pmProd.brl)}\nTotal: R$ ${brl(total)}\n\nSeu time na China recebe, fotografa, filma e mede o produto. Em até 7 dias após a chegada no depósito, tudo aparece aqui pra você. E fechando o pedido grande, a taxa vira crédito.\n\nConfirmar solicitação?`))return;
+  const {error}=await sb.from("amostras").insert({user_id:USER.id,offer_id:pmProd.offer_id,taxa_brl:total,obs_aluno:""});
+  if(error){alert("Erro: "+error.message);return;}
+  fechaProd();showToast("Amostra solicitada, o time vai confirmar o pagamento");
+}
+async function abreMeus(){
+  $("amodal").classList.add("show");
+  const [am,so]=await Promise.all([
+    sb.from("amostras").select("*, catalogo(nome,img)").eq("user_id",USER.id).order("criado_em",{ascending:false}),
+    sb.from("solicitacoes_foto").select("*").eq("user_id",USER.id).order("criado_em",{ascending:false})
+  ]);
+  const EST={solicitada:"Solicitada",paga:"Paga ✓",comprada:"Comprada no fornecedor",chegou:"Chegou no depósito 🇨🇳",pronta:"Conteúdo pronto ✓"};
+  const A=(am.data||[]).map(x=>`<div class="fitem"><img src="${(x.catalogo||{}).img||''}"/>
+    <div class="fi"><div class="fn">${(x.catalogo||{}).nome||x.offer_id}</div>
+    <div class="fm">R$ ${brl(x.taxa_brl)} · <b>${EST[x.status]||x.status}</b></div>
+    ${(x.midia||[]).length?`<div style="display:flex;gap:6px;margin-top:6px;flex-wrap:wrap">${x.midia.map(u=>u.match(/\.(mp4|mov|webm)/i)?`<a href="${u}" target="_blank" style="font-size:11px;font-weight:700;color:var(--orange)">🎬 vídeo</a>`:`<a href="${u}" target="_blank"><img src="${u}" style="width:44px;height:44px;border-radius:7px;object-fit:cover"/></a>`).join("")}</div>`:""}
+    </div></div>`).join("");
+  const S=(so.data||[]).map(x=>`<div class="fitem"><img src="${x.foto_url||''}"/>
+    <div class="fi"><div class="fn">Orçamento por foto · ${new Date(x.criado_em).toLocaleDateString('pt-BR')}</div>
+    <div class="fm">${x.status==='respondida'?'<b style="color:var(--green)">Respondido ✓</b>':x.status==='pesquisando'?'Time garimpando…':'Recebido pelo time'}</div>
+    ${x.status==='respondida'&&(x.resultados||[]).length?`<div style="margin-top:8px">${x.resultados.slice(0,6).map(p=>`<div class="fm" style="display:flex;justify-content:space-between;gap:8px;padding:3px 0"><span>${(p.nome||'').slice(0,38)} · ${p.anos}a</span><span><b>R$ ${brl(p.brl)}</b> <button class="fadd" style="padding:5px 8px" onclick='addFoto(${JSON.stringify(p).replace(/'/g,"&#39;")})'>+ Cotar</button></span></div>`).join("")}</div>`:""}
+    </div></div>`).join("");
+  $("amBody").innerHTML=(A||S)?`${A?'<div class="fhead2">Amostras</div>'+A:''}${S?'<div class="fhead2" style="margin-top:10px">Orçamentos por foto</div>'+S:''}`:`<div class="fstatus">Você ainda não pediu amostras nem orçamentos. Na página de qualquer produto tem o botão de amostra; e o 📷 na barra acha produto por foto.</div>`;
+}
+
 boot();
 </script>
 
@@ -556,6 +588,7 @@ boot();
         <span style="font-size:12px;color:var(--soft)">mínimo <b id="pmMoq">1</b> un</span>
       </div>
       <button class="btn p full" onclick="addDoModal()">+ Adicionar à minha cotação</button>
+      <button class="btn full" style="margin-top:8px;background:var(--panel);border:1.5px solid var(--ink)" onclick="pedirAmostra()">📦 Pedir amostra real (fotos e vídeo do produto)</button>
       <div class="pnote">Sem compromisso. Você monta a lista, envia, e nosso time responde com o preço firme.</div>
     </div>
   </div>
@@ -564,14 +597,22 @@ boot();
 <div class="fmodal" id="fmodal" onclick="if(event.target===this)fechaFoto()">
   <div class="fbox">
     <button class="fclose" onclick="fechaFoto()">✕</button>
-    <h3>Buscar por foto</h3>
-    <div class="sub2">Manda a foto de um produto (print da Shopee vale) e a gente acha ele nos nossos fornecedores confiáveis, do mais barato pro mais caro.</div>
+    <h3>Achar produto por foto</h3>
+    <div class="sub2">Manda a foto (print da Shopee vale) que a gente procura primeiro no catálogo Garimpo. Não achou? Você abre um pedido de orçamento e nosso time garimpa pra você.</div>
     <input type="file" id="fInput" accept="image/*" style="display:none" onchange="fotoEscolhida(this)"/>
     <div class="fdrop" id="fDrop" onclick="$('fInput').click()">
       <div id="fDropIn">📷<br><b>Clique pra escolher a foto</b><br><span style="font-size:11.5px;color:var(--faint)">ou tire um print e cole aqui (Ctrl+V)</span></div>
     </div>
     <div id="fStatus" class="fstatus" style="display:none"></div>
     <div id="fRes" class="fres"></div>
+  </div>
+</div>
+
+<div class="fmodal" id="amodal" onclick="if(event.target===this)$('amodal').classList.remove('show')">
+  <div class="fbox">
+    <button class="fclose" onclick="$('amodal').classList.remove('show')">✕</button>
+    <h3 style="font-size:17px;font-weight:700">Minhas amostras e orçamentos</h3>
+    <div id="amBody" style="margin-top:12px"><div class="fstatus">Carregando…</div></div>
   </div>
 </div>
 </body></html>

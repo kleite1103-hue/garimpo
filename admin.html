@@ -152,6 +152,8 @@ tr.click{cursor:pointer}tr.click:hover{background:#FAFAFB}
     <div class="al" data-v="cat" onclick="nav(this)">▤ Catálogo</div>
     <div class="al" data-v="cfg" onclick="nav(this)">⚙ Configurações</div>
     <div class="al" data-v="cur" onclick="nav(this)">🎓 Curadoria<span class="bd hidden" id="bdCur">0</span></div>
+    <div class="al" data-v="sol" onclick="nav(this)">📨 Solicitações<span class="bd hidden" id="bdSol">0</span></div>
+    <div class="al" data-v="amo" onclick="nav(this)">📦 Amostras<span class="bd hidden" id="bdAmo">0</span></div>
     <div class="al" onclick="abreFoto()">📷 Busca por foto</div>
   </aside>
   <main class="amain">
@@ -198,6 +200,16 @@ tr.click{cursor:pointer}tr.click:hover{background:#FAFAFB}
       <div id="catList"><div class="loading">Carregando…</div></div>
     </div>
 
+    <!-- SOLICITACOES -->
+    <div id="vSol" class="hidden">
+      <div class="ahead"><h2>Solicitações por foto</h2><span class="sub">o aluno mandou a foto; um clique e o garimpo roda</span></div>
+      <div id="solList"><div class="loading">Carregando…</div></div>
+    </div>
+    <!-- AMOSTRAS -->
+    <div id="vAmo" class="hidden">
+      <div class="ahead"><h2>Amostras</h2><span class="sub">clique na etapa pra avançar · 7 dias após a chegada</span></div>
+      <div id="amoList"><div class="loading">Carregando…</div></div>
+    </div>
     <!-- CURADORIA -->
     <div id="vCur" class="hidden">
       <div class="ahead"><h2>Curadoria · Modo treino</h2><span class="sub">seus vereditos ensinam a IA a julgar como você</span></div>
@@ -258,11 +270,13 @@ async function boot(){
 }
 function nav(el){
   document.querySelectorAll(".al").forEach(a=>a.classList.remove("on"));el.classList.add("on");
-  ["Geral","Cot","Ped","Cat","Cfg","Cur"].forEach(v=>$("v"+v).classList.add("hidden"));
+  ["Geral","Cot","Ped","Cat","Cfg","Cur","Sol","Amo"].forEach(v=>$("v"+v).classList.add("hidden"));
   const v=el.dataset.v;
   $("v"+v.charAt(0).toUpperCase()+v.slice(1)).classList.remove("hidden");
   if(v==="cat"&&!CATP.length)loadCat();
   if(v==="cur")loadCur();
+  if(v==="sol")loadSol();
+  if(v==="amo")loadAmo();
 }
 // ---------- LOADS ----------
 async function loadCots(){
@@ -547,13 +561,13 @@ async function buscaFoto(){
   const {data:{session}}=await sb.auth.getSession();
   const hd={"Content-Type":"application/json","Authorization":"Bearer "+session.access_token,"apikey":CFG.SUPABASE_ANON};
   try{
-    const r=await fetch(CFG.SUPABASE_URL+"/functions/v1/buscafoto",{method:"POST",headers:hd,body:JSON.stringify({action:"start",image:fotoData})});
+    const r=await fetch(CFG.SUPABASE_URL+"/functions/v1/buscafoto",{method:"POST",headers:hd,body:JSON.stringify({action:"start",image:fotoData,solicitacao_id:window._solId||null})});
     const j=await r.json();
     if(!j.runId)throw new Error(j.error||"não iniciou");
     let n=0;
     fPoll=setInterval(async()=>{
       n++;
-      const rc=await fetch(CFG.SUPABASE_URL+"/functions/v1/buscafoto",{method:"POST",headers:hd,body:JSON.stringify({action:"check",runId:j.runId,fx:FX,mult:(CFGS.multiplicador||{}).fator||1.8,seg:1+((CFGS.margem_seguranca||{}).pct||8)/100})});
+      const rc=await fetch(CFG.SUPABASE_URL+"/functions/v1/buscafoto",{method:"POST",headers:hd,body:JSON.stringify({action:"check",runId:j.runId,solicitacao_id:window._solId||null,fx:FX,mult:(CFGS.multiplicador||{}).fator||1.8,seg:1+((CFGS.margem_seguranca||{}).pct||8)/100})});
       const jc=await rc.json();
       if(jc.status==="rodando"){if(n>40){clearInterval(fPoll);$("fStatus").innerHTML="Demorou demais. Tenta de novo.";}return;}
       clearInterval(fPoll);$("fStatus").style.display="none";
@@ -614,6 +628,87 @@ async function curVolta(id){
 
 
 function fmtV(v){if(!v)return "";const s=String(v);const m=s.match(/([\d.]+)\s*万/);if(m){const n=parseFloat(m[1])*10000;return (n>=1e6?(n/1e6).toLocaleString('pt-BR',{maximumFractionDigits:1})+" mi":Math.round(n/1000)+" mil")+"+";}return s;}
+
+
+async function loadSol(){
+  const {data}=await sb.from("solicitacoes_foto").select("*").order("criado_em",{ascending:false}).limit(80);
+  const L=data||[];
+  const novas=L.filter(x=>x.status==="nova").length;
+  $("bdSol").textContent=novas;$("bdSol").classList.toggle("hidden",!novas);
+  $("solList").innerHTML=L.length?L.map(x=>`<div class="fitem">
+    <img src="${x.foto_url||''}"/>
+    <div class="fi"><div class="fn">${new Date(x.criado_em).toLocaleString('pt-BR')} · <span class="mono" style="font-size:10px">${(x.user_id||'').slice(0,8)}</span></div>
+    <div class="fm">${x.obs||'(sem observação)'} · <b>${x.status}</b></div></div>
+    ${x.status!=='respondida'?`<button class="btn sm p" onclick="pesquisarSol(${x.id},'${x.foto_url}')">🔍 Garimpar essa foto</button>`:`<span class="st respondida">Respondida ✓</span>`}
+  </div>`).join(""):`<div class="panel"><div class="loading">Nenhuma solicitação ainda.</div></div>`;
+}
+async function pesquisarSol(id,url){
+  window._solId=id;
+  await sb.from("solicitacoes_foto").update({status:"pesquisando"}).eq("id",id);
+  const b=await fetch(url).then(r=>r.blob());
+  const dataUrl=await new Promise(res=>{const fr=new FileReader();fr.onload=()=>res(fr.result);fr.readAsDataURL(b);});
+  fotoData=dataUrl;abreFoto();
+  $("fDropIn").innerHTML=`<img src="${dataUrl}"/><br><span style="font-size:12px;color:var(--soft)">Foto da solicitação #${id}</span>`;
+  buscaFoto();
+}
+const ESTA=["solicitada","paga","comprada","chegou","pronta"];
+const ELAB2={solicitada:"Solicitada",paga:"Paga",comprada:"Comprada",chegou:"Chegou 🇨🇳",pronta:"Pronta ✓"};
+async function loadAmo(){
+  const {data}=await sb.from("amostras").select("*, catalogo(nome,img,offer_id)").order("criado_em",{ascending:false}).limit(80);
+  const L=data||[];
+  const pend=L.filter(x=>x.status!=="pronta").length;
+  $("bdAmo").textContent=pend;$("bdAmo").classList.toggle("hidden",!pend);
+  $("amoList").innerHTML=L.length?L.map(x=>{
+    const idx=ESTA.indexOf(x.status);
+    const med=x.medidas||{};
+    return `<div class="panel" style="margin-bottom:12px;padding:14px 16px">
+      <div style="display:flex;gap:12px;align-items:flex-start;flex-wrap:wrap">
+        <img src="${(x.catalogo||{}).img||''}" style="width:56px;height:56px;border-radius:9px;object-fit:cover"/>
+        <div style="flex:1;min-width:200px">
+          <b style="font-size:13px">${(x.catalogo||{}).nome||x.offer_id}</b>
+          <div style="font-size:11px;color:var(--soft)">R$ ${brl(x.taxa_brl)} · aluno ${(x.user_id||'').slice(0,8)} · ${new Date(x.criado_em).toLocaleDateString('pt-BR')}</div>
+          <div class="etapasbtns" style="margin-top:8px">${ESTA.map((e,i)=>`<span class="eb ${i<idx?'done':i===idx?'cur':''}" onclick="amoEtapa(${x.id},'${e}')">${ELAB2[e]}</span>`).join("")}</div>
+          <div style="display:flex;gap:8px;margin-top:8px;flex-wrap:wrap;align-items:center">
+            <select onchange="amoUpd(${x.id},{obs_aluno:this.value})" style="border:1.5px solid var(--line);border-radius:8px;padding:6px;font-size:11.5px">
+              <option ${x.obs_aluno==='Monica'?'selected':''}>Monica</option><option ${x.obs_aluno==='Cheng'?'selected':''}>Cheng</option>
+            </select>
+            <input placeholder="rastreio China" value="${(med.rastreio||'')}" onchange="amoMed(${x.id},'rastreio',this.value)" style="border:1.5px solid var(--line);border-radius:8px;padding:6px;font-size:11.5px;width:130px"/>
+            ${med.rastreio?`<a href="https://t.17track.net/pt#nums=${med.rastreio}" target="_blank" style="font-size:11px;font-weight:700;color:var(--blue)">rastrear ↗</a>`:''}
+            <input placeholder="peso g" value="${med.peso||''}" onchange="amoMed(${x.id},'peso',this.value)" style="border:1.5px solid var(--line);border-radius:8px;padding:6px;font-size:11.5px;width:64px"/>
+            <input placeholder="AxLxC cm" value="${med.dim||''}" onchange="amoDim(${x.id},'${(x.catalogo||{}).offer_id}',this.value)" style="border:1.5px solid var(--line);border-radius:8px;padding:6px;font-size:11.5px;width:90px"/>
+            <label class="btn sm s" style="cursor:pointer">📎 mídia<input type="file" multiple accept="image/*,video/*" style="display:none" onchange="amoUpload(${x.id},this)"/></label>
+            <span style="font-size:10.5px;color:var(--faint)">${(x.midia||[]).length} arquivos</span>
+          </div>
+        </div>
+      </div></div>`;
+  }).join(""):`<div class="panel"><div class="loading">Nenhuma amostra solicitada ainda.</div></div>`;
+}
+async function amoEtapa(id,e){await sb.from("amostras").update({status:e}).eq("id",id);loadAmo();}
+async function amoUpd(id,o){await sb.from("amostras").update(o).eq("id",id);}
+async function amoMed(id,k,v){
+  const {data}=await sb.from("amostras").select("medidas").eq("id",id).single();
+  const m=(data||{}).medidas||{};m[k]=v;
+  await sb.from("amostras").update({medidas:m}).eq("id",id);loadAmo();
+}
+async function amoDim(id,offer,v){
+  await amoMed(id,'dim',v);
+  const p=v.split(/[x×*]/).map(n=>parseFloat(n.replace(",",".")));
+  if(p.length===3&&p.every(n=>n>0)&&offer){
+    const litros=Math.round(p[0]*p[1]*p[2]/1000*1.2*100)/100;
+    await sb.from("catalogo").update({volume_l:litros}).eq("offer_id",offer);
+  }
+}
+async function amoUpload(id,inp){
+  const {data}=await sb.from("amostras").select("midia").eq("id",id).single();
+  const midia=(data||{}).midia||[];
+  for(const f of inp.files){
+    const path=`${id}/${Date.now()}_${f.name.replace(/[^a-zA-Z0-9_.-]/g,"")}`;
+    const up=await sb.storage.from("amostras").upload(path,f,{upsert:true});
+    if(up.error){alert("Upload falhou: "+up.error.message);return;}
+    midia.push(sb.storage.from("amostras").getPublicUrl(path).data.publicUrl);
+  }
+  await sb.from("amostras").update({midia}).eq("id",id);loadAmo();
+}
 
 boot();
 </script>
