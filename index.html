@@ -451,6 +451,10 @@ function abreProd(id){
   const og=opcoesGrupo(p);if(og){const d=document.createElement("div");d.className="grupo-opcoes";d.innerHTML=og;document.querySelector("#pmodal .ptiers").after(d);}
   $("pmForn").textContent=(p.forn_nome?p.forn_nome+" · ":"")+(p.forn_anos?p.forn_anos+(p.forn_anos>1?" anos":" ano")+" de operação · ":"")+(fmtV(p.vendas)||"")+" vendas · avaliado pela nossa curadoria";
   $("pmMoq").textContent=p.moq||1;$("pmQty").value=p.moq||1;
+  const gal=((p.imgs&&p.imgs.length)?p.imgs:[p.img]).filter(Boolean);
+  $("pmThumbs").innerHTML=gal.length>1?gal.map((u,i)=>`<img src="${u}" style="width:52px;height:52px;border-radius:8px;object-fit:cover;cursor:pointer;border:2px solid ${i===0?'var(--orange)':'transparent'}" onclick="$('pmImg').src='${u}';[...this.parentNode.children].forEach(x=>x.style.borderColor='transparent');this.style.borderColor='var(--orange)'"/>`).join(""):"";
+  $("pmDesc").textContent=(p.descricao||"").slice(0,300);
+  if(p.eh_kit){$("pmBadges").innerHTML+=`<span class="pb warn">📦 ${p.kit_texto||"Preço refere-se ao KIT"}</span>`;}
   $("pmodal").classList.add("show");
 }
 function fechaProd(){$("pmodal").classList.remove("show");}
@@ -575,7 +579,7 @@ boot();
 <div class="pmodal" id="pmodal" onclick="if(event.target===this)fechaProd()">
   <div class="pbox">
     <button class="pclose" onclick="fechaProd()">✕</button>
-    <div class="pimg"><img id="pmImg" src=""/></div>
+    <div><div class="pimg"><img id="pmImg" src=""/></div><div id="pmThumbs" style="display:flex;gap:6px;padding:8px;overflow-x:auto"></div></div>
     <div class="pinfo">
       <h2 id="pmNome"></h2>
       <div class="pbadges" id="pmBadges"></div>
@@ -583,6 +587,7 @@ boot();
         <div class="aviso"><b>*Estimativa</b> com câmbio do dia. O preço firme vem na resposta da sua cotação.</div></div>
       <div class="ptiers"><div class="th">Preço por quantidade (estimado)</div><div id="pmTiers"></div></div>
       <div class="pforn">🛡️ <div><b>Fornecedor verificado</b><div style="font-size:11px;color:var(--soft)" id="pmForn"></div></div></div>
+      <div id="pmDesc" style="font-size:12px;color:var(--soft);line-height:1.55;margin:10px 0 2px"></div>
       <div class="pqty">
         <div class="stepper"><button onclick="pmQ(-1)">−</button><input id="pmQty" value="1"/><button onclick="pmQ(1)">+</button></div>
         <span style="font-size:12px;color:var(--soft)">mínimo <b id="pmMoq">1</b> un</span>
