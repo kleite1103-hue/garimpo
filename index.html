@@ -454,6 +454,8 @@ function abreProd(id){
   const gal=((p.imgs&&p.imgs.length)?p.imgs:[p.img]).filter(Boolean);
   $("pmThumbs").innerHTML=gal.length>1?gal.map((u,i)=>`<img src="${u}" style="width:52px;height:52px;border-radius:8px;object-fit:cover;cursor:pointer;border:2px solid ${i===0?'var(--orange)':'transparent'}" onclick="$('pmImg').src='${u}';[...this.parentNode.children].forEach(x=>x.style.borderColor='transparent');this.style.borderColor='var(--orange)'"/>`).join(""):"";
   $("pmDesc").textContent=(p.descricao||"").slice(0,300);
+  const fx=document.getElementById("pmFaixaVar");if(fx)fx.remove();
+  if(p.brl_max&&Number(p.brl_max)>Number(p.brl)){const d=document.createElement("div");d.id="pmFaixaVar";d.style.cssText="font-size:11.5px;color:var(--soft);margin-top:2px";d.innerHTML=`variações deste anúncio: <b>R$ ${brl(p.brl)} a R$ ${brl(p.brl_max)}</b> · o preço firme da variação escolhida vem na cotação`;document.getElementById("pmDesc").after(d);}
   if(p.eh_kit){$("pmBadges").innerHTML+=`<span class="pb warn">📦 ${p.kit_texto||"Preço refere-se ao KIT"}</span>`;}
   $("pmodal").classList.add("show");
 }
