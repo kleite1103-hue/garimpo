@@ -397,6 +397,7 @@ async function abreCot(id){
         <div class="acts">
           <button class="btn p" onclick="responder()">Responder com preço firme</button>
           <button class="btn ghost" onclick="salvarStatus()">Salvar status/responsável</button>
+          <button class="btn s" onclick="abreCopiloto()">🤝 Copiloto China (perguntar à fábrica)</button>
         </div>
       </div>
     </div>
@@ -710,6 +711,43 @@ async function amoUpload(id,inp){
   await sb.from("amostras").update({midia}).eq("id",id);loadAmo();
 }
 
+
+function abreCopiloto(){
+  if(!selCot)return;
+  const its=selCot.cotacao_itens||[];
+  Promise.all([sb.from("catalogo_origem").select("offer_id,url_origem").in("offer_id",its.map(i=>i.offer_id))]).then(([og])=>{
+    const urls={};(og.data||[]).forEach(o=>urls[o.offer_id]=o.url_origem);
+    $("cpMsgs").innerHTML=its.map((i,ix)=>{
+      const msg=`您好！我们是巴西的采购公司，想订购这个产品 ${i.qtd} 个。请告知：\n1) ${i.qtd}个的准确单价（含国内运费到义乌仓库）\n2) 一箱装多少个？外箱尺寸（长宽高cm）和毛重？\n3) ${i.qtd}个大约多少立方（CBM）？\n4) 生产周期几天？\n谢谢！`;
+      return `<div style="border:1px solid var(--line);border-radius:11px;padding:11px;margin-bottom:9px">
+        <div style="font-size:12px;font-weight:700;margin-bottom:5px">${ix+1}. ${i.nome} · ${i.qtd} un ${urls[i.offer_id]?`· <a href="${urls[i.offer_id]}" target="_blank" style="color:var(--green);font-weight:700">abrir chat do fornecedor ↗</a>`:''}</div>
+        <textarea readonly style="width:100%;min-height:88px;border:1px solid var(--line2);border-radius:8px;padding:8px;font-size:12px;font-family:inherit" onclick="this.select()">${msg}</textarea>
+        <button class="btn sm s" style="margin-top:5px" onclick="navigator.clipboard.writeText(this.previousElementSibling.value);this.textContent='✓ copiado'">Copiar mensagem</button>
+      </div>`;
+    }).join("");
+    $("cpmodal").classList.add("show");
+  });
+}
+async function cpParse(){
+  const txt=($("cpResp").value||"").trim();
+  if(!txt){alert("Cola a resposta primeiro.");return;}
+  $("cpOut").textContent="Lendo a resposta…";
+  const {data:{session}}=await sb.auth.getSession();
+  const hd={"Content-Type":"application/json","Authorization":"Bearer "+session.access_token,"apikey":CFG.SUPABASE_ANON};
+  const r=await fetch(CFG.SUPABASE_URL+"/functions/v1/buscafoto",{method:"POST",headers:hd,body:JSON.stringify({action:"parse_resposta",texto:txt})});
+  const j=await r.json();
+  if(j.error){$("cpOut").textContent="Erro: "+j.error;return;}
+  const p=j.parsed||{};
+  let aplicado=[];
+  if(p.cbm_total>0){$("cVol")&&($("cVol").value=(p.cbm_total*1000).toFixed(1));calcVol&&calcVol();aplicado.push(`cubagem ${p.cbm_total} m³ → frete calculado`);}
+  if(p.preco_unit_rmb>0&&selCot){
+    const qtd=(selCot.cotacao_itens||[]).reduce((s,i)=>s+i.qtd,0);
+    window._custoBrl=p.preco_unit_rmb*qtd*FX;calcFirme();
+    aplicado.push(`custo exato ¥${p.preco_unit_rmb}/un aplicado`);
+  }
+  $("cpOut").innerHTML=`<b>Extraído:</b> ${p.preco_unit_rmb?`¥${p.preco_unit_rmb}/un · `:''}${p.un_por_caixa?`${p.un_por_caixa}/caixa · `:''}${p.caixa_dim||''} ${p.cbm_total?`· ${p.cbm_total} m³ `:''}${p.prazo_dias?`· ${p.prazo_dias} dias`:''}<br><b style="color:var(--green)">${aplicado.join(" · ")||"nada aplicável encontrado"}</b>${p.resumo?`<br><span style="color:var(--faint)">${p.resumo}</span>`:''}`;
+}
+
 boot();
 </script>
 
@@ -723,6 +761,21 @@ boot();
     <div id="fStatus" class="fstatus" style="display:none"></div>
     <div id="fRes" style="margin-top:14px"></div>
     <div id="fHist" style="margin-top:16px"></div>
+  </div>
+</div>
+
+<div class="fmodal" id="cpmodal" onclick="if(event.target===this)$('cpmodal').classList.remove('show')">
+  <div class="fbox" style="max-width:820px">
+    <button class="fclose" onclick="$('cpmodal').classList.remove('show')">✕</button>
+    <h3 style="font-size:17px;font-weight:700">🤝 Copiloto de Negociação</h3>
+    <div style="font-size:12.5px;color:var(--soft);margin:4px 0 12px">Mensagem pronta em chinês pra cada item. Copia, cola no chat do fornecedor, e quando ele responder, cola a resposta aqui embaixo que eu extraio os números e preencho a calculadora.</div>
+    <div id="cpMsgs"></div>
+    <div style="margin-top:14px;border-top:1px solid var(--line);padding-top:12px">
+      <div style="font-size:12px;font-weight:700;margin-bottom:6px">📥 Resposta do fornecedor (chinês ou português)</div>
+      <textarea id="cpResp" style="width:100%;min-height:90px;border:1.5px solid var(--line);border-radius:10px;padding:10px;font-size:12.5px;font-family:inherit" placeholder="Cola aqui a resposta do chat…"></textarea>
+      <button class="btn p" style="margin-top:8px" onclick="cpParse()">Extrair números e aplicar na calculadora</button>
+      <div id="cpOut" style="font-size:12px;margin-top:8px;color:var(--soft)"></div>
+    </div>
   </div>
 </div>
 </body></html>
