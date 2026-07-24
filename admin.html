@@ -714,39 +714,62 @@ async function amoUpload(id,inp){
 
 function abreCopiloto(){
   if(!selCot)return;
+  window._cpDados={};
   const its=selCot.cotacao_itens||[];
-  Promise.all([sb.from("catalogo_origem").select("offer_id,url_origem").in("offer_id",its.map(i=>i.offer_id))]).then(([og])=>{
-    const urls={};(og.data||[]).forEach(o=>urls[o.offer_id]=o.url_origem);
+  sb.from("catalogo_origem").select("offer_id,url_origem").in("offer_id",its.map(i=>i.offer_id)).then(({data})=>{
+    const urls={};(data||[]).forEach(o=>urls[o.offer_id]=o.url_origem);
     $("cpMsgs").innerHTML=its.map((i,ix)=>{
-      const msg=`您好！我们是巴西的采购公司，想订购这个产品 ${i.qtd} 个。请告知：\n1) ${i.qtd}个的准确单价（含国内运费到义乌仓库）\n2) 一箱装多少个？外箱尺寸（长宽高cm）和毛重？\n3) ${i.qtd}个大约多少立方（CBM）？\n4) 生产周期几天？\n谢谢！`;
-      return `<div style="border:1px solid var(--line);border-radius:11px;padding:11px;margin-bottom:9px">
-        <div style="font-size:12px;font-weight:700;margin-bottom:5px">${ix+1}. ${i.nome} · ${i.qtd} un ${urls[i.offer_id]?`· <a href="${urls[i.offer_id]}" target="_blank" style="color:var(--green);font-weight:700">abrir chat do fornecedor ↗</a>`:''}</div>
-        <textarea readonly style="width:100%;min-height:88px;border:1px solid var(--line2);border-radius:8px;padding:8px;font-size:12px;font-family:inherit" onclick="this.select()">${msg}</textarea>
-        <button class="btn sm s" style="margin-top:5px" onclick="navigator.clipboard.writeText(this.previousElementSibling.value);this.textContent='✓ copiado'">Copiar mensagem</button>
+      const ref=`${selCot.numero}-${ix+1}`;
+      const msg=`您好！我们是巴西的采购公司（参考号 ${ref}），想订购这个产品 ${i.qtd} 个。请告知：\n1) ${i.qtd}个的准确单价（含运费到义乌仓库）\n2) 一箱装多少个？外箱尺寸（长宽高cm）和毛重？\n3) ${i.qtd}个总共多少立方（CBM）？\n4) 生产周期几天？\n谢谢！`;
+      return `<div style="border:1px solid var(--line);border-radius:11px;padding:11px;margin-bottom:9px" id="cpItem${ix}">
+        <div style="font-size:12px;font-weight:700;margin-bottom:5px"><span class="mono" style="color:var(--orange)">${ref}</span> · ${i.nome} · ${i.qtd} un ${urls[i.offer_id]?`· <a href="${urls[i.offer_id]}" target="_blank" style="color:var(--green);font-weight:700">abrir chat ↗</a>`:''}</div>
+        <textarea readonly style="width:100%;min-height:80px;border:1px solid var(--line2);border-radius:8px;padding:8px;font-size:11.5px;font-family:inherit" onclick="this.select()">${msg}</textarea>
+        <button class="btn sm s" style="margin-top:5px" onclick="navigator.clipboard.writeText(this.previousElementSibling.value);this.textContent='✓ copiado'">Copiar</button>
+        <div style="margin-top:8px;font-size:11.5px;font-weight:700">📥 Resposta deste fornecedor:</div>
+        <textarea id="cpResp${ix}" style="width:100%;min-height:56px;border:1.5px solid var(--line);border-radius:8px;padding:8px;font-size:11.5px;font-family:inherit" placeholder="cola a resposta do chat ${ref} aqui…"></textarea>
+        <button class="btn sm p" style="margin-top:5px" onclick="cpParseItem(${ix})">Extrair deste item</button>
+        <span id="cpOk${ix}" style="font-size:11.5px;margin-left:6px;color:var(--green)"></span>
       </div>`;
-    }).join("");
+    }).join("")+`<div id="cpResumo" style="background:var(--goldbg);border:1px solid #F0E2C4;border-radius:10px;padding:10px 12px;font-size:12.5px;display:none"></div>
+      <button class="btn p full" id="cpAplica" style="display:none;margin-top:8px" onclick="cpAplicar()">Aplicar tudo na calculadora</button>`;
     $("cpmodal").classList.add("show");
   });
 }
-async function cpParse(){
-  const txt=($("cpResp").value||"").trim();
-  if(!txt){alert("Cola a resposta primeiro.");return;}
-  $("cpOut").textContent="Lendo a resposta…";
+async function cpParseItem(ix){
+  const txt=($("cpResp"+ix).value||"").trim();
+  if(!txt){alert("Cola a resposta desse fornecedor primeiro.");return;}
+  $("cpOk"+ix).textContent="lendo…";
   const {data:{session}}=await sb.auth.getSession();
   const hd={"Content-Type":"application/json","Authorization":"Bearer "+session.access_token,"apikey":CFG.SUPABASE_ANON};
   const r=await fetch(CFG.SUPABASE_URL+"/functions/v1/buscafoto",{method:"POST",headers:hd,body:JSON.stringify({action:"parse_resposta",texto:txt})});
   const j=await r.json();
-  if(j.error){$("cpOut").textContent="Erro: "+j.error;return;}
+  if(j.error){$("cpOk"+ix).textContent="erro";return;}
   const p=j.parsed||{};
-  let aplicado=[];
-  if(p.cbm_total>0){$("cVol")&&($("cVol").value=(p.cbm_total*1000).toFixed(1));calcVol&&calcVol();aplicado.push(`cubagem ${p.cbm_total} m³ → frete calculado`);}
-  if(p.preco_unit_rmb>0&&selCot){
-    const qtd=(selCot.cotacao_itens||[]).reduce((s,i)=>s+i.qtd,0);
-    window._custoBrl=p.preco_unit_rmb*qtd*FX;calcFirme();
-    aplicado.push(`custo exato ¥${p.preco_unit_rmb}/un aplicado`);
-  }
-  $("cpOut").innerHTML=`<b>Extraído:</b> ${p.preco_unit_rmb?`¥${p.preco_unit_rmb}/un · `:''}${p.un_por_caixa?`${p.un_por_caixa}/caixa · `:''}${p.caixa_dim||''} ${p.cbm_total?`· ${p.cbm_total} m³ `:''}${p.prazo_dias?`· ${p.prazo_dias} dias`:''}<br><b style="color:var(--green)">${aplicado.join(" · ")||"nada aplicável encontrado"}</b>${p.resumo?`<br><span style="color:var(--faint)">${p.resumo}</span>`:''}`;
+  const it=(selCot.cotacao_itens||[])[ix];
+  window._cpDados[ix]={parsed:p,qtd:it.qtd};
+  $("cpOk"+ix).textContent=`✓ ¥${p.preco_unit_rmb||"?"}/un · ${p.cbm_total||"?"} m³ · ${p.prazo_dias||"?"}d`;
+  cpResumo();
 }
+function cpResumo(){
+  const ds=Object.values(window._cpDados||{});
+  if(!ds.length)return;
+  const custoRmb=ds.reduce((s,d)=>s+(d.parsed.preco_unit_rmb||0)*d.qtd,0);
+  const cbm=ds.reduce((s,d)=>s+(d.parsed.cbm_total||0),0);
+  const prazo=Math.max(...ds.map(d=>d.parsed.prazo_dias||0));
+  window._cpTot={custoRmb,cbm,prazo};
+  $("cpResumo").style.display="block";
+  $("cpResumo").innerHTML=`<b>Consolidado (${ds.length} de ${(selCot.cotacao_itens||[]).length} itens confirmados):</b> custo ¥${custoRmb.toFixed(2)} (R$ ${brl(custoRmb*FX)}) · ${cbm.toFixed(3)} m³ · prazo ${prazo||"?"} dias`;
+  $("cpAplica").style.display="block";
+}
+function cpAplicar(){
+  const t=window._cpTot||{};
+  if(t.cbm>0){$("cVol").value=(t.cbm*1000).toFixed(1);calcVol();}
+  if(t.custoRmb>0){window._custoBrl=t.custoRmb*FX;calcFirme();}
+  if(t.prazo>0&&$("cPrazo")&&!$("cPrazo").value)$("cPrazo").value=`${t.prazo+35}–${t.prazo+50} dias (produção + trânsito)`;
+  $("cpmodal").classList.remove("show");
+  alert("Aplicado! Custo exato, cubagem real e prazo na calculadora. Confere e responde com o preço firme.");
+}
+
 
 boot();
 </script>
