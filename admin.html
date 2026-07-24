@@ -214,7 +214,8 @@ tr.click{cursor:pointer}tr.click:hover{background:#FAFAFB}
     <div id="vCur" class="hidden">
       <div class="ahead"><h2>Curadoria · Modo treino</h2><span class="sub">seus vereditos ensinam a IA a julgar como você</span></div>
       <div class="tabs">
-        <span class="tab on" data-f="ia_vetou" onclick="curTab(this)">A julgar</span>
+        <span class="tab on" data-f="ia_duvida" onclick="curTab(this)">🤔 Dúvidas da IA</span>
+        <span class="tab" data-f="ia_vetou" onclick="curTab(this)">Vetados</span>
         <span class="tab" data-f="karina_aprovou" onclick="curTab(this)">Resgatados</span>
         <span class="tab" data-f="karina_vetou" onclick="curTab(this)">Vetos confirmados</span>
       </div>
@@ -597,11 +598,11 @@ async function renderFotoRes(jc){
 }
 
 
-let CURP=[],curF="ia_vetou";
+let CURP=[],curF="ia_duvida";
 async function loadCur(){
   const {data}=await sb.from("catalogo").select("offer_id,nome,subcategoria,categoria,brl,vendas,img,nota_ia,curadoria").eq("curadoria",curF).order("nota_ia",{ascending:false}).limit(400);
   CURP=data||[];renderCur();
-  const {count}=await sb.from("catalogo").select("offer_id",{count:"exact",head:true}).eq("curadoria","ia_vetou");
+  const {count}=await sb.from("catalogo").select("offer_id",{count:"exact",head:true}).eq("curadoria","ia_duvida");
   $("bdCur").textContent=count||0;$("bdCur").classList.toggle("hidden",!count);
 }
 function curTab(el){document.querySelectorAll("#vCur .tab").forEach(t=>t.classList.remove("on"));el.classList.add("on");curF=el.dataset.f;loadCur();}
@@ -610,7 +611,7 @@ function renderCur(){
     <img src="${p.img||''}"/>
     <div class="fi"><div class="fn">${p.nome}</div>
     <div class="fm">${p.categoria} / ${p.subcategoria} · R$ ${brl(p.brl)} · ${fmtV(p.vendas)||''} vendas · nota IA ${p.nota_ia??'—'}</div></div>
-    ${curF==='ia_vetou'?`
+    ${(curF==='ia_vetou'||curF==='ia_duvida')?`
       <button class="btn sm g" onclick="curJulga('${p.offer_id}',true)">👍 Resgatar</button>
       <button class="btn sm ghost" onclick="curJulga('${p.offer_id}',false)">👎 Confirmar veto</button>`:
       `<button class="btn sm ghost" onclick="curVolta('${p.offer_id}')">↩ devolver pra fila</button>`}
