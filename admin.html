@@ -409,6 +409,7 @@ async function abreCot(id){
 }
 function calcVol(){
   const L=parseFloat(($("cVol").value||"0").replace(",","."))||0;
+  const Lc=Math.max(L,1000); // piso: 1 m³ por pedido
   const m3brl=(((CFGS.custo_m3||{}).usd)||900)*(window._USD||5.4);
   if(L>0){$("cFrete").value=(L/1000*m3brl).toFixed(2);}
   calcFirme();

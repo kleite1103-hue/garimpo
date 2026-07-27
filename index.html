@@ -232,6 +232,7 @@ input,textarea,select{font-family:inherit}
     <div class="crumbs">Catálogo / <b>Meu pedido de cotação</b></div>
     <div class="cotgrid">
       <div class="panel"><div class="ph2">Itens da cotação (<span id="nItens">0</span>)</div><div id="cartItems"></div>
+        <div id="cubometro" style="margin-bottom:12px"></div>
         <div class="obsbox"><label style="font-size:12px;font-weight:600;color:var(--soft);display:block;margin-bottom:6px">Observações (opcional)</label><textarea id="obsAluno" placeholder="Ex.: prefiro na cor dourada; é pra revenda…"></textarea></div>
       </div>
       <div class="panel"><div class="ph2">Resumo</div>
@@ -300,6 +301,7 @@ async function carregaCatalogo(){
   let all=[],off=0;
   while(true){
     const {data,error}=await sb.from("catalogo").select("*").eq("visivel",true).range(off,off+999);
+    if(off===0){try{USD=(await (await fetch("https://api.frankfurter.app/latest?from=USD&to=BRL")).json()).rates.BRL;}catch(e){USD=5.4;}}
     if(error||!data||!data.length)break;
     all=all.concat(data);off+=1000;if(data.length<1000)break;
   }
@@ -369,7 +371,7 @@ function updCart(){$("cartN").textContent=CART.length;}
 function irCarrinho(){$("pCat").classList.add("hidden");$("pMinhas").classList.add("hidden");$("pCart").classList.remove("hidden");renderCart();scrollTo(0,0);}
 function irCatalogo(){$("pCart").classList.add("hidden");$("pMinhas").classList.add("hidden");$("pCat").classList.remove("hidden");scrollTo(0,0);}
 function irMinhas(){$("pCat").classList.add("hidden");$("pCart").classList.add("hidden");$("pMinhas").classList.remove("hidden");carregaMinhas();scrollTo(0,0);}
-function renderCart(){
+function renderCart(){setTimeout(desenhaCubo,0);
   $("nItens").textContent=CART.length;
   $("cartItems").innerHTML=CART.length?CART.map((c,i)=>`
    <div class="item"><img src="${c.img}"/><div class="in">
@@ -383,11 +385,33 @@ function renderCart(){
   $("sumItens").textContent=`${CART.length} produtos · ${un} unidades`;
   $("sumTotal").textContent="R$ "+brl(tot);
 }
+function volCart(){return CART.reduce((s,c)=>{const p=PROD.find(x=>x.offer_id===c.offer_id);return s+((p&&p.volume_l)||0)*c.qtd;},0);}
+function desenhaCubo(){
+  const el=$("cubometro");if(!el)return;
+  const L=volCart();const m3=L/1000;const MIN=1;
+  if(!CART.length||L<=0){el.innerHTML="";return;}
+  const pct=Math.min(100,m3/MIN*100);
+  const freteMin=MIN*1200*USD;                     // paga o cubo cheio
+  const freteReal=Math.max(m3,MIN)*1200*USD;
+  const unTotal=CART.reduce((s,c)=>s+c.qtd,0);
+  const freteUn=freteReal/unTotal;
+  const ok=m3>=MIN;
+  el.innerHTML=`<div style="border:1.5px solid ${ok?'var(--greenbd,#CDE6D9)':'#F0D9B8'};background:${ok?'#F1F7F3':'#FDF6EA'};border-radius:12px;padding:12px 14px">
+    <div style="display:flex;justify-content:space-between;font-size:12px;font-weight:700;margin-bottom:6px">
+      <span>📦 Volume do pedido</span><span>${m3.toFixed(2)} m³ de ${MIN} m³ mínimo</span></div>
+    <div style="height:9px;background:#E8E4DC;border-radius:6px;overflow:hidden"><div style="height:100%;width:${pct}%;background:${ok?'var(--green)':'var(--orange)'};border-radius:6px"></div></div>
+    <div style="font-size:11.5px;color:var(--soft);margin-top:7px;line-height:1.5">
+    ${ok?`✓ Pedido viável: frete rateado ≈ <b>R$ ${brl(freteUn)}/un</b> (estimativa, confirmado na cotação).`
+    :`⚠ <b>Abaixo do mínimo de importação (1 m³).</b> O frete do cubo é fixo (≈ R$ ${brl(freteMin)}), e rateado nesse volume sai <b>R$ ${brl(freteUn)}/un</b> — pode inviabilizar. Aumente as quantidades ou <b>complete o cubo com outros produtos</b> do catálogo até ${MIN} m³.`}
+    </div></div>`;
+}
 function qtd(i,d){CART[i].qtd=Math.max(CART[i].moq,CART[i].qtd+d);renderCart();}
 function qtdSet(i,v){CART[i].qtd=Math.max(CART[i].moq,parseInt(v)||CART[i].moq);renderCart();}
 function rm(i){CART.splice(i,1);updCart();renderCart();}
 async function enviarCotacao(){
   if(!CART.length){alert("Adicione produtos antes de enviar.");return;}
+  const _m3=volCart()/1000;
+  if(_m3>0&&_m3<1&&!confirm(`Seu pedido ocupa ${_m3.toFixed(2)} m³ e o mínimo de importação é 1 m³ (o frete do cubo é cobrado cheio).\n\nQuer enviar mesmo assim? Nosso time vai avaliar, mas o frete por unidade pode ficar alto.`))return;
   const tot=CART.reduce((s,c)=>s+c.brl*c.qtd,0);
   const {data:cot,error}=await sb.from("cotacoes").insert({user_id:USER.id,total_estimado:tot,obs_aluno:$("obsAluno").value.trim()||null}).select().single();
   if(error){alert("Não foi possível enviar: "+error.message);return;}
@@ -454,6 +478,8 @@ function abreProd(id){
   const gal=((p.imgs&&p.imgs.length)?p.imgs:[p.img]).filter(Boolean);
   $("pmThumbs").innerHTML=gal.length>1?gal.map((u,i)=>`<img src="${u}" style="width:52px;height:52px;border-radius:8px;object-fit:cover;cursor:pointer;border:2px solid ${i===0?'var(--orange)':'transparent'}" onclick="$('pmImg').src='${u}';[...this.parentNode.children].forEach(x=>x.style.borderColor='transparent');this.style.borderColor='var(--orange)'"/>`).join(""):"";
   $("pmDesc").textContent=(p.descricao||"").slice(0,300);
+  const rg=document.getElementById("pmUnM3");if(rg)rg.remove();
+  if(p.volume_l>0){const d=document.createElement("div");d.id="pmUnM3";d.style.cssText="font-size:11.5px;color:var(--soft);margin-top:3px";d.textContent=`📐 Cabem ~${Math.floor(1000/p.volume_l)} unidades por m³ (mínimo de importação: 1 m³ por pedido, pode misturar produtos)`;document.getElementById("pmDesc").after(d);}
   const fx=document.getElementById("pmFaixaVar");if(fx)fx.remove();
   if(p.brl_max&&Number(p.brl_max)>Number(p.brl)){const d=document.createElement("div");d.id="pmFaixaVar";d.style.cssText="font-size:11.5px;color:var(--soft);margin-top:2px";d.innerHTML=`variações deste anúncio: <b>R$ ${brl(p.brl)} a R$ ${brl(p.brl_max)}</b> · o preço firme da variação escolhida vem na cotação`;document.getElementById("pmDesc").after(d);}
   if(p.eh_kit){$("pmBadges").innerHTML+=`<span class="pb warn">📦 ${p.kit_texto||"Preço refere-se ao KIT"}</span>`;}
