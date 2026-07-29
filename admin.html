@@ -154,6 +154,7 @@ tr.click{cursor:pointer}tr.click:hover{background:#FAFAFB}
     <div class="al" data-v="cur" onclick="nav(this)">🎓 Curadoria<span class="bd hidden" id="bdCur">0</span></div>
     <div class="al" data-v="sol" onclick="nav(this)">📨 Solicitações<span class="bd hidden" id="bdSol">0</span></div>
     <div class="al" data-v="amo" onclick="nav(this)">📦 Amostras<span class="bd hidden" id="bdAmo">0</span></div>
+    <div class="al" data-v="ver" onclick="nav(this)">🕵️ Verificar fornecedor</div>
     <div class="al" onclick="abreFoto()">📷 Busca por foto</div>
   </aside>
   <main class="amain">
@@ -175,7 +176,7 @@ tr.click{cursor:pointer}tr.click:hover{background:#FAFAFB}
 
     <!-- COTACOES -->
     <div id="vCot" class="hidden">
-      <div class="ahead"><h2>Cotações</h2></div>
+      <div class="ahead"><h2>Cotações</h2><button class="btn sm p" style="margin-left:10px" onclick="abreNovaCot()">+ Nova cotação (time)</button></div>
       <div class="tabs" id="cotTabs">
         <span class="tab on" data-f="todas" onclick="cotFiltro(this)">Todas</span>
         <span class="tab" data-f="nova" onclick="cotFiltro(this)">Novas</span>
@@ -200,6 +201,17 @@ tr.click{cursor:pointer}tr.click:hover{background:#FAFAFB}
       <div id="catList"><div class="loading">Carregando…</div></div>
     </div>
 
+    <!-- VERIFICADOR -->
+    <div id="vVer" class="hidden">
+      <div class="ahead"><h2>Verificar fornecedor</h2><span class="sub">cole o link de um produto e a IA investiga a fábrica por trás</span></div>
+      <div class="panel" style="padding:16px">
+        <div style="display:flex;gap:8px;flex-wrap:wrap">
+          <input id="verUrl" placeholder="https://detail.1688.com/offer/…  (ou cole o link do cofre)" style="flex:1;min-width:240px;border:1.5px solid var(--line);border-radius:10px;padding:10px;font-size:12.5px"/>
+          <button class="btn p" onclick="verificarForn()">Investigar</button>
+        </div>
+        <div id="verOut" style="margin-top:14px;font-size:13px"></div>
+      </div>
+    </div>
     <!-- SOLICITACOES -->
     <div id="vSol" class="hidden">
       <div class="ahead"><h2>Solicitações por foto</h2><span class="sub">o aluno mandou a foto; um clique e o garimpo roda</span></div>
@@ -271,7 +283,7 @@ async function boot(){
 }
 function nav(el){
   document.querySelectorAll(".al").forEach(a=>a.classList.remove("on"));el.classList.add("on");
-  ["Geral","Cot","Ped","Cat","Cfg","Cur","Sol","Amo"].forEach(v=>$("v"+v).classList.add("hidden"));
+  ["Geral","Cot","Ped","Cat","Cfg","Cur","Sol","Amo","Ver"].forEach(v=>$("v"+v).classList.add("hidden"));
   const v=el.dataset.v;
   $("v"+v.charAt(0).toUpperCase()+v.slice(1)).classList.remove("hidden");
   if(v==="cat"&&!CATP.length)loadCat();
@@ -722,11 +734,21 @@ function abreCopiloto(){
     const urls={};(data||[]).forEach(o=>urls[o.offer_id]=o.url_origem);
     $("cpMsgs").innerHTML=its.map((i,ix)=>{
       const ref=`${selCot.numero}-${ix+1}`;
-      const msg=`您好！我们是巴西的采购公司（参考号 ${ref}），想订购这个产品 ${i.qtd} 个。请告知：\n1) ${i.qtd}个的准确单价（含运费到义乌仓库）\n2) 一箱装多少个？外箱尺寸（长宽高cm）和毛重？\n3) ${i.qtd}个总共多少立方（CBM）？\n4) 生产周期几天？\n谢谢！`;
+      const extras=(window._cpExtras||{})[ix]||[];
+      let n=5;const linhasExtras=extras.map(e=>`${n++}) ${e}`).join("\n");
+      const msg=`您好！我们是巴西的采购公司（参考号 ${ref}），想订购这个产品 ${i.qtd} 个。请告知：\n1) ${i.qtd}个的准确单价（含运费到义乌仓库）\n2) 一箱装多少个？外箱尺寸（长宽高cm）和毛重？\n3) ${i.qtd}个总共多少立方（CBM）？\n4) 生产周期几天？${linhasExtras?"\n"+linhasExtras:""}\n谢谢！`;
       return `<div style="border:1px solid var(--line);border-radius:11px;padding:11px;margin-bottom:9px" id="cpItem${ix}">
         <div style="font-size:12px;font-weight:700;margin-bottom:5px"><span class="mono" style="color:var(--orange)">${ref}</span> · ${i.nome} · ${i.qtd} un ${urls[i.offer_id]?`· <a href="${urls[i.offer_id]}" target="_blank" style="color:var(--green);font-weight:700">abrir chat ↗</a>`:''}</div>
         <textarea readonly style="width:100%;min-height:80px;border:1px solid var(--line2);border-radius:8px;padding:8px;font-size:11.5px;font-family:inherit" onclick="this.select()">${msg}</textarea>
         <button class="btn sm s" style="margin-top:5px" onclick="navigator.clipboard.writeText(this.previousElementSibling.value);this.textContent='✓ copiado'">Copiar</button>
+        <div style="margin-top:7px;font-size:11px;font-weight:700;color:var(--soft)">Perguntas específicas (clique pra incluir):</div>
+        <div style="display:flex;gap:5px;flex-wrap:wrap;margin-top:4px">
+          ${[["Tecido/composição","面料成分是什么？"],["Gramatura (gsm)","克重是多少（gsm）？"],["Acabamento","表面处理和做工如何？"],["Medidas exatas","产品净尺寸是多少？"],["Cores disponíveis","有哪些颜色可选？"],["Logo/personalização","可以定制LOGO吗？定制起订量多少？"],["Certificado/laudo","有质检报告或认证吗？"]].map(q=>`<span class="tab" style="font-size:10.5px;padding:4px 8px" onclick="cpExtra(${ix},'${q[1]}',this)">${q[0]}</span>`).join("")}
+        </div>
+        <div style="display:flex;gap:6px;margin-top:5px">
+          <input id="cpLivre${ix}" placeholder="outra pergunta (pt ou zh)…" style="flex:1;border:1px solid var(--line);border-radius:8px;padding:6px;font-size:11px"/>
+          <button class="btn sm ghost" onclick="cpExtra(${ix},$('cpLivre${ix}').value,null);$('cpLivre${ix}').value=''">+ incluir</button>
+        </div>
         <div style="margin-top:8px;font-size:11.5px;font-weight:700">📥 Resposta deste fornecedor:</div>
         <textarea id="cpResp${ix}" style="width:100%;min-height:56px;border:1.5px solid var(--line);border-radius:8px;padding:8px;font-size:11.5px;font-family:inherit" placeholder="cola a resposta do chat ${ref} aqui…"></textarea>
         <button class="btn sm p" style="margin-top:5px" onclick="cpParseItem(${ix})">Extrair deste item</button>
@@ -773,6 +795,63 @@ function cpAplicar(){
 }
 
 
+
+function cpExtra(ix,txt,el){
+  if(!txt||!txt.trim())return;
+  window._cpExtras=window._cpExtras||{};
+  (window._cpExtras[ix]=window._cpExtras[ix]||[]).push(txt.trim());
+  if(el){el.style.background="var(--orange)";el.style.color="#fff";}
+  abreCopiloto._extras=window._cpExtras;
+  const saved=window._cpExtras;abreCopiloto();window._cpExtras=saved;
+}
+async function verificarForn(){
+  const url=($("verUrl").value||"").trim();
+  if(!url){alert("Cole o link do produto.");return;}
+  $("verOut").innerHTML='<div class="loading">🕵️ Investigando… (30-90s: identidade, estatísticas e veredito)</div>';
+  const {data:{session}}=await sb.auth.getSession();
+  const hd={"Content-Type":"application/json","Authorization":"Bearer "+session.access_token,"apikey":CFG.SUPABASE_ANON};
+  try{
+    const r=await fetch(CFG.SUPABASE_URL+"/functions/v1/buscafoto",{method:"POST",headers:hd,body:JSON.stringify({action:"verificar_fornecedor",url})});
+    const j=await r.json();
+    if(j.error){$("verOut").innerHTML="Erro: "+j.error;return;}
+    const f=j.ficha||{};const ok=j.veredito==="aprovado";
+    $("verOut").innerHTML=`<div style="border:1.5px solid ${ok?'#CDE6D9':'#F0D9B8'};background:${ok?'#F1F7F3':'#FDF6EA'};border-radius:12px;padding:14px">
+      <div style="font-size:15px;font-weight:800">${ok?'✅ APROVADO como fornecedor':'⚠️ '+(j.veredito==='reprovado'?'REPROVADO':'DADOS INCOMPLETOS')}</div>
+      <div style="margin-top:8px;line-height:1.7">
+        <b>Empresa:</b> ${f.empresa||'?'} ${f.empresa_pt?`(${f.empresa_pt})`:''}<br>
+        <b>Tempo de 1688:</b> ${f.anos??'?'} anos · <b>Fábrica:</b> ${f.fabrica?'sim':'não confirmado'}<br>
+        <b>Vendas do produto:</b> ${f.vendas_produto||'?'} · <b>Preço:</b> ¥${f.preco||'?'}<br>
+        <b>Member ID:</b> <span class="mono" style="font-size:10.5px">${f.member_id||'?'}</span></div>
+      <div style="margin-top:8px;font-size:12.5px;color:var(--soft)">${j.analise||''}</div>
+    </div>`;
+  }catch(e){$("verOut").innerHTML="Erro: "+(e.message||e);}
+}
+let NC=[];
+function abreNovaCot(){NC=[];$("ncItens").innerHTML="";$("ncRes").innerHTML="";$("ncBusca").value="";$("ncCliente").value="";$("ncmodal").classList.add("show");}
+async function ncBuscar(){
+  const q=$("ncBusca").value.trim();
+  if(q.length<3){$("ncRes").innerHTML="";return;}
+  const {data}=await sb.from("catalogo").select("offer_id,nome,brl,img,moq").eq("visivel",true).ilike("nome",`%${q}%`).limit(8);
+  $("ncRes").innerHTML=(data||[]).map(p=>`<div class="fitem" style="cursor:pointer" onclick='ncAdd(${JSON.stringify(p).replace(/'/g,"&#39;")})'>
+    <img src="${p.img}"/><div class="fi"><div class="fn">${p.nome}</div><div class="fm">R$ ${brl(p.brl)}/un · MOQ ${p.moq}</div></div><span style="font-weight:800;color:var(--orange)">+</span></div>`).join("");
+}
+function ncAdd(p){if(NC.find(x=>x.offer_id===p.offer_id))return;NC.push({...p,qtd:p.moq||10});ncRender();}
+function ncRender(){
+  $("ncItens").innerHTML=NC.map((p,i)=>`<div class="fitem"><img src="${p.img}"/><div class="fi"><div class="fn">${p.nome}</div></div>
+    <input type="number" value="${p.qtd}" min="1" onchange="NC[${i}].qtd=parseInt(this.value)||1" style="width:80px;border:1.5px solid var(--line);border-radius:8px;padding:6px"/>
+    <button class="btn sm ghost" onclick="NC.splice(${i},1);ncRender()">✕</button></div>`).join("");
+}
+async function ncEnviar(){
+  if(!NC.length){alert("Adicione ao menos um produto.");return;}
+  const tot=NC.reduce((s,c)=>s+Number(c.brl)*c.qtd,0);
+  const {data:{user}}=await sb.auth.getUser();
+  const {data:cot,error}=await sb.from("cotacoes").insert({user_id:user.id,total_estimado:tot,obs_aluno:"[ABERTA PELO TIME] "+($("ncCliente").value.trim()||"")}).select().single();
+  if(error){alert(error.message);return;}
+  const {error:e2}=await sb.from("cotacao_itens").insert(NC.map(c=>({cotacao_id:cot.id,offer_id:c.offer_id,nome:c.nome,img:c.img,qtd:c.qtd,moq:c.moq,brl_estimado_un:c.brl})));
+  if(e2){alert(e2.message);return;}
+  $("ncmodal").classList.remove("show");loadCots&&loadCots();alert("Cotação "+(cot.numero||"criada")+" aberta!");
+}
+
 boot();
 </script>
 
@@ -801,6 +880,18 @@ boot();
       <button class="btn p" style="margin-top:8px" onclick="cpParse()">Extrair números e aplicar na calculadora</button>
       <div id="cpOut" style="font-size:12px;margin-top:8px;color:var(--soft)"></div>
     </div>
+  </div>
+</div>
+
+<div class="fmodal" id="ncmodal" onclick="if(event.target===this)$('ncmodal').classList.remove('show')">
+  <div class="fbox" style="max-width:680px">
+    <button class="fclose" onclick="$('ncmodal').classList.remove('show')">✕</button>
+    <h3 style="font-size:17px;font-weight:700">Nova cotação aberta pelo time</h3>
+    <input id="ncCliente" placeholder="Cliente/observação (ex.: aluna Maria — WhatsApp 41 9…)" style="width:100%;border:1.5px solid var(--line);border-radius:10px;padding:10px;font-size:12.5px;margin:10px 0"/>
+    <div style="display:flex;gap:8px"><input id="ncBusca" placeholder="buscar produto do catálogo…" oninput="ncBuscar()" style="flex:1;border:1.5px solid var(--line);border-radius:10px;padding:10px;font-size:12.5px"/></div>
+    <div id="ncRes" style="max-height:180px;overflow:auto;margin-top:8px"></div>
+    <div id="ncItens" style="margin-top:10px"></div>
+    <button class="btn p full" style="margin-top:10px" onclick="ncEnviar()">Criar cotação</button>
   </div>
 </div>
 </body></html>
