@@ -771,7 +771,9 @@ async function cpParseItem(ix){
   const p=j.parsed||{};
   const it=(selCot.cotacao_itens||[])[ix];
   window._cpDados[ix]={parsed:p,qtd:it.qtd};
-  $("cpOk"+ix).textContent=`✓ ¥${p.preco_unit_rmb||"?"}/un · ${p.cbm_total||"?"} m³ · ${p.prazo_dias||"?"}d`;
+  const vs=p.variacoes||[];
+  $("cpOk"+ix).innerHTML=vs.length>1?`✓ ${vs.length} variações: `+vs.map(v=>`${v.nome} ¥${v.preco_unit_rmb}${v.un_por_caixa?` (${v.un_por_caixa}/cx)`:''}`).join(" · ")+` · ${p.prazo_dias||"?"}d`
+  :`✓ ¥${p.preco_unit_rmb||"?"}/un · ${p.cbm_total||"?"} m³ · ${p.prazo_dias||"?"}d`;
   cpResumo();
 }
 function cpResumo(){
