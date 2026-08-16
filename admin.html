@@ -895,9 +895,9 @@ function loadOuroRender(){
       <div style="display:flex;gap:5px;flex-wrap:wrap;font-size:10.5px">
         ${f.is_factory?'<span class="badge" style="background:#FDF3E0;color:#8A6100">🏭 fábrica '+(f.factory_level||"")+'</span>':'<span class="badge">trading</span>'}
         <span class="badge">${f.years_on_platform||"?"} anos</span>
-        <span class="badge" style="background:#F1F7F3;color:var(--green)">recompra ${Math.round((f.repeat_rate||0)*100)}%</span>
-        <span class="badge">fat. 3m ¥${(fat/1e6).toFixed(1)}M</span>
-        <span class="badge">resposta ${Math.round((f.ww_response_rate||0)*100)}%</span>
+        ${f.repeat_rate!=null?`<span class="badge" style="background:#F1F7F3;color:var(--green)">recompra ${Math.round(f.repeat_rate*100)}%</span>`:""}
+        ${fat?`<span class="badge">fat. 3m ¥${(fat/1e6).toFixed(1)}M</span>`:""}
+        ${f.ww_response_rate!=null?`<span class="badge">resposta ${Math.round(f.ww_response_rate*100)}%</span>`:""}
         ${String(f.vat_invoice)==="有"?'<span class="badge">NF ✓</span>':''}
         ${String(f.foreign_trade_orders)==="支持"?'<span class="badge">exporta ✓</span>':''}
       </div>
