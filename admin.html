@@ -154,6 +154,7 @@ tr.click{cursor:pointer}tr.click:hover{background:#FAFAFB}
     <div class="al" data-v="cur" onclick="nav(this)">🎓 Curadoria<span class="bd hidden" id="bdCur">0</span></div>
     <div class="al" data-v="sol" onclick="nav(this)">📨 Solicitações<span class="bd hidden" id="bdSol">0</span></div>
     <div class="al" data-v="amo" onclick="nav(this)">📦 Amostras<span class="bd hidden" id="bdAmo">0</span></div>
+    <div class="al" data-v="ouro" onclick="nav(this)">🏆 Fornecedores Ouro<span class="bd hidden" id="bdOuro">0</span></div>
     <div class="al" data-v="ver" onclick="nav(this)">🕵️ Verificar fornecedor</div>
     <div class="al" onclick="abreFoto()">📷 Busca por foto</div>
   </aside>
@@ -201,6 +202,12 @@ tr.click{cursor:pointer}tr.click:hover{background:#FAFAFB}
       <div id="catList"><div class="loading">Carregando…</div></div>
     </div>
 
+    <!-- FORNECEDORES OURO -->
+    <div id="vOuro" class="hidden">
+      <div class="ahead"><h2>Fornecedores Ouro · Candidatos</h2><span class="sub">avalie as fábricas: aprovadas viram fonte de catálogo</span></div>
+      <div class="tabs" id="ouroNichos" style="flex-wrap:wrap"></div>
+      <div id="ouroList"><div class="loading">Carregando…</div></div>
+    </div>
     <!-- VERIFICADOR -->
     <div id="vVer" class="hidden">
       <div class="ahead"><h2>Verificar fornecedor</h2><span class="sub">cole o link de um produto e a IA investiga a fábrica por trás</span></div>
@@ -283,13 +290,14 @@ async function boot(){
 }
 function nav(el){
   document.querySelectorAll(".al").forEach(a=>a.classList.remove("on"));el.classList.add("on");
-  ["Geral","Cot","Ped","Cat","Cfg","Cur","Sol","Amo","Ver"].forEach(v=>$("v"+v).classList.add("hidden"));
+  ["Geral","Cot","Ped","Cat","Cfg","Cur","Sol","Amo","Ver","Ouro"].forEach(v=>$("v"+v).classList.add("hidden"));
   const v=el.dataset.v;
   $("v"+v.charAt(0).toUpperCase()+v.slice(1)).classList.remove("hidden");
   if(v==="cat"&&!CATP.length)loadCat();
   if(v==="cur")loadCur();
   if(v==="sol")loadSol();
   if(v==="amo")loadAmo();
+  if(v==="ouro")loadOuro();
 }
 // ---------- LOADS ----------
 async function loadCots(){
@@ -853,6 +861,51 @@ async function ncEnviar(){
   if(e2){alert(e2.message);return;}
   $("ncmodal").classList.remove("show");loadCots&&loadCots();alert("Cotação "+(cot.numero||"criada")+" aberta!");
 }
+
+
+let OURO=[],ouroN=null;
+async function loadOuro(){
+  const {data}=await sb.from("fornecedores_ouro").select("*").order("score",{ascending:false}).limit(400);
+  OURO=data||[];
+  const nichos=[...new Set(OURO.map(x=>x.nicho))].sort();
+  if(!ouroN)ouroN=nichos[0];
+  $("ouroNichos").innerHTML=nichos.map(n=>{
+    const pend=OURO.filter(x=>x.nicho===n&&x.status==="candidato").length;
+    return `<span class="tab ${n===ouroN?'on':''}" style="font-size:11px" onclick="ouroN='${n}';loadOuroRender()">${n}${pend?` (${pend})`:" ✓"}</span>`;
+  }).join("");
+  const pendT=OURO.filter(x=>x.status==="candidato").length;
+  $("bdOuro").textContent=pendT;$("bdOuro").classList.toggle("hidden",!pendT);
+  loadOuroRender();
+}
+function loadOuroRender(){
+  document.querySelectorAll("#ouroNichos .tab").forEach(t=>t.classList.toggle("on",t.textContent.startsWith(ouroN)));
+  const L=OURO.filter(x=>x.nicho===ouroN);
+  $("ouroList").innerHTML=L.map(x=>{
+    const f=x.ficha||{};
+    const thumbs=(f.product_thumbnails||[]).slice(0,5);
+    const fat=f.pay_ord_amt_3m_yuan||0;
+    return `<div class="panel" style="margin-bottom:12px;padding:14px 16px;${x.status==='aprovado'?'border-color:#CDE6D9;background:#F7FBF8':x.status==='reprovado'?'opacity:.5':''}">
+      <div style="display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;align-items:center">
+        <div><b style="font-size:14px">${x.empresa_pt||f.company_name||"?"}</b>
+        <span style="font-size:11px;color:var(--faint)"> · ${f.city||""} · <b style="color:var(--orange)">${x.score}/12</b></span></div>
+        <div>${x.status==='candidato'?`<button class="btn sm g" onclick="ouroJulga(${x.id},'aprovado')">👍 Aprovar fábrica</button>
+        <button class="btn sm ghost" onclick="ouroJulga(${x.id},'reprovado')">👎 Não</button>`:`<span class="st ${x.status==='aprovado'?'respondida':''}">${x.status}</span> <button class="btn sm ghost" onclick="ouroJulga(${x.id},'candidato')">↩</button>`}</div>
+      </div>
+      <div style="display:flex;gap:6px;margin:9px 0;overflow-x:auto">${thumbs.map((t,i)=>`<a href="${(f.product_urls||[])[i]||'#'}" target="_blank"><img src="${t}" style="width:74px;height:74px;border-radius:9px;object-fit:cover;border:1px solid var(--line)"/></a>`).join("")||'<span style="font-size:11px;color:var(--faint)">sem fotos na ficha</span>'}</div>
+      <div style="display:flex;gap:5px;flex-wrap:wrap;font-size:10.5px">
+        ${f.is_factory?'<span class="badge" style="background:#FDF3E0;color:#8A6100">🏭 fábrica '+(f.factory_level||"")+'</span>':'<span class="badge">trading</span>'}
+        <span class="badge">${f.years_on_platform||"?"} anos</span>
+        <span class="badge" style="background:#F1F7F3;color:var(--green)">recompra ${Math.round((f.repeat_rate||0)*100)}%</span>
+        <span class="badge">fat. 3m ¥${(fat/1e6).toFixed(1)}M</span>
+        <span class="badge">resposta ${Math.round((f.ww_response_rate||0)*100)}%</span>
+        ${String(f.vat_invoice)==="有"?'<span class="badge">NF ✓</span>':''}
+        ${String(f.foreign_trade_orders)==="支持"?'<span class="badge">exporta ✓</span>':''}
+      </div>
+      <div style="font-size:11.5px;color:var(--soft);margin-top:7px">${x.produtos_pt||""}</div>
+    </div>`;
+  }).join("")||'<div class="panel"><div class="loading">Nada neste nicho.</div></div>';
+}
+async function ouroJulga(id,st){await sb.from("fornecedores_ouro").update({status:st}).eq("id",id);const x=OURO.find(o=>o.id===id);if(x)x.status=st;loadOuro();}
 
 boot();
 </script>
