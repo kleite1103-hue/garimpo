@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="pt-BR"><head>
 <meta charset="utf-8"/><meta name="referrer" content="no-referrer"/><meta name="viewport" content="width=device-width, initial-scale=1"/>
-<title>Garimpo · Efeito Vendas</title>
+<title>Efeito Vendas na China</title>
 <link rel="stylesheet" href="assets/fonts.css"/>
 <script src="assets/js/supabase.min.js"></script>
 <script src="config.js"></script>
@@ -17,8 +17,8 @@ input,textarea,select{font-family:inherit}
 .top{background:var(--panel);border-bottom:1px solid var(--line);position:sticky;top:0;z-index:30}
 .topin{max-width:1280px;margin:0 auto;padding:12px 20px;display:flex;align-items:center;gap:16px;flex-wrap:wrap}
 .logo{display:flex;flex-direction:column;line-height:1;cursor:pointer}
-.logo .ev{font-family:"Space Mono",monospace;font-size:9px;letter-spacing:.26em;text-transform:uppercase;color:var(--faint)}
-.logo .g{font-family:"Bebas Neue",sans-serif;font-size:27px;letter-spacing:.02em;margin-top:2px}.logo .g i{color:var(--orange);font-style:normal}
+.logo .ev{font-family:"Bebas Neue",sans-serif;font-size:15px;letter-spacing:.09em;text-transform:uppercase;color:var(--ink)}
+.logo .g{font-family:"Bebas Neue",sans-serif;font-size:27px;letter-spacing:.02em;margin-top:2px}.logo .g i{color:#D91F26;font-style:normal}
 .searchbar{flex:1;display:flex;align-items:center;background:var(--bg);border:2px solid var(--ink);border-radius:11px;overflow:hidden;min-width:200px;max-width:560px}
 .searchbar input{flex:1;border:0;background:transparent;outline:0;padding:11px 15px;font-size:15px}
 .searchbar .cam{display:grid;place-items:center;width:44px;align-self:stretch;border-left:1px solid var(--line);color:var(--soft);cursor:pointer}.searchbar .cam:hover{color:var(--orange)}
@@ -46,7 +46,7 @@ input,textarea,select{font-family:inherit}
 .ok{background:var(--greenbg);color:var(--green);font-size:12.5px;padding:10px 12px;border-radius:10px;margin-bottom:12px;display:none}
 /* shell */
 .shell{max-width:1280px;margin:0 auto;padding:20px;display:grid;grid-template-columns:200px 1fr;gap:20px;align-items:start}
-.side{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:8px;position:sticky;top:80px}
+.side{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:8px;position:sticky;top:80px;max-height:calc(100vh - 96px);overflow-y:auto}
 .side h4{font-family:"Space Mono",monospace;font-size:10px;letter-spacing:.15em;text-transform:uppercase;color:var(--faint);padding:11px 12px 7px}
 .cat{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:10px 12px;border-radius:9px;cursor:pointer;font-weight:500;font-size:13px;color:#2b2a28}
 .cat:hover{background:var(--bg)}.cat.on{background:var(--orangebg);color:var(--orange);font-weight:600}
@@ -183,7 +183,7 @@ input,textarea,select{font-family:inherit}
 <!-- LOGIN -->
 <div id="vLogin" class="loginwrap">
   <div class="loginbox">
-    <div class="logo"><span class="ev" id="lgMarca">Efeito Vendas</span><span class="g" style="font-size:38px">Garimpo<i>.</i></span></div>
+    <div class="logo"><span class="ev">Efeito Vendas</span><span class="g" style="font-size:34px">na <i>China</i></span></div>
     <p>Catálogo de produtos direto da fonte, com preço de chegada no Brasil e cotação com nosso time.</p>
     <div class="lock">🔒 Acesso exclusivo. Entre com sua conta ou crie a sua pra montar cotações.</div>
     <div class="err" id="lgErr"></div>
@@ -199,7 +199,7 @@ input,textarea,select{font-family:inherit}
 <!-- APP -->
 <div id="vApp" class="hidden">
 <div class="top"><div class="topin">
-  <div class="logo" onclick="irCatalogo()"><span class="ev">Efeito Vendas</span><span class="g">Garimpo<i>.</i></span></div>
+  <div class="logo" onclick="irCatalogo()"><span class="ev">Efeito Vendas</span><span class="g" style="font-size:34px">na <i>China</i></span></div>
   <div class="searchbar"><input id="q" placeholder="Buscar produto…" oninput="render()"/><button onclick="render()">Buscar</button></div>
   <div class="navbtns">
     <div class="nb" onclick="abreFoto()">📷 Achar por foto</div>
