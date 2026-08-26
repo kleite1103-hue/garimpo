@@ -204,7 +204,7 @@ input,textarea,select{font-family:inherit}
   <div class="navbtns">
     <div class="nb" onclick="abreFoto()">📷 Achar por foto</div>
     <div class="nb" onclick="abreMeus()">📦 Amostras</div>
-    <a class="nb hidden" id="btnAdmin" href="admin.html" style="text-decoration:none;background:var(--orangebg);border-color:var(--orange);color:var(--orange)">⚙ Painel do time</a>
+    
     <div class="nb" onclick="irMinhas()">Minhas cotações</div>
     <div class="nb dark" onclick="irCarrinho()">Cotação<span class="n" id="cartN">0</span></div>
     <div class="uchip"><span class="uav" id="uAv">?</span><span id="uNome"></span><span class="sair" onclick="sair()">sair</span></div>
@@ -293,7 +293,7 @@ async function boot(){
   $("vLogin").classList.add("hidden");$("vApp").classList.remove("hidden");
   const nome=PERFIL.nome||USER.email.split("@")[0];
   $("uNome").textContent=nome;$("uAv").textContent=nome.slice(0,2).toUpperCase();
-  if(PERFIL&&(PERFIL.papel==="admin"||PERFIL.papel==="equipe"))$("btnAdmin").classList.remove("hidden");
+  if(PERFIL&&(PERFIL.papel==="admin"||PERFIL.papel==="equipe"))
   await carregaCatalogo();
 }
 // ---------- CATALOGO ----------
@@ -408,8 +408,31 @@ function desenhaCubo(){
 function qtd(i,d){CART[i].qtd=Math.max(CART[i].moq,CART[i].qtd+d);renderCart();}
 function qtdSet(i,v){CART[i].qtd=Math.max(CART[i].moq,parseInt(v)||CART[i].moq);renderCart();}
 function rm(i){CART.splice(i,1);updCart();renderCart();}
-async function enviarCotacao(){
+let LEADCFG={ativo:false,max_cotacoes:999};
+async function leadGate(){
+  try{const {data}=await sb.from("config").select("valor").eq("chave","modo_lead").single();if(data)LEADCFG=data.valor;}catch(e){}
+  if(!LEADCFG.ativo||["admin","equipe"].includes(PAPEL))return "ok";
+  const {count}=await sb.from("cotacoes").select("id",{count:"exact",head:true}).eq("user_id",USER.id);
+  if((count||0)>=(LEADCFG.max_cotacoes||1))return "limite";
+  const {data:pf}=await sb.from("perfis").select("nome,whatsapp").eq("id",USER.id).single();
+  if(!pf||!pf.nome||!pf.whatsapp)return "dados";
+  return "ok";
+}
+async function leadSalva(){
+  const nome=$("ldNome").value.trim(),whats=$("ldWhats").value.replace(/\D/g,"");
+  if(nome.length<5||whats.length<10){alert("Preencha nome completo e WhatsApp com DDD.");return;}
+  const loja=$("ldLoja").value.trim();
+  await sb.from("perfis").update({nome,whatsapp:whats+(loja?" · "+loja:"")}).eq("id",USER.id);
+  $("leadmodal").classList.remove("show");
+  enviarCotacao(true);
+}
+async function enviarCotacao(pos){
   if(!CART.length){alert("Adicione produtos antes de enviar.");return;}
+  if(!pos){
+    const g=await leadGate();
+    if(g==="limite"){alert("Sua cotação de demonstração já foi enviada! 🎉\n\nNosso time vai te chamar no WhatsApp pra apresentar o preço e liberar novas cotações na reunião.");return;}
+    if(g==="dados"){$("leadmodal").classList.add("show");return;}
+  }
   const _m3=volCart()/1000;
   if(_m3>0&&_m3<1&&!confirm(`Seu pedido ocupa ${_m3.toFixed(2)} m³ e o mínimo de importação é 1 m³ (o frete do cubo é cobrado cheio).\n\nQuer enviar mesmo assim? Nosso time vai avaliar, mas o frete por unidade pode ficar alto.`))return;
   const tot=CART.reduce((s,c)=>s+c.brl*c.qtd,0);
@@ -646,6 +669,18 @@ boot();
     <button class="fclose" onclick="$('amodal').classList.remove('show')">✕</button>
     <h3 style="font-size:17px;font-weight:700">Minhas amostras e orçamentos</h3>
     <div id="amBody" style="margin-top:12px"><div class="fstatus">Carregando…</div></div>
+  </div>
+</div>
+
+<div class="fmodal" id="leadmodal">
+  <div class="fbox" style="max-width:430px">
+    <h3 style="font-size:17px;font-weight:700">Antes de enviar sua cotação</h3>
+    <div style="font-size:12.5px;color:var(--soft);margin:6px 0 12px">Nosso time analisa cada cotação pessoalmente e te retorna com o preço firme. Completa seus dados:</div>
+    <input id="ldNome" placeholder="Seu nome completo *" style="width:100%;border:1.5px solid var(--line);border-radius:10px;padding:11px;font-size:13px;margin-bottom:8px"/>
+    <input id="ldWhats" placeholder="WhatsApp com DDD *" style="width:100%;border:1.5px solid var(--line);border-radius:10px;padding:11px;font-size:13px;margin-bottom:8px"/>
+    <input id="ldLoja" placeholder="Sua loja/Instagram (opcional)" style="width:100%;border:1.5px solid var(--line);border-radius:10px;padding:11px;font-size:13px;margin-bottom:12px"/>
+    <button class="btn p full" onclick="leadSalva()">Enviar minha cotação</button>
+    <button class="btn full" style="margin-top:6px;background:none;border:none;color:var(--faint);font-size:12px" onclick="$('leadmodal').classList.remove('show')">voltar</button>
   </div>
 </div>
 </body></html>

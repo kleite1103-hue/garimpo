@@ -271,6 +271,11 @@ async function gateEntrar(){
 }
 async function sair(){await sb.auth.signOut();location.reload();}
 async function boot(){
+  const {data:{session:_gate}}=await sb.auth.getSession();
+  if(!_gate){location.href="index.html";return;}
+  const {data:pf}=await sb.from("perfis").select("papel").eq("id",_gate.user.id).single();
+  if(!pf||!["admin","equipe"].includes(pf.papel)){alert("Área restrita ao time.");location.href="index.html";return;}
+
   const {data:{session}}=await sb.auth.getSession();
   if(!session)return;
   USER=session.user;
