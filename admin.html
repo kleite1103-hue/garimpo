@@ -354,7 +354,7 @@ function renderCots(){
   $("cotList").innerHTML=L.length?`<table><tr><th>Pedido</th><th>Itens</th><th>Total est.</th><th>Total firme</th><th>Status</th><th>Data</th></tr>`+
     L.map(c=>{
       const nIt=(c.cotacao_itens||[]).length,un=(c.cotacao_itens||[]).reduce((s,i)=>s+i.qtd,0);
-      return `<tr class="click" onclick="abreCot(${c.id})"><td class="mono">${c.numero}</td><td>${nIt} produto${nIt!==1?'s':''} · ${un} un</td><td>R$ ${brl(c.total_estimado)}</td><td>${c.total_firme?'<b>R$ '+brl(c.total_firme)+'</b>':'—'}</td><td><span class="st ${c.status}">${stLab[c.status]||c.status}</span></td><td>${new Date(c.criado_em).toLocaleDateString('pt-BR')}</td></tr>`;
+      return `<tr class="click" onclick="abreCot(${c.id})"><td class="mono">${c.numero}${c.lead_nome?' <span class="badge" style="background:#FDF3E0;color:#8A6100">LEAD</span>':''}</td><td>${nIt} produto${nIt!==1?'s':''} · ${un} un</td><td>R$ ${brl(c.total_estimado)}</td><td>${c.total_firme?'<b>R$ '+brl(c.total_firme)+'</b>':'—'}</td><td><span class="st ${c.status}">${stLab[c.status]||c.status}</span></td><td>${new Date(c.criado_em).toLocaleDateString('pt-BR')}</td></tr>`;
     }).join("")+`</table>`:`<div class="panel"><div class="loading">Nenhuma cotação ${curFiltro==='todas'?'ainda':'neste status'}. Quando um aluno enviar, aparece aqui.</div></div>`;
   $("cotDetail").innerHTML="";
 }
@@ -381,7 +381,7 @@ async function abreCot(id){
   const marg=Number((CFGS.margem_time||{}).pct||35);
   $("cotDetail").innerHTML=`<div class="detail">
     <div class="panel">
-      <div class="ph2">Detalhe ${c.numero}<span style="margin-left:auto;font-weight:400;font-size:11px;color:var(--faint)">${new Date(c.criado_em).toLocaleString('pt-BR')}</span></div>
+      <div class="ph2">Detalhe ${c.numero}${c.lead_nome?` · <span style="font-size:12px;font-weight:600">👤 ${c.lead_nome} · 📱 <a href="https://wa.me/55${(c.lead_whatsapp||'').replace(/\D/g,'')}" target="_blank" style="color:var(--green)">${c.lead_whatsapp}</a>${c.lead_loja?' · '+c.lead_loja:''}</span>`:''}<span style="margin-left:auto;font-weight:400;font-size:11px;color:var(--faint)">${new Date(c.criado_em).toLocaleString('pt-BR')}</span></div>
       <div class="solic">
         <div class="f2"><div class="k">Solicitante</div><div class="v">${perfil.nome||'—'}</div></div>
         <div class="f2"><div class="k">WhatsApp</div><div class="v">${perfil.whatsapp||'—'}</div></div>

@@ -3,8 +3,18 @@
 <meta charset="utf-8"/><meta name="referrer" content="no-referrer"/><meta name="viewport" content="width=device-width, initial-scale=1"/>
 <title>Efeito Vendas na China</title>
 <link rel="stylesheet" href="assets/fonts.css"/>
-<script src="assets/js/supabase.min.js"></script>
-<script src="config.js"></script>
+<script src="assets/js/supabase.min.js">
+function abreAmostra(...a){
+  if(!USER){alert("📦 As amostras fazem parte da sua importação!\n\nEnvia sua cotação que nosso time cuida de tudo — inclusive de trazer amostras com fotos e vídeos reais pra você decidir com segurança.");return;}
+  return abreAmostra_real(...a);
+}
+</script>
+<script src="config.js">
+function abreAmostra(...a){
+  if(!USER){alert("📦 As amostras fazem parte da sua importação!\n\nEnvia sua cotação que nosso time cuida de tudo — inclusive de trazer amostras com fotos e vídeos reais pra você decidir com segurança.");return;}
+  return abreAmostra_real(...a);
+}
+</script>
 <style>
 :root{--bg:#F4F5F7;--panel:#FFF;--ink:#161514;--soft:#6C6A66;--faint:#9C9995;--line:#E7E7E9;--line2:#EFEFF1;--orange:#FF4D1C;--orangebg:#FFF1EC;--gold:#C4933B;--goldbg:#FBF3E3;--green:#1F8A4C;--greenbg:#E7F6ED;--warn:#B26B00;--warnbg:#FFF6E5;--blue:#2563C9;--bluebg:#EAF1FD;--red:#C0392B;--redbg:#FDECEA}
 *{box-sizing:border-box;margin:0;padding:0}
@@ -192,6 +202,7 @@ input,textarea,select{font-family:inherit}
     <div class="f"><label>E-mail</label><input id="inEmail" type="email" placeholder="seu@email.com"/></div>
     <div class="f"><label>Senha</label><input id="inPw" type="password" placeholder="••••••••"/></div>
     <button class="btn p full" id="btnEntrar" onclick="entrar()">Entrar</button>
+    <div style="text-align:center;margin-top:10px"><a href="#" onclick="boot();return false" style="font-size:12px;color:var(--faint)">← Ver o catálogo sem entrar</a></div>
     <div class="lgalt" id="lgToggle">Ainda não tem conta? <b onclick="modoCadastro(true)">Criar minha conta</b></div>
   </div>
 </div>
@@ -205,9 +216,9 @@ input,textarea,select{font-family:inherit}
     <div class="nb" onclick="abreFoto()">📷 Achar por foto</div>
     <div class="nb" onclick="abreMeus()">📦 Amostras</div>
     
-    <div class="nb" onclick="irMinhas()">Minhas cotações</div>
+    <div class="nb soLogado" onclick="irMinhas()">Minhas cotações</div>
     <div class="nb dark" onclick="irCarrinho()">Cotação<span class="n" id="cartN">0</span></div>
-    <div class="uchip"><span class="uav" id="uAv">?</span><span id="uNome"></span><span class="sair" onclick="sair()">sair</span></div>
+    <div id="chipUser" style="display:contents"><div class="uchip"><span class="uav" id="uAv">?</span><span id="uNome"></span><span class="sair" onclick="sair()">sair</span></div>
   </div>
 </div></div>
 
@@ -282,15 +293,21 @@ async function entrar(){
     }
   }catch(e){$("lgErr").textContent="Não deu: "+(e.message||e);$("lgErr").style.display="block";}
 }
+function abreLogin(){$('vApp').classList.add('hidden');$('vLogin').classList.remove('hidden');}
 async function sair(){await sb.auth.signOut();location.reload();}
 
 async function boot(){
+  $("vLogin").classList.add("hidden");$("vApp").classList.remove("hidden");
   const {data:{session}}=await sb.auth.getSession();
-  if(!session){return;}
+  if(!session){
+    document.querySelectorAll(".soLogado").forEach(e=>e.classList.add("hidden"));
+    $("chipUser").classList.add("hidden");$("btnEntrarTop").classList.remove("hidden");
+    await carregaCatalogo();return;
+  }
   USER=session.user;
   const {data:p}=await sb.from("perfis").select("*").eq("id",USER.id).single();
   PERFIL=p||{};
-  $("vLogin").classList.add("hidden");$("vApp").classList.remove("hidden");
+  $("btnEntrarTop").classList.add("hidden");$("chipUser").classList.remove("hidden");
   const nome=PERFIL.nome||USER.email.split("@")[0];
   $("uNome").textContent=nome;$("uAv").textContent=nome.slice(0,2).toUpperCase();
   if(PERFIL&&(PERFIL.papel==="admin"||PERFIL.papel==="equipe"))
@@ -422,13 +439,14 @@ async function leadSalva(){
   const nome=$("ldNome").value.trim(),whats=$("ldWhats").value.replace(/\D/g,"");
   if(nome.length<5||whats.length<10){alert("Preencha nome completo e WhatsApp com DDD.");return;}
   const loja=$("ldLoja").value.trim();
-  await sb.from("perfis").update({nome,whatsapp:whats+(loja?" · "+loja:"")}).eq("id",USER.id);
+  if(USER){await sb.from("perfis").update({nome,whatsapp:whats+(loja?" · "+loja:"")}).eq("id",USER.id);}
+  else{window._ldNome=nome;window._ldWhats=whats;window._ldLoja=loja;}
   $("leadmodal").classList.remove("show");
   enviarCotacao(true);
 }
 async function enviarCotacao(pos){
   if(!CART.length){alert("Adicione produtos antes de enviar.");return;}
-  if(!pos){
+  if(!pos&&USER){
     const g=await leadGate();
     if(g==="limite"){alert("Sua cotação já está com nosso time! 🎉\n\nVocê vai receber no WhatsApp o preço final da sua importação e todos os detalhes pra fazer tudo com nosso apoio e segurança — do pedido à chegada no Brasil.");return;}
     if(g==="dados"){$("leadmodal").classList.add("show");return;}
@@ -436,6 +454,21 @@ async function enviarCotacao(pos){
   const _m3=volCart()/1000;
   if(_m3>0&&_m3<1&&!confirm(`Seu pedido ocupa ${_m3.toFixed(2)} m³ e o mínimo de importação é 1 m³ (o frete do cubo é cobrado cheio).\n\nQuer enviar mesmo assim? Nosso time vai avaliar, mas o frete por unidade pode ficar alto.`))return;
   const tot=CART.reduce((s,c)=>s+c.brl*c.qtd,0);
+  if(!USER){
+    if(!pos){
+      if(localStorage.getItem("ev_lead_ok")){alert("Sua cotação já está com nosso time! 🎉\n\nVocê vai receber no WhatsApp o preço final da sua importação e todos os detalhes pra fazer tudo com nosso apoio e segurança — do pedido à chegada no Brasil.");return;}
+      $("leadmodal").classList.add("show");return;
+    }
+    try{
+      const {data:num,error:eL}=await sb.rpc("cotacao_lead",{p_nome:window._ldNome,p_whats:window._ldWhats,p_loja:window._ldLoja||"",p_obs:$("obsAluno").value.trim()||"",p_total:tot,p_itens:CART.map(c=>({offer_id:c.offer_id,nome:c.nome,img:c.img,qtd:c.qtd,moq:c.moq,brl:c.brl}))});
+      if(eL){alert("Não foi possível enviar: "+eL.message);return;}
+      localStorage.setItem("ev_lead_ok","1");
+      CART=[];updCart();$("obsAluno").value="";
+      alert("Cotação "+(num||"")+" enviada! 🎉\n\nNosso time vai entrar em contato pelo seu WhatsApp com o preço final da sua importação e todos os detalhes pra importar com nosso apoio e segurança.");
+      irCatalogo&&irCatalogo();
+    }catch(e){alert("Não foi possível enviar. Tente de novo.");}
+    return;
+  }
   const {data:cot,error}=await sb.from("cotacoes").insert({user_id:USER.id,total_estimado:tot,obs_aluno:$("obsAluno").value.trim()||null}).select().single();
   if(error){alert("Não foi possível enviar: "+error.message);return;}
   const itens=CART.map(c=>({cotacao_id:cot.id,offer_id:c.offer_id,nome:c.nome,img:c.img,qtd:c.qtd,moq:c.moq,brl_estimado_un:c.brl}));
@@ -624,6 +657,11 @@ async function abreMeus(){
 }
 
 boot();
+
+function abreAmostra(...a){
+  if(!USER){alert("📦 As amostras fazem parte da sua importação!\n\nEnvia sua cotação que nosso time cuida de tudo — inclusive de trazer amostras com fotos e vídeos reais pra você decidir com segurança.");return;}
+  return abreAmostra_real(...a);
+}
 </script>
 
 <div class="toast" id="toast"><span class="tk">✓</span><span id="toastMsg"></span></div>
