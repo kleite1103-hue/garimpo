@@ -218,7 +218,7 @@ input,textarea,select{font-family:inherit}
     
     <div class="nb soLogado" onclick="irMinhas()">Minhas cotações</div>
     <div class="nb dark" onclick="irCarrinho()">Cotação<span class="n" id="cartN">0</span></div>
-    <div id="chipUser" style="display:contents"><div class="uchip"><span class="uav" id="uAv">?</span><span id="uNome"></span><span class="sair" onclick="sair()">sair</span></div>
+    <div id="chipUser" style="display:contents"><div class="uchip"><span class="uav" id="uAv">?</span><span id="uNome"></span><span class="sair" onclick="sair()">sair</span></div></div><button class="btn sm ghost hidden" id="btnEntrarTop" onclick="abreLogin()">Entrar</button>
   </div>
 </div></div>
 
@@ -293,6 +293,7 @@ async function entrar(){
     }
   }catch(e){$("lgErr").textContent="Não deu: "+(e.message||e);$("lgErr").style.display="block";}
 }
+function _el(id){return document.getElementById(id)||{classList:{add(){},remove(){},toggle(){}},textContent:''};}
 function abreLogin(){$('vApp').classList.add('hidden');$('vLogin').classList.remove('hidden');}
 async function sair(){await sb.auth.signOut();location.reload();}
 
@@ -301,13 +302,13 @@ async function boot(){
   const {data:{session}}=await sb.auth.getSession();
   if(!session){
     document.querySelectorAll(".soLogado").forEach(e=>e.classList.add("hidden"));
-    $("chipUser").classList.add("hidden");$("btnEntrarTop").classList.remove("hidden");
+    _el("chipUser").classList.add("hidden");_el("btnEntrarTop").classList.remove("hidden");
     await carregaCatalogo();return;
   }
   USER=session.user;
   const {data:p}=await sb.from("perfis").select("*").eq("id",USER.id).single();
   PERFIL=p||{};
-  $("btnEntrarTop").classList.add("hidden");$("chipUser").classList.remove("hidden");
+  _el("btnEntrarTop").classList.add("hidden");_el("chipUser").classList.remove("hidden");
   const nome=PERFIL.nome||USER.email.split("@")[0];
   $("uNome").textContent=nome;$("uAv").textContent=nome.slice(0,2).toUpperCase();
   if(PERFIL&&(PERFIL.papel==="admin"||PERFIL.papel==="equipe"))
