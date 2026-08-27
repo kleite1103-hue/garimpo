@@ -449,7 +449,7 @@ async function enviarCotacao(pos){
 async function carregaMinhas(){
   const {data:cots}=await sb.from("cotacoes").select("*, cotacao_itens(*)").eq("user_id",USER.id).order("criado_em",{ascending:false});
   const {data:peds}=await sb.from("pedidos").select("*").eq("user_id",USER.id).order("criado_em",{ascending:false});
-  const stMap={nova:["env","Enviada — aguardando resposta"],em_cotacao:["env","Em cotação pelo time"],respondida:["resp","Respondida — preço firme chegou"],aceita:["ace","Aceita — virou pedido"],recusada:["rec","Recusada"],expirada:["exp","Expirada"],fechada:["exp","Fechada"]};
+  const stMap={nova:["env","Enviada — aguardando resposta"],em_cotacao:["env","Em cotação pelo time"],respondida:["resp","Respondida — preço final chegou"],aceita:["ace","Aceita — virou pedido"],recusada:["rec","Recusada"],expirada:["exp","Expirada"],fechada:["exp","Fechada"]};
   const ETAPAS=["confirmado","producao","embarcado","no_brasil","entregue"];
   const ELAB={confirmado:"Confirmado",producao:"Em produção",embarcado:"Embarcado",no_brasil:"No Brasil",entregue:"Entregue"};
   let h="";
@@ -635,7 +635,7 @@ boot();
       <h2 id="pmNome"></h2>
       <div class="pbadges" id="pmBadges"></div>
       <div class="pprice"><div class="row1"><span style="font-size:11px;color:var(--faint)">a partir de</span><span class="big" id="pmBrl"></span><span class="lab">/un · chegada no Brasil</span></div>
-        <div class="aviso"><b>*Estimativa</b> com câmbio do dia. O preço firme vem na resposta da sua cotação.</div></div>
+        <div class="aviso"><b>*Estimativa</b> com câmbio do dia. O preço final vem na resposta da sua cotação.</div></div>
       <div class="ptiers"><div class="th">Preço por quantidade (estimado)</div><div id="pmTiers"></div></div>
       <div class="pforn">🛡️ <div><b>Fornecedor verificado</b><div style="font-size:11px;color:var(--soft)" id="pmForn"></div></div></div>
       <div id="pmDesc" style="font-size:12px;color:var(--soft);line-height:1.55;margin:10px 0 2px"></div>
@@ -645,7 +645,7 @@ boot();
       </div>
       <button class="btn p full" onclick="addDoModal()">+ Adicionar à minha cotação</button>
       <button class="btn full" style="margin-top:8px;background:var(--panel);border:1.5px solid var(--ink)" onclick="pedirAmostra()">📦 Pedir amostra real (fotos e vídeo do produto)</button>
-      <div class="pnote">Sem compromisso. Você monta a lista, envia, e nosso time responde com o preço firme.</div>
+      <div class="pnote">Sem compromisso. Você monta a lista, envia, e nosso time responde com o preço final.</div>
     </div>
   </div>
 </div>
