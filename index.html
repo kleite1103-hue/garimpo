@@ -430,7 +430,7 @@ async function enviarCotacao(pos){
   if(!CART.length){alert("Adicione produtos antes de enviar.");return;}
   if(!pos){
     const g=await leadGate();
-    if(g==="limite"){alert("Sua cotação de demonstração já foi enviada! 🎉\n\nNosso time vai te chamar no WhatsApp pra apresentar o preço e liberar novas cotações na reunião.");return;}
+    if(g==="limite"){alert("Sua cotação já foi enviada! 🎉\n\nNosso time vai entrar em contato pelo seu WhatsApp com o preço firme e os próximos passos.");return;}
     if(g==="dados"){$("leadmodal").classList.add("show");return;}
   }
   const _m3=volCart()/1000;
@@ -675,7 +675,7 @@ boot();
 <div class="fmodal" id="leadmodal">
   <div class="fbox" style="max-width:430px">
     <h3 style="font-size:17px;font-weight:700">Antes de enviar sua cotação</h3>
-    <div style="font-size:12.5px;color:var(--soft);margin:6px 0 12px">Nosso time analisa cada cotação pessoalmente e te retorna com o preço firme. Completa seus dados:</div>
+    <div style="font-size:12.5px;color:var(--soft);margin:6px 0 12px">Nosso time analisa sua cotação pessoalmente e entra em contato pelo WhatsApp com o preço firme. Completa seus dados:</div>
     <input id="ldNome" placeholder="Seu nome completo *" style="width:100%;border:1.5px solid var(--line);border-radius:10px;padding:11px;font-size:13px;margin-bottom:8px"/>
     <input id="ldWhats" placeholder="WhatsApp com DDD *" style="width:100%;border:1.5px solid var(--line);border-radius:10px;padding:11px;font-size:13px;margin-bottom:8px"/>
     <input id="ldLoja" placeholder="Sua loja/Instagram (opcional)" style="width:100%;border:1.5px solid var(--line);border-radius:10px;padding:11px;font-size:13px;margin-bottom:12px"/>
