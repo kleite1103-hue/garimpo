@@ -275,9 +275,9 @@ async function gateEntrar(){
 async function sair(){await sb.auth.signOut();location.reload();}
 async function boot(){
   const {data:{session:_gate}}=await sb.auth.getSession();
-  if(!_gate){location.href="index.html";return;}
+  if(!_gate){mostraLoginTime();return;}
   const {data:pf}=await sb.from("perfis").select("papel").eq("id",_gate.user.id).single();
-  if(!pf||!["admin","equipe"].includes(pf.papel)){alert("Área restrita ao time.");location.href="index.html";return;}
+  if(!pf||!["admin","equipe"].includes(String(pf.papel).toLowerCase())){alert("Área restrita ao time.");location.href="index.html";return;}
 
   const {data:{session}}=await sb.auth.getSession();
   if(!session)return;
@@ -1121,6 +1121,29 @@ function passaFiltro(c){
   if(evFiltro==="cliente")return ev;
   if(evFiltro==="lead")return !!c.lead_nome&&!ev;
   return true;
+}
+
+
+function mostraLoginTime(){
+  const d=document.createElement("div");
+  d.id="gateTime";
+  d.style.cssText="position:fixed;inset:0;background:var(--bg,#FAF7F2);z-index:9999;display:flex;align-items:center;justify-content:center";
+  d.innerHTML=`<div style="width:min(360px,90vw);background:#fff;border:1px solid #E7E0D6;border-radius:16px;padding:26px;box-shadow:0 10px 40px rgba(0,0,0,.08)">
+    <div style="font-family:'Bebas Neue',sans-serif;font-size:15px;letter-spacing:.09em">EFEITO VENDAS</div>
+    <div style="font-family:'Bebas Neue',sans-serif;font-size:30px;line-height:1">na <span style="color:#D91F26">China</span></div>
+    <div style="font-size:12px;color:#8A8378;margin:6px 0 16px">Painel do time — entre com sua conta</div>
+    <input id="gtEmail" placeholder="email" style="width:100%;border:1.5px solid #E7E0D6;border-radius:10px;padding:11px;font-size:13px;margin-bottom:8px"/>
+    <input id="gtSenha" type="password" placeholder="senha" style="width:100%;border:1.5px solid #E7E0D6;border-radius:10px;padding:11px;font-size:13px;margin-bottom:12px" onkeydown="if(event.key==='Enter')gateEntrar()"/>
+    <button onclick="gateEntrar()" style="width:100%;background:#1A1A1A;color:#fff;border:none;border-radius:10px;padding:12px;font-weight:700;cursor:pointer">Entrar no painel</button>
+    <div id="gtErr" style="font-size:11.5px;color:#D91F26;margin-top:8px"></div>
+  </div>`;
+  document.body.appendChild(d);
+}
+async function gateEntrar(){
+  const {error}=await sb.auth.signInWithPassword({email:$("gtEmail").value.trim(),password:$("gtSenha").value});
+  if(error){$("gtErr").textContent="Login inválido — confere email e senha.";return;}
+  document.getElementById("gateTime").remove();
+  boot();
 }
 
 boot();
