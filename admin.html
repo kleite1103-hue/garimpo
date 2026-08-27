@@ -123,6 +123,12 @@ tr.click{cursor:pointer}tr.click:hover{background:#FAFAFB}
 .fitem .fp .v2{font-size:15px;font-weight:800}
 .fitem .fp .l2{font-size:9.5px;color:var(--faint)}
 .fclose{position:absolute;top:12px;right:12px;width:32px;height:32px;border-radius:50%;background:var(--panel);border:1px solid var(--line);font-size:15px}
+
+@media(max-width:700px){
+  .pprow{grid-template-columns:1fr 1fr !important}
+  .pprow input:first-child{grid-column:1/-1}
+  .leadinfo{display:block;font-size:11px !important;line-height:1.8;margin-top:4px}
+}
 </style></head>
 <body>
 
@@ -384,7 +390,7 @@ async function abreCot(id){
   const marg=Number((CFGS.margem_time||{}).pct||35);
   $("cotDetail").innerHTML=`<div class="detail">
     <div class="panel">
-      <div class="ph2">Detalhe ${c.numero}${c.lead_nome?` · <span style="font-size:12px;font-weight:600">👤 ${c.lead_nome} · 📱 <a href="https://wa.me/55${(c.lead_whatsapp||'').replace(/\D/g,'')}" target="_blank" style="color:var(--green)">${c.lead_whatsapp}</a>${c.lead_quiz?`${c.lead_quiz.cliente?' · ⭐ '+c.lead_quiz.cliente:''} · 💰 ${c.lead_quiz.faturamento} · 🛒 ${c.lead_quiz.canal} · ✈️ ${c.lead_quiz.importa} · 🏛 ${c.lead_quiz.regime}`:(c.lead_loja?' · '+c.lead_loja:'')}</span>`:''}<span style="margin-left:auto;font-weight:400;font-size:11px;color:var(--faint)">${new Date(c.criado_em).toLocaleString('pt-BR')}</span></div>
+      <div class="ph2">Detalhe ${c.numero}${c.lead_nome?` <span class="leadinfo" style="font-size:12px;font-weight:600">👤 ${c.lead_nome} · 📱 <a href="https://wa.me/55${(c.lead_whatsapp||'').replace(/\D/g,'')}" target="_blank" style="color:var(--green)">${c.lead_whatsapp}</a>${c.lead_quiz?`${c.lead_quiz.cliente?' · ⭐ '+c.lead_quiz.cliente:''} · 💰 ${c.lead_quiz.faturamento} · 🛒 ${c.lead_quiz.canal} · ✈️ ${c.lead_quiz.importa} · 🏛 ${c.lead_quiz.regime}`:(c.lead_loja?' · '+c.lead_loja:'')}</span>`:''}<span style="margin-left:auto;font-weight:400;font-size:11px;color:var(--faint)">${new Date(c.criado_em).toLocaleString('pt-BR')}</span></div>
       <div class="solic">
         <div class="f2"><div class="k">Solicitante</div><div class="v">${perfil.nome||'—'}</div></div>
         <div class="f2"><div class="k">WhatsApp</div><div class="v">${perfil.whatsapp||'—'}</div></div>
@@ -775,6 +781,8 @@ function abreCopiloto(){
         <div style="margin-top:8px;font-size:11.5px;font-weight:700">📥 Resposta deste fornecedor:</div>
         <textarea id="cpResp${ix}" style="width:100%;min-height:56px;border:1.5px solid var(--line);border-radius:8px;padding:8px;font-size:11.5px;font-family:inherit" placeholder="cola a resposta do chat ${ref} aqui…">${(CP[i.id]&&CP[i.id].raw)?CP[i.id].raw:""}</textarea>
         <button class="btn sm p" style="margin-top:5px" onclick="cpParseItem(${ix})">Extrair deste item</button>
+        <button class="btn sm ghost" onclick="$('cpFile${ix}').click()">📷 Ler print da conversa</button>
+        <input type="file" id="cpFile${ix}" accept="image/*" style="display:none" onchange="cpPrint(${ix},this)"/>
         <span id="cpOk${ix}" style="font-size:11.5px;margin-left:6px;color:var(--green)"></span>
       </div>`;
     }).join("")+`<div id="cpResumo" style="background:var(--goldbg);border:1px solid #F0E2C4;border-radius:10px;padding:10px 12px;font-size:12.5px;display:none"></div>
@@ -989,9 +997,11 @@ function msgCliente(){
 }
 
 
-function abreProposta(){
+async function abreProposta(){
   const c=selCot;if(!c)return;
   const its=c.cotacao_itens||[];
+  const {data:cf}=await sb.from("catalogo").select("offer_id,forn_nome,forn_anos").in("offer_id",its.map(i=>i.offer_id));
+  const FB={};(cf||[]).forEach(x=>FB[x.offer_id]=x);
   const P=(c.proposta&&typeof c.proposta==="object")?c.proposta:{};
   const dd=window._cpDados||{};
   const fx=(window._USD?window._USD/7.2:0.76);
@@ -1000,9 +1010,10 @@ function abreProposta(){
     const pit=P[it.id]||{forn:[{},{},{}],midias:""};
     const sug=dd[ix]&&_melhor(dd[ix].parsed).preco_unit_rmb?Math.round(_melhor(dd[ix].parsed).preco_unit_rmb*fx*marg*100)/100:"";
     const org=(window._cotOrigem||{})[it.offer_id]||{};
-    const autoA=org.empresa||"";
+    const fb=FB[it.offer_id]||{};
+    const autoA=org.empresa||(fb.forn_nome?`${fb.forn_nome}${fb.forn_anos?" · "+fb.forn_anos+" anos":""}`:"");
     const fr=(i)=>{const f=(pit.forn||[])[i]||{};const valNome=f.nome||(i===0?autoA:"");return `
-      <div style="display:grid;grid-template-columns:1.2fr .7fr .5fr .8fr;gap:5px;margin-top:4px">
+      <div class="pprow" style="display:grid;grid-template-columns:1.2fr .7fr .5fr .8fr;gap:5px;margin-top:4px">
         <input id="pp_n${it.id}_${i}" placeholder="Fornecedor ${"ABC"[i]} (ex.: Yiwu Taotao Pet · fábrica · 17 anos)" value="${valNome}" style="border:1px solid var(--line);border-radius:8px;padding:7px;font-size:11.5px"/>${i>0?`<input id="pp_l${it.id}_${i}" placeholder="link do produto do fornecedor ${"ABC"[i]}" style="grid-column:1/-1;border:1px dashed var(--line);border-radius:8px;padding:6px;font-size:11px" onchange="ppPuxa(${it.id},${i})"/>`:""}
         <input id="pp_p${it.id}_${i}" placeholder="R$/un ${i===0&&sug?("sug. "+sug):""}" value="${f.preco||""}" style="border:1px solid var(--line);border-radius:8px;padding:7px;font-size:11.5px"/>
         <input id="pp_m${it.id}_${i}" placeholder="MOQ" value="${f.moq||""}" style="border:1px solid var(--line);border-radius:8px;padding:7px;font-size:11.5px"/>
@@ -1144,6 +1155,42 @@ async function gateEntrar(){
   if(error){$("gtErr").textContent="Login inválido — confere email e senha.";return;}
   document.getElementById("gateTime").remove();
   boot();
+}
+
+
+async function cpPrint(ix,inp){
+  const f=inp.files&&inp.files[0];if(!f)return;
+  $("cpOk"+ix).textContent="📷 lendo o print…";
+  const b64=await new Promise(res=>{
+    const img=new Image(),rd=new FileReader();
+    rd.onload=()=>{img.onload=()=>{
+      const cv=document.createElement("canvas");
+      const esc=Math.min(1,1100/Math.max(img.width,img.height));
+      cv.width=img.width*esc;cv.height=img.height*esc;
+      cv.getContext("2d").drawImage(img,0,0,cv.width,cv.height);
+      res(cv.toDataURL("image/jpeg",0.82).split(",")[1]);
+    };img.src=rd.result;};
+    rd.readAsDataURL(f);
+  });
+  const {data:{session}}=await sb.auth.getSession();
+  const hd={"Content-Type":"application/json","Authorization":"Bearer "+session.access_token,"apikey":CFG.SUPABASE_ANON};
+  try{
+    const r=await fetch(CFG.SUPABASE_URL+"/functions/v1/buscafoto",{method:"POST",headers:hd,body:JSON.stringify({action:"parse_resposta",image:b64,texto:($("cpResp"+ix).value||"").trim()})});
+    const j=await r.json();
+    if(j.error||!j.parsed){$("cpOk"+ix).textContent="erro no print";alert(j.error||"Não consegui ler — a função nova está publicada?");return;}
+    const p=j.parsed;const it=(selCot.cotacao_itens||[])[ix];
+    window._cpDados[ix]={parsed:p,qtd:it.qtd};
+    try{
+      const CP=(selCot.copiloto&&typeof selCot.copiloto==="object")?selCot.copiloto:{};
+      CP[it.id]={raw:"[print da conversa] "+(p.resumo||""),parsed:p,quando:new Date().toISOString()};
+      selCot.copiloto=CP;
+      sb.from("cotacoes").update({copiloto:CP}).eq("id",selCot.id).then(()=>{});
+    }catch(e){}
+    const vs=p.variacoes||[];
+    $("cpOk"+ix).innerHTML=(vs.length>1?`✓ print lido · ${vs.length} variações`:`✓ print lido · ¥${p.preco_unit_rmb||"?"}/un · ${p.prazo_dias||"?"}d`)+(p.resumo?` — ${p.resumo.slice(0,80)}`:"");
+    cpResumo&&cpResumo();
+    toast&&toast("Print lido e salvo ✓");
+  }catch(e){$("cpOk"+ix).textContent="erro no print";}
 }
 
 boot();
