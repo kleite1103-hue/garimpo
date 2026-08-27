@@ -265,6 +265,7 @@ body{-webkit-font-smoothing:antialiased}
           <div style="font-size:11.5px;color:var(--soft);margin:4px 0 10px">Nosso time monta sua importação e responde no seu WhatsApp — produto, frete e impostos fechados.</div>
           <input id="liNome" placeholder="Seu nome completo *" style="width:100%;border:1.5px solid var(--line);border-radius:10px;padding:11px;font-size:13px;margin-bottom:8px;background:#fff;color:var(--ink)"/>
           <input id="liWhats" placeholder="WhatsApp com DDD *" style="width:100%;border:1.5px solid var(--line);border-radius:10px;padding:11px;font-size:13px;margin-bottom:8px;background:#fff;color:var(--ink)"/>
+          <select id="liCli" style="width:100%;border:1.5px solid var(--line);border-radius:10px;padding:11px;font-size:13px;margin-bottom:8px;background:#fff;color:var(--ink)"><option value="">Você já é aluno(a) ou cliente Efeito Vendas? *</option><option>Sou aluno(a) Efeito Vendas</option><option>Sou cliente de importação</option><option>Aluno(a) + cliente</option><option>Ainda não</option></select>
           <select id="liFat" style="width:100%;border:1.5px solid var(--line);border-radius:10px;padding:11px;font-size:13px;margin-bottom:8px;background:#fff;color:var(--ink)"><option value="">Quanto você fatura por mês? *</option><option>Ainda não vendo</option><option>Até R$ 10 mil</option><option>R$ 10 a 50 mil</option><option>R$ 50 a 200 mil</option><option>Acima de R$ 200 mil</option></select>
           <select id="liCanal" style="width:100%;border:1.5px solid var(--line);border-radius:10px;padding:11px;font-size:13px;margin-bottom:8px;background:#fff;color:var(--ink)"><option value="">Onde você vende hoje? *</option><option>Shopee</option><option>Mercado Livre</option><option>Shopee + Mercado Livre</option><option>Loja própria / Instagram</option><option>Ainda não vendo</option></select>
           <select id="liImp" style="width:100%;border:1.5px solid var(--line);border-radius:10px;padding:11px;font-size:13px;margin-bottom:8px;background:#fff;color:var(--ink)"><option value="">Você já importa? *</option><option>Nunca importei</option><option>Já tentei, não deu certo</option><option>Importo às vezes</option><option>Importo sempre</option></select>
@@ -472,8 +473,8 @@ async function leadGate(){
 async function leadSalva(){
   const nome=$("ldNome").value.trim(),whats=$("ldWhats").value.replace(/\D/g,"");
   if(nome.length<5||whats.length<10){alert("Preencha nome completo e WhatsApp com DDD.");return;}
-  const quiz={faturamento:$("ldFat").value,canal:$("ldCanal").value,importa:$("ldImp").value,regime:$("ldReg").value};
-  if(!quiz.faturamento||!quiz.canal||!quiz.importa||!quiz.regime){alert("Responde as 4 perguntinhas — é o que nosso time usa pra montar sua importação certa.");return;}
+  const quiz={cliente:$("ldCli").value,faturamento:$("ldFat").value,canal:$("ldCanal").value,importa:$("ldImp").value,regime:$("ldReg").value};
+  if(!quiz.cliente||!quiz.faturamento||!quiz.canal||!quiz.importa||!quiz.regime){alert("Responde as perguntinhas — é o que nosso time usa pra montar sua importação certa.");return;}
   if(USER){await sb.from("perfis").update({nome,whatsapp:whats}).eq("id",USER.id);}
   window._ldNome=nome;window._ldWhats=whats;window._ldQuiz=quiz;
   $("leadmodal").classList.remove("show");
@@ -492,9 +493,9 @@ async function enviarCotacao(pos){
   if(!USER){
     if(localStorage.getItem("ev_lead_ok")&&!pos){alert("Sua cotação já está com nosso time! 🎉\n\nVocê vai receber no WhatsApp o preço final da sua importação e todos os detalhes pra fazer tudo com nosso apoio e segurança — do pedido à chegada no Brasil.");return;}
     const nome=$("liNome").value.trim(),whats=$("liWhats").value.replace(/\D/g,"");
-    const quiz={faturamento:$("liFat").value,canal:$("liCanal").value,importa:$("liImp").value,regime:$("liReg").value};
+    const quiz={cliente:$("liCli").value,faturamento:$("liFat").value,canal:$("liCanal").value,importa:$("liImp").value,regime:$("liReg").value};
     if(nome.length<5||whats.length<10){alert("Preencha seu nome completo e WhatsApp com DDD.");$("liNome").focus();return;}
-    if(!quiz.faturamento||!quiz.canal||!quiz.importa||!quiz.regime){alert("Responde as 4 perguntinhas — é o que nosso time usa pra montar sua importação certa.");return;}
+    if(!quiz.cliente||!quiz.faturamento||!quiz.canal||!quiz.importa||!quiz.regime){alert("Responde as perguntinhas — é o que nosso time usa pra montar sua importação certa.");return;}
     window._ldNome=nome;window._ldWhats=whats;window._ldQuiz=quiz;
     {
     try{
@@ -756,6 +757,7 @@ function abreAmostra(...a){
     <div style="font-size:12.5px;color:var(--soft);margin:6px 0 12px">Nosso time monta sua importação pessoalmente: você recebe no WhatsApp o preço final fechado — produto, frete e prazos — e todos os detalhes pra importar com o apoio e a segurança da Efeito Vendas. Completa seus dados:</div>
     <input id="ldNome" placeholder="Seu nome completo *" style="width:100%;border:1.5px solid var(--line);border-radius:10px;padding:11px;font-size:13px;margin-bottom:8px"/>
     <input id="ldWhats" placeholder="WhatsApp com DDD *" style="width:100%;border:1.5px solid var(--line);border-radius:10px;padding:11px;font-size:13px;margin-bottom:8px"/>
+    <select id="ldCli" style="width:100%;border:1.5px solid var(--line);border-radius:10px;padding:11px;font-size:13px;margin-bottom:8px;background:#fff;color:var(--ink)"><option value="">Já é aluno(a) ou cliente Efeito Vendas? *</option><option>Sou aluno(a) Efeito Vendas</option><option>Sou cliente de importação</option><option>Aluno(a) + cliente</option><option>Ainda não</option></select>
     <select id="ldFat" style="width:100%;border:1.5px solid var(--line);border-radius:10px;padding:11px;font-size:13px;margin-bottom:8px;background:#fff;color:var(--ink)">
       <option value="">Quanto você fatura por mês? *</option>
       <option>Ainda não vendo</option><option>Até R$ 10 mil</option><option>R$ 10 a 50 mil</option><option>R$ 50 a 200 mil</option><option>Acima de R$ 200 mil</option>
