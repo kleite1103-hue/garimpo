@@ -425,7 +425,8 @@ async function abreCot(id){
           <button class="btn ghost" onclick="salvarStatus()">Salvar status/responsável</button>
           <button class="btn s" onclick="abreCopiloto()">🤝 Copiloto China (perguntar à fábrica)</button>
           <button class="btn ghost" onclick="usarRespostas()">⚡ Usar respostas da fábrica no preço</button>
-          <button class="btn g" onclick="msgCliente()">📱 Gerar mensagem pro cliente</button>
+          <button class="btn g" onclick="abreProposta()">📄 Montar proposta (PDF)</button>
+          <button class="btn ghost" onclick="msgCliente()">📱 Mensagem curta (WhatsApp)</button>
         </div>
       </div>
     </div>
@@ -750,8 +751,8 @@ function abreCopiloto(){
     $("cpMsgs").innerHTML=its.map((i,ix)=>{
       const ref=`${selCot.numero}-${ix+1}`;
       const extras=(window._cpExtras||{})[ix]||[];
-      let n=5;const linhasExtras=extras.map(e=>`${n++}) ${e}`).join("\n");
-      const msg=`您好！我们是巴西的采购公司（参考号 ${ref}），想订购这个产品 ${i.qtd} 个。请告知：\n1) ${i.qtd}个的准确单价（含运费到义乌仓库）\n2) 一箱装多少个？外箱尺寸（长宽高cm）和毛重？\n3) ${i.qtd}个总共多少立方（CBM）？\n4) 生产周期几天？${linhasExtras?"\n"+linhasExtras:""}\n谢谢！`;
+      let n=6;const linhasExtras=extras.map(e=>`${n++}) ${e}`).join("\n");
+      const msg=`您好！我们是巴西的采购公司（参考号 ${ref}），想订购这个产品 ${i.qtd} 个。请告知：\n1) ${i.qtd}个的准确单价（含运费到义乌仓库）\n2) 一箱装多少个？外箱尺寸（长宽高cm）和毛重？\n3) ${i.qtd}个总共多少立方（CBM）？\n4) 生产周期几天？\n5) 请发这个产品的实拍照片和视频（发客户看的，越清晰越好）${linhasExtras?"\n"+linhasExtras:""}\n谢谢！`;
       return `<div style="border:1px solid var(--line);border-radius:11px;padding:11px;margin-bottom:9px" id="cpItem${ix}">
         <div style="font-size:12px;font-weight:700;margin-bottom:5px"><span class="mono" style="color:var(--orange)">${ref}</span> · ${i.nome} · ${i.qtd} un ${urls[i.offer_id]?`· <a href="${urls[i.offer_id]}" target="_blank" style="color:var(--green);font-weight:700">abrir chat ↗</a>`:''}</div>
         <textarea readonly style="width:100%;min-height:80px;border:1px solid var(--line2);border-radius:8px;padding:8px;font-size:11.5px;font-family:inherit" onclick="this.select()">${msg}</textarea>
@@ -968,6 +969,105 @@ function msgCliente(){
   const msg=`Olá${nome?" "+nome:""}! 🇨🇳 Sua cotação ${c.numero} na Efeito Vendas na China ficou pronta:\n\n${linhas}\n\n💰 *Valor final da importação: R$ ${brl(firme)}*\n(produto + frete internacional + impostos — sem surpresa)\n⏱ Prazo estimado: ${$("cPrazo").value||"35–45 dias"}\n\nFazemos tudo com você — do pedido na fábrica à chegada no Brasil, com nosso apoio e segurança. Quer seguir? É só responder aqui! 🚀`;
   navigator.clipboard.writeText(msg);
   alert("Mensagem copiada! ✓\n\nCola no WhatsApp do cliente.\n\n———\n"+msg.slice(0,400));
+}
+
+
+function abreProposta(){
+  const c=selCot;if(!c)return;
+  const its=c.cotacao_itens||[];
+  const P=(c.proposta&&typeof c.proposta==="object")?c.proposta:{};
+  const dd=window._cpDados||{};
+  const fx=(window._USD?window._USD/7.2:0.76);
+  const marg=1+((parseFloat(($("cMarg")&&$("cMarg").value||"0").replace(",","."))||0)/100);
+  const box=its.map((it,ix)=>{
+    const pit=P[it.id]||{forn:[{},{},{}],midias:""};
+    const sug=dd[ix]&&_melhor(dd[ix].parsed).preco_unit_rmb?Math.round(_melhor(dd[ix].parsed).preco_unit_rmb*fx*marg*100)/100:"";
+    const fr=(i)=>{const f=(pit.forn||[])[i]||{};return `
+      <div style="display:grid;grid-template-columns:1.2fr .7fr .5fr .8fr;gap:5px;margin-top:4px">
+        <input id="pp_n${it.id}_${i}" placeholder="Fornecedor ${"ABC"[i]} (ex.: Xin*** Fábrica · 8 anos)" value="${f.nome||""}" style="border:1px solid var(--line);border-radius:8px;padding:7px;font-size:11.5px"/>
+        <input id="pp_p${it.id}_${i}" placeholder="R$/un ${i===0&&sug?("sug. "+sug):""}" value="${f.preco||""}" style="border:1px solid var(--line);border-radius:8px;padding:7px;font-size:11.5px"/>
+        <input id="pp_m${it.id}_${i}" placeholder="MOQ" value="${f.moq||""}" style="border:1px solid var(--line);border-radius:8px;padding:7px;font-size:11.5px"/>
+        <input id="pp_z${it.id}_${i}" placeholder="prazo (ex.: 7d)" value="${f.prazo||""}" style="border:1px solid var(--line);border-radius:8px;padding:7px;font-size:11.5px"/>
+      </div>`;};
+    return `<div class="panel" style="margin-top:10px;padding:12px">
+      <div style="display:flex;gap:8px;align-items:center"><img src="${it.img}" style="width:40px;height:40px;border-radius:8px;object-fit:cover"/><b style="font-size:12.5px">${it.nome}</b><span style="margin-left:auto;font-size:11px;color:var(--faint)">${it.qtd} un</span></div>
+      ${fr(0)}${fr(1)}${fr(2)}
+      <textarea id="pp_md${it.id}" placeholder="Links de fotos/vídeos REAIS da fábrica (um por linha — peça no Copiloto, suba no Drive e cole aqui)" style="width:100%;border:1px solid var(--line);border-radius:8px;padding:7px;font-size:11px;margin-top:6px;min-height:44px">${pit.midias||""}</textarea>
+    </div>`;
+  }).join("");
+  $("cotDetail").insertAdjacentHTML("beforeend",`<div id="ppBox" class="panel" style="margin-top:14px;padding:14px;border-color:#F0D9B8">
+    <div class="ph2">📄 Proposta de importação — até 3 fornecedores por produto</div>${box}
+    <div style="display:flex;gap:8px;margin-top:10px">
+      <button class="btn p" onclick="salvaProposta()">Salvar proposta</button>
+      <button class="btn g" onclick="gerarPDF()">Gerar PDF</button>
+      <button class="btn ghost" onclick="$('ppBox').remove()">fechar</button>
+    </div></div>`);
+  document.getElementById("ppBox").scrollIntoView({behavior:"smooth"});
+}
+async function salvaProposta(){
+  const c=selCot;const its=c.cotacao_itens||[];const P={};
+  its.forEach(it=>{
+    P[it.id]={forn:[0,1,2].map(i=>({nome:$(`pp_n${it.id}_${i}`).value.trim(),preco:$(`pp_p${it.id}_${i}`).value.trim(),moq:$(`pp_m${it.id}_${i}`).value.trim(),prazo:$(`pp_z${it.id}_${i}`).value.trim()})).filter(f=>f.nome||f.preco),
+      midias:$(`pp_md${it.id}`).value.trim()};
+  });
+  const {error}=await sb.from("cotacoes").update({proposta:P}).eq("id",c.id);
+  if(error){alert("Salvar falhou: "+error.message+"\n(rodou o SQL da proposta?)");return;}
+  selCot.proposta=P;toast&&toast("Proposta salva ✓");
+}
+function gerarPDF(){
+  const c=selCot;if(!c)return;
+  const P=(c.proposta&&typeof c.proposta==="object")?c.proposta:{};
+  const its=c.cotacao_itens||[];
+  const nome=c.lead_nome||"Cliente";
+  const hoje=new Date().toLocaleDateString("pt-BR");
+  const firme=window._firme||c.total_firme;
+  const bloco=its.map(it=>{
+    const pit=P[it.id]||{forn:[],midias:""};
+    const forn=(pit.forn||[]).filter(f=>f.nome||f.preco);
+    const rows=forn.map((f,i)=>`<tr ${i===0?'class="best"':''}><td>${"ABC"[i]}</td><td>${f.nome||"—"}</td><td><b>R$ ${f.preco||"—"}/un</b></td><td>${f.moq||"—"}</td><td>${f.prazo||"—"}</td></tr>`).join("")
+      ||`<tr class="best"><td>A</td><td>Fornecedor verificado</td><td><b>R$ ${Number(it.brl_estimado_un).toFixed(2)}/un</b></td><td>${it.moq}</td><td>—</td></tr>`;
+    const fotos=(pit.midias||"").split("\n").map(s=>s.trim()).filter(Boolean);
+    const imgs=fotos.filter(u=>/\.(jpe?g|png|webp)(\?|$)/i.test(u)).slice(0,4).map(u=>`<img src="${u}"/>`).join("");
+    const vids=fotos.filter(u=>!/\.(jpe?g|png|webp)(\?|$)/i.test(u)).map(u=>`<a href="${u}">🎬 Ver vídeo real do produto</a>`).join(" · ");
+    return `<section>
+      <div class="prod"><img src="${it.img}"/><div><h3>${it.nome}</h3><span>${it.qtd} unidades</span></div></div>
+      <table><tr><th></th><th>Fornecedor</th><th>Valor final no Brasil*</th><th>Mínimo</th><th>Produção</th></tr>${rows}</table>
+      ${imgs?`<div class="midias">${imgs}</div>`:""}${vids?`<div class="vids">${vids}</div>`:""}
+    </section>`;
+  }).join("");
+  const w=window.open("","_blank");
+  w.document.write(`<!doctype html><html><head><meta charset="utf-8"><title>Proposta ${c.numero} — Efeito Vendas na China</title><style>
+    @page{size:A4;margin:14mm}
+    body{font-family:'Segoe UI',Arial,sans-serif;color:#1A1A1A;margin:0}
+    .top{display:flex;justify-content:space-between;align-items:center;border-bottom:3px solid #D91F26;padding-bottom:10px}
+    .logo{font-family:Arial Black,Arial;font-size:20px;letter-spacing:.5px}.logo i{color:#D91F26;font-style:normal}
+    .meta{text-align:right;font-size:11px;color:#666}
+    h2{font-size:15px;margin:16px 0 4px}
+    .cliente{font-size:12px;color:#444}
+    section{margin:14px 0;page-break-inside:avoid;border:1px solid #E7E0D6;border-radius:10px;padding:12px}
+    .prod{display:flex;gap:10px;align-items:center}.prod img{width:64px;height:64px;border-radius:8px;object-fit:cover}
+    .prod h3{margin:0;font-size:13px}.prod span{font-size:11px;color:#777}
+    table{width:100%;border-collapse:collapse;margin-top:8px;font-size:11.5px}
+    th{text-align:left;color:#888;font-weight:600;padding:4px 6px;border-bottom:1px solid #eee}
+    td{padding:6px}tr.best td{background:#F1F7F3;font-weight:600}
+    .midias{display:flex;gap:6px;margin-top:8px}.midias img{width:86px;height:86px;object-fit:cover;border-radius:8px;border:1px solid #eee}
+    .vids{font-size:11.5px;margin-top:6px}.vids a{color:#D91F26}
+    .total{background:#1A1A1A;color:#fff;border-radius:10px;padding:14px;display:flex;justify-content:space-between;align-items:center;margin-top:16px}
+    .total b{font-size:19px}.total small{color:#bbb}
+    .foot{font-size:10.5px;color:#777;margin-top:12px;line-height:1.5}
+  </style></head><body>
+    <div class="top"><div class="logo">EFEITO VENDAS <i>na China</i></div>
+    <div class="meta">Proposta de importação <b>${c.numero}</b><br>${hoje} · validade 7 dias</div></div>
+    <h2>Proposta preparada para ${nome}</h2>
+    <div class="cliente">Cotação analisada pessoalmente pelo nosso time — preços de fábrica verificada, com frete internacional e impostos considerados.</div>
+    ${bloco}
+    <div class="total"><span>💰 Valor final da importação<br><small>produto + frete internacional + impostos — sem surpresa</small></span><b>${firme?"R$ "+brl(firme):"sob confirmação"}</b></div>
+    <div class="foot">⏱ Prazo estimado: ${($("cPrazo")&&$("cPrazo").value)||c.prazo_estimado||"35–45 dias"} · *Valores por unidade na quantidade cotada.<br>
+    Fazemos tudo com você — do pedido na fábrica à chegada no Brasil, com o apoio e a segurança da Efeito Vendas na China. 🇨🇳<br>
+    efeitovendasnachina.com.br</div>
+  </body></html>`);
+  w.document.close();
+  setTimeout(()=>{try{w.focus();w.print();}catch(e){}},900);
 }
 
 boot();
