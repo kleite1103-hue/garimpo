@@ -198,6 +198,10 @@ input,textarea,select{font-family:inherit}
 @media(min-width:1500px){.grid{grid-template-columns:repeat(auto-fill,minmax(240px,1fr))}}
 body{-webkit-font-smoothing:antialiased}
 .card img{background:#F3EFE9}
+.chegada .pnote{font-size:10.5px;font-weight:700;color:var(--green);margin-top:1px}
+#pmBanner{background:#F1F7F3;border:1.5px solid #CDE6D9;border-radius:12px;padding:10px 14px;margin:8px 0}
+#pmBanner .t{font-size:10.5px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:var(--green)}
+#pmBanner .s{font-size:11.5px;color:var(--soft);margin-top:2px}
 </style></head>
 <body>
 
@@ -379,16 +383,13 @@ function filtered(){
   else L.sort((a,b)=>vnum(b.vendas)-vnum(a.vendas));
   return L;
 }
+function mini(u){return u&&u.includes('alicdn.com')?u+'_360x360q75.jpg':u;}
 function card(p){
   const fx=(p.faixas_brl||[]).slice(0,2).map(f=>`<div class="trow"><span>${f.faixa||'qualquer'}</span><b>R$ ${brl(f.brl)}</b></div>`).join("")||`<div class="trow"><span>unidade</span><b>R$ ${brl(p.brl)}</b></div>`;
   const w=p.certificacao?`<span class="warnb">⚠ ${p.certificacao}</span>`:"";
-  return `<article class="card" onclick="abreProd(\'${p.offer_id}\')" style="cursor:pointer"><div class="thumb"><img loading="lazy" src="${p.img}" alt=""/><span class="bdg">▲ ${p.vendas||''}</span>${w}</div>
+  return `<article class="card" onclick="abreProd(\'${p.offer_id}\')" style="cursor:pointer"><div class="thumb"><img loading="lazy" src="${mini(p.img)}" alt=""/><span class="bdg">▲ ${p.vendas||''}</span>${w}</div>
    <div class="cbody"><div class="pname">${p.nome}</div>
-    <div class="chegada" style="background:#F1F7F3;border:1.5px solid #CDE6D9;border-radius:12px;padding:10px 12px">
-      <div style="font-size:10.5px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:var(--green)">✈️ Valor final no Brasil</div>
-      <span class="big">R$ ${brl(p.brl)}</span><span class="lab">/un*</span>
-      <div style="font-size:11px;color:var(--soft);margin-top:2px">já considerando <b>frete internacional + impostos</b></div>
-    </div>
+    <div class="chegada"><span class="big">R$ ${brl(p.brl)}</span><span class="lab">/un no Brasil*</span><div class="pnote">✈️ c/ frete + impostos</div></div>
     <div class="tiers"><div class="th">Preço por quantidade</div>${fx}</div>
     <div class="metarow"><span class="moq">MOQ <b>${p.moq} un</b></span><span class="sales">▲ ${p.vendas||'—'}</span></div>
     <div class="forn">✓ Fornecedor verificado${p.forn_anos?' · '+p.forn_anos+(p.forn_anos>1?' anos':' ano'):''}</div>
@@ -424,7 +425,7 @@ function irMinhas(){$("pCat").classList.add("hidden");$("pCart").classList.add("
 function renderCart(){setTimeout(desenhaCubo,0);
   $("nItens").textContent=CART.length;
   $("cartItems").innerHTML=CART.length?CART.map((c,i)=>`
-   <div class="item"><img src="${c.img}"/><div class="in">
+   <div class="item"><img src="${mini(c.img)}"/><div class="in">
      <div class="nm">${c.nome}</div>
      <div class="est">estimado <b>R$ ${brl(c.brl)}/un</b> · subtotal R$ ${brl(c.brl*c.qtd)}</div>
      <div style="font-size:11px;color:var(--faint)">mínimo ${c.moq} un</div>
@@ -571,7 +572,7 @@ function abreProd(id){
   $("pmForn").textContent=(p.forn_nome?p.forn_nome+" · ":"")+(p.forn_anos?p.forn_anos+(p.forn_anos>1?" anos":" ano")+" de operação · ":"")+(fmtV(p.vendas)||"")+" vendas · avaliado pela nossa curadoria";
   $("pmMoq").textContent=p.moq||1;$("pmQty").value=p.moq||1;
   const gal=((p.imgs&&p.imgs.length)?p.imgs:[p.img]).filter(Boolean);
-  $("pmThumbs").innerHTML=gal.length>1?gal.map((u,i)=>`<img src="${u}" style="width:52px;height:52px;border-radius:8px;object-fit:cover;cursor:pointer;border:2px solid ${i===0?'var(--orange)':'transparent'}" onclick="$('pmImg').src='${u}';[...this.parentNode.children].forEach(x=>x.style.borderColor='transparent');this.style.borderColor='var(--orange)'"/>`).join(""):"";
+  $("pmThumbs").innerHTML=gal.length>1?gal.map((u,i)=>`<img src="${mini(u)}" style="width:52px;height:52px;border-radius:8px;object-fit:cover;cursor:pointer;border:2px solid ${i===0?'var(--orange)':'transparent'}" onclick="$('pmImg').src='${u}';[...this.parentNode.children].forEach(x=>x.style.borderColor='transparent');this.style.borderColor='var(--orange)'"/>`).join(""):"";
   $("pmDesc").textContent=(p.descricao||"").slice(0,300);
   const rg=document.getElementById("pmUnM3");if(rg)rg.remove();
   if(p.volume_l>0){const d=document.createElement("div");d.id="pmUnM3";d.style.cssText="font-size:11.5px;color:var(--soft);margin-top:3px";d.textContent=`📐 Cabem ~${Math.floor(1000/p.volume_l)} unidades por m³ (mínimo de importação: 1 m³ por pedido, pode misturar produtos)`;document.getElementById("pmDesc").after(d);}
@@ -587,7 +588,7 @@ function addDoModal(){
   const q=Math.max(pmProd.moq||1,parseInt($("pmQty").value)||1);
   const ex=CART.find(x=>x.offer_id===pmProd.offer_id);
   if(ex)ex.qtd+=q;else CART.push({offer_id:pmProd.offer_id,nome:pmProd.nome,img:pmProd.img,moq:pmProd.moq||1,qtd:q,brl:pmProd.brl});
-  updCart();fechaProd();showToast("Adicionado à sua cotação");
+  updCart();fechaProd();irCarrinho();showToast("Adicionado à sua cotação");
 }
 
 let fotoData=null,fPoll=null;
@@ -711,7 +712,7 @@ function abreAmostra(...a){
     <div class="pinfo">
       <h2 id="pmNome"></h2>
       <div class="pbadges" id="pmBadges"></div>
-      <div class="pprice"><div class="row1"><span style="font-size:11px;color:var(--faint)">a partir de</span><span class="big" id="pmBrl"></span><span class="lab">/un · chegada no Brasil</span></div>
+      <div class="pprice"><div class="row1"><span style="font-size:11px;color:var(--faint)">a partir de</span><div id="pmBanner"><div class="t">✈️ Valor final no Brasil</div><span class="big" id="pmBrl"></span><div class="s">já considerando <b>frete internacional + impostos</b> — fechado na resposta da sua cotação</div></div><span class="lab">/un · chegada no Brasil</span></div>
         <div class="aviso"><b>*Estimativa</b> com câmbio do dia. O preço final vem na resposta da sua cotação.</div></div>
       <div class="ptiers"><div class="th">Preço por quantidade (estimado)</div><div id="pmTiers"></div></div>
       <div class="pforn">🛡️ <div><b>Fornecedor verificado</b><div style="font-size:11px;color:var(--soft)" id="pmForn"></div></div></div>
