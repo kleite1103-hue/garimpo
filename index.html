@@ -256,6 +256,16 @@ body{-webkit-font-smoothing:antialiased}
       <div class="panel"><div class="ph2">Itens da cotação (<span id="nItens">0</span>)</div><div id="cartItems"></div>
         <div id="cubometro" style="margin-bottom:12px"></div>
         <div class="obsbox"><label style="font-size:12px;font-weight:600;color:var(--soft);display:block;margin-bottom:6px">Observações (opcional)</label><textarea id="obsAluno" placeholder="Ex.: prefiro na cor dourada; é pra revenda…"></textarea></div>
+        <div id="leadInline" class="panel hidden" style="margin-top:12px;padding:14px;border-color:#F0D9B8;background:#FDF9F2">
+          <div style="font-size:13px;font-weight:800">📋 Seus dados pra receber o preço final</div>
+          <div style="font-size:11.5px;color:var(--soft);margin:4px 0 10px">Nosso time monta sua importação e responde no seu WhatsApp — produto, frete e impostos fechados.</div>
+          <input id="liNome" placeholder="Seu nome completo *" style="width:100%;border:1.5px solid var(--line);border-radius:10px;padding:11px;font-size:13px;margin-bottom:8px;background:#fff;color:var(--ink)"/>
+          <input id="liWhats" placeholder="WhatsApp com DDD *" style="width:100%;border:1.5px solid var(--line);border-radius:10px;padding:11px;font-size:13px;margin-bottom:8px;background:#fff;color:var(--ink)"/>
+          <select id="liFat" style="width:100%;border:1.5px solid var(--line);border-radius:10px;padding:11px;font-size:13px;margin-bottom:8px;background:#fff;color:var(--ink)"><option value="">Quanto você fatura por mês? *</option><option>Ainda não vendo</option><option>Até R$ 10 mil</option><option>R$ 10 a 50 mil</option><option>R$ 50 a 200 mil</option><option>Acima de R$ 200 mil</option></select>
+          <select id="liCanal" style="width:100%;border:1.5px solid var(--line);border-radius:10px;padding:11px;font-size:13px;margin-bottom:8px;background:#fff;color:var(--ink)"><option value="">Onde você vende hoje? *</option><option>Shopee</option><option>Mercado Livre</option><option>Shopee + Mercado Livre</option><option>Loja própria / Instagram</option><option>Ainda não vendo</option></select>
+          <select id="liImp" style="width:100%;border:1.5px solid var(--line);border-radius:10px;padding:11px;font-size:13px;margin-bottom:8px;background:#fff;color:var(--ink)"><option value="">Você já importa? *</option><option>Nunca importei</option><option>Já tentei, não deu certo</option><option>Importo às vezes</option><option>Importo sempre</option></select>
+          <select id="liReg" style="width:100%;border:1.5px solid var(--line);border-radius:10px;padding:11px;font-size:13px;margin-bottom:2px;background:#fff;color:var(--ink)"><option value="">Seu regime tributário? *</option><option>Não tenho CNPJ</option><option>MEI</option><option>Simples Nacional</option><option>Lucro Presumido</option><option>Lucro Real</option></select>
+        </div>
       </div>
       <div class="panel"><div class="ph2">Resumo</div>
         <div class="sumrow"><span>Itens</span><b id="sumItens">—</b></div>
@@ -404,10 +414,11 @@ function add(id){
   const p=PROD.find(x=>x.offer_id===id);if(!p)return;
   const ex=CART.find(x=>x.offer_id===id);
   if(ex)ex.qtd+=p.moq||1;else CART.push({offer_id:id,nome:p.nome,img:p.img,moq:p.moq||1,qtd:p.moq||1,brl:p.brl});
-  updCart();showToast("Adicionado à sua cotação");
+  updCart();irCarrinho();showToast("Adicionado à sua cotação");
 }
 function updCart(){$("cartN").textContent=CART.length;}
-function irCarrinho(){$("pCat").classList.add("hidden");$("pMinhas").classList.add("hidden");$("pCart").classList.remove("hidden");renderCart();scrollTo(0,0);}
+function irCarrinho(){try{document.getElementById('leadInline').classList.toggle('hidden',!!USER);}catch(e){}
+  $("pCat").classList.add("hidden");$("pMinhas").classList.add("hidden");$("pCart").classList.remove("hidden");renderCart();scrollTo(0,0);}
 function irCatalogo(){$("pCart").classList.add("hidden");$("pMinhas").classList.add("hidden");$("pCat").classList.remove("hidden");scrollTo(0,0);}
 function irMinhas(){$("pCat").classList.add("hidden");$("pCart").classList.add("hidden");$("pMinhas").classList.remove("hidden");carregaMinhas();scrollTo(0,0);}
 function renderCart(){setTimeout(desenhaCubo,0);
@@ -478,10 +489,13 @@ async function enviarCotacao(pos){
   if(_m3>0&&_m3<1&&!confirm(`Seu pedido ocupa ${_m3.toFixed(2)} m³ e o mínimo de importação é 1 m³ (o frete do cubo é cobrado cheio).\n\nQuer enviar mesmo assim? Nosso time vai avaliar, mas o frete por unidade pode ficar alto.`))return;
   const tot=CART.reduce((s,c)=>s+c.brl*c.qtd,0);
   if(!USER){
-    if(!pos){
-      if(localStorage.getItem("ev_lead_ok")){alert("Sua cotação já está com nosso time! 🎉\n\nVocê vai receber no WhatsApp o preço final da sua importação e todos os detalhes pra fazer tudo com nosso apoio e segurança — do pedido à chegada no Brasil.");return;}
-      $("leadmodal").classList.add("show");return;
-    }
+    if(localStorage.getItem("ev_lead_ok")&&!pos){alert("Sua cotação já está com nosso time! 🎉\n\nVocê vai receber no WhatsApp o preço final da sua importação e todos os detalhes pra fazer tudo com nosso apoio e segurança — do pedido à chegada no Brasil.");return;}
+    const nome=$("liNome").value.trim(),whats=$("liWhats").value.replace(/\D/g,"");
+    const quiz={faturamento:$("liFat").value,canal:$("liCanal").value,importa:$("liImp").value,regime:$("liReg").value};
+    if(nome.length<5||whats.length<10){alert("Preencha seu nome completo e WhatsApp com DDD.");$("liNome").focus();return;}
+    if(!quiz.faturamento||!quiz.canal||!quiz.importa||!quiz.regime){alert("Responde as 4 perguntinhas — é o que nosso time usa pra montar sua importação certa.");return;}
+    window._ldNome=nome;window._ldWhats=whats;window._ldQuiz=quiz;
+    {
     try{
       const {data:num,error:eL}=await sb.rpc("cotacao_lead",{p_nome:window._ldNome,p_whats:window._ldWhats,p_quiz:window._ldQuiz||{},p_obs:$("obsAluno").value.trim()||"",p_total:tot,p_itens:CART.map(c=>({offer_id:c.offer_id,nome:c.nome,img:c.img,qtd:c.qtd,moq:c.moq,brl:c.brl}))});
       if(eL){alert("Não foi possível enviar: "+eL.message);return;}
@@ -490,6 +504,7 @@ async function enviarCotacao(pos){
       alert("Cotação "+(num||"")+" enviada! 🎉\n\nNosso time vai entrar em contato pelo seu WhatsApp com o preço final da sua importação e todos os detalhes pra importar com nosso apoio e segurança.");
       irCatalogo&&irCatalogo();
     }catch(e){alert("Não foi possível enviar. Tente de novo.");}
+    }
     return;
   }
   const {data:cot,error}=await sb.from("cotacoes").insert({user_id:USER.id,total_estimado:tot,obs_aluno:$("obsAluno").value.trim()||null}).select().single();
