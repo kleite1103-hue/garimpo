@@ -368,7 +368,7 @@ async function abreCot(id){
   let origem={},forn={};
   if(oids.length){
     const {data:og}=await sb.from("catalogo_origem").select("*").in("offer_id",oids);
-    (og||[]).forEach(o=>origem[o.offer_id]=o);
+    (og||[]).forEach(o=>origem[o.offer_id]=o);window._cotOrigem=origem;
     const mids=[...new Set((og||[]).map(o=>o.member_id).filter(Boolean))];
     if(mids.length){const {data:fs}=await sb.from("fornecedores_origem").select("*").in("member_id",mids);(fs||[]).forEach(f=>forn[f.member_id]=f);}
   }
@@ -397,6 +397,7 @@ async function abreCot(id){
             <div class="sfrow"><span>Empresa</span><span>${f.empresa_pt||f.empresa||'—'}</span></div>
             <div class="sfrow"><span>Plataforma</span><span>${f.anos||'?'} anos · ${f.vendas_total||'?'} vendas${f.eh_fabrica?' · Fábrica':''}</span></div>
             <div class="sfrow"><span>Loja de origem</span><span>${f.url_loja?`<a href="${f.url_loja}" target="_blank">abrir ↗</a>`:'—'}</span></div>
+            ${o.empresa?`<div class="sfrow"><span>🏭 Fábrica</span><span><b>${o.empresa}</b></span></div>`:""}
             ${o.url_origem?`<div class="sfrow"><span>Produto na origem</span><span><a href="${o.url_origem}" target="_blank">abrir ↗</a></span></div>`:''}
           </div>`:''}
         </div></div>`;
@@ -615,7 +616,7 @@ async function renderFotoRes(jc){
   // origem (¥ e link) — só o time enxerga estas tabelas
   let org={};
   try{
-    const {data}=await sb.from("catalogo_origem").select("offer_id,rmb,url_origem").in("offer_id",L.map(p=>p.offer_id));
+    const {data}=await sb.from("catalogo_origem").select("offer_id,rmb,url_origem,member_id,empresa").in("offer_id",L.map(p=>p.offer_id));
     (data||[]).forEach(o=>org[o.offer_id]=o);
   }catch(e){}
   $("fRes").innerHTML=`<div style="font-size:13.5px;font-weight:700;margin-bottom:10px">Encontrado em <span style="color:var(--green)">${L.length} fornecedores confiáveis</span> · do mais barato pro mais caro</div>`+
@@ -995,9 +996,11 @@ function abreProposta(){
   const box=its.map((it,ix)=>{
     const pit=P[it.id]||{forn:[{},{},{}],midias:""};
     const sug=dd[ix]&&_melhor(dd[ix].parsed).preco_unit_rmb?Math.round(_melhor(dd[ix].parsed).preco_unit_rmb*fx*marg*100)/100:"";
-    const fr=(i)=>{const f=(pit.forn||[])[i]||{};return `
+    const org=(window._cotOrigem||{})[it.offer_id]||{};
+    const autoA=org.empresa||"";
+    const fr=(i)=>{const f=(pit.forn||[])[i]||{};const valNome=f.nome||(i===0?autoA:"");return `
       <div style="display:grid;grid-template-columns:1.2fr .7fr .5fr .8fr;gap:5px;margin-top:4px">
-        <input id="pp_n${it.id}_${i}" placeholder="Fornecedor ${"ABC"[i]} (ex.: Yiwu Taotao Pet · fábrica · 17 anos)" value="${f.nome||""}" style="border:1px solid var(--line);border-radius:8px;padding:7px;font-size:11.5px"/>
+        <input id="pp_n${it.id}_${i}" placeholder="Fornecedor ${"ABC"[i]} (ex.: Yiwu Taotao Pet · fábrica · 17 anos)" value="${valNome}" style="border:1px solid var(--line);border-radius:8px;padding:7px;font-size:11.5px"/>${i>0?`<input id="pp_l${it.id}_${i}" placeholder="link do produto do fornecedor ${"ABC"[i]}" style="grid-column:1/-1;border:1px dashed var(--line);border-radius:8px;padding:6px;font-size:11px" onchange="ppPuxa(${it.id},${i})"/>`:""}
         <input id="pp_p${it.id}_${i}" placeholder="R$/un ${i===0&&sug?("sug. "+sug):""}" value="${f.preco||""}" style="border:1px solid var(--line);border-radius:8px;padding:7px;font-size:11.5px"/>
         <input id="pp_m${it.id}_${i}" placeholder="MOQ" value="${f.moq||""}" style="border:1px solid var(--line);border-radius:8px;padding:7px;font-size:11.5px"/>
         <input id="pp_z${it.id}_${i}" placeholder="prazo (ex.: 7d)" value="${f.prazo||""}" style="border:1px solid var(--line);border-radius:8px;padding:7px;font-size:11.5px"/>
@@ -1087,6 +1090,24 @@ function gerarPDF(){
   </body></html>`);
   w.document.close();
   setTimeout(()=>{try{w.focus();w.print();}catch(e){}},900);
+}
+
+
+async function ppPuxa(itemId,i){
+  const url=($(`pp_l${itemId}_${i}`).value||"").trim();
+  if(!url)return;
+  const campo=$(`pp_n${itemId}_${i}`);campo.value="🕵️ investigando…";
+  const {data:{session}}=await sb.auth.getSession();
+  const hd={"Content-Type":"application/json","Authorization":"Bearer "+session.access_token,"apikey":CFG.SUPABASE_ANON};
+  try{
+    const r=await fetch(CFG.SUPABASE_URL+"/functions/v1/buscafoto",{method:"POST",headers:hd,body:JSON.stringify({action:"verificar_fornecedor",url})});
+    const j=await r.json();
+    if(j.error||!j.ficha){campo.value="";alert(j.error||"Não consegui investigar — a função nova está publicada?");return;}
+    const f=j.ficha;
+    campo.value=`${f.empresa_pt||f.empresa||"Fornecedor"}${f.anos?" · "+f.anos+" anos":""}${f.fabrica?" · fábrica":""}`;
+    if(f.preco&&!$(`pp_p${itemId}_${i}`).value)$(`pp_p${itemId}_${i}`).placeholder="¥"+f.preco+" na origem";
+    toast&&toast(j.veredito==="aprovado"?"Fornecedor investigado: aprovado ✓":"Investigado — confere a análise: "+(j.analise||""));
+  }catch(e){campo.value="";alert("Investigação falhou.");}
 }
 
 boot();
