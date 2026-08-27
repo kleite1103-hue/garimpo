@@ -424,6 +424,8 @@ async function abreCot(id){
           <button class="btn p" onclick="responder()">Responder com preço firme</button>
           <button class="btn ghost" onclick="salvarStatus()">Salvar status/responsável</button>
           <button class="btn s" onclick="abreCopiloto()">🤝 Copiloto China (perguntar à fábrica)</button>
+          <button class="btn ghost" onclick="usarRespostas()">⚡ Usar respostas da fábrica no preço</button>
+          <button class="btn g" onclick="msgCliente()">📱 Gerar mensagem pro cliente</button>
         </div>
       </div>
     </div>
@@ -911,6 +913,62 @@ function loadOuroRender(){
   }).join("")||'<div class="panel"><div class="loading">Nada neste nicho.</div></div>';
 }
 async function ouroJulga(id,st){await sb.from("fornecedores_ouro").update({status:st}).eq("id",id);const x=OURO.find(o=>o.id===id);if(x)x.status=st;loadOuro();}
+
+
+function _dimL(s){ // "60x62x53 cm" -> litros da caixa
+  const m=String(s||"").match(/(\d+[\.,]?\d*)\s*[x×]\s*(\d+[\.,]?\d*)\s*[x×]\s*(\d+[\.,]?\d*)/);
+  if(!m)return 0;
+  const [a,b,c]=[m[1],m[2],m[3]].map(v=>parseFloat(v.replace(",",".")));
+  return a*b*c/1000;
+}
+function _melhor(p){ // menor preço entre variações ou o do topo
+  const vs=(p.variacoes||[]).filter(v=>v.preco_unit_rmb);
+  if(vs.length)return vs.reduce((a,b)=>a.preco_unit_rmb<=b.preco_unit_rmb?a:b);
+  return {preco_unit_rmb:p.preco_unit_rmb,un_por_caixa:p.un_por_caixa,nome:null};
+}
+function usarRespostas(){
+  const dd=window._cpDados||{};const ixs=Object.keys(dd);
+  if(!ixs.length){alert("Nenhuma resposta lida ainda — abre o Copiloto, cola as respostas e clica em Conferir em cada item.");return;}
+  let rmb=0,litros=0,prazo=0,itensOk=0;
+  ixs.forEach(ix=>{
+    const d=dd[ix];const p=d.parsed||{};const m=_melhor(p);
+    if(!m.preco_unit_rmb)return;
+    itensOk++;
+    rmb+=m.preco_unit_rmb*d.qtd;
+    const cxL=_dimL(p.caixa_dim);
+    const upc=m.un_por_caixa||p.un_por_caixa||0;
+    if(cxL&&upc)litros+=Math.ceil(d.qtd/upc)*cxL;
+    else if(p.cbm_total)litros+=p.cbm_total*1000;
+    if(p.prazo_dias)prazo=Math.max(prazo,p.prazo_dias);
+  });
+  if(!itensOk){alert("As respostas lidas não têm preço — confere no Copiloto.");return;}
+  const fx=(window._USD?window._USD/7.2:0.76);
+  window._custoBrl=Math.round(rmb*fx*100)/100;
+  const el=document.querySelector(".calc .crow b");
+  if(el)el.innerHTML=`¥ ${rmb.toFixed(2)} · R$ ${brl(window._custoBrl)} <span class="badge" style="background:#F1F7F3;color:var(--green)">da fábrica ✓</span>`;
+  if(litros>0){$("cVol").value=litros.toFixed(1);calcVol();}else{calcFirme();}
+  if(prazo)$("cPrazo").value=`${prazo}d produção + 30–40d logística`;
+  toast&&toast(`Preço real de ${itensOk} item(ns) aplicado — confere a margem e responde.`);
+}
+function msgCliente(){
+  const c=selCot;if(!c)return;
+  const firme=window._firme;
+  if(!firme){alert("Fecha o preço primeiro (volume + margem) — o valor final aparece na calculadora.");return;}
+  const its=c.cotacao_itens||[];
+  const dd=window._cpDados||{};
+  const custoTot=window._custoBrl||its.reduce((s,i)=>s+Number(i.brl_estimado_un)*i.qtd,0);
+  const fator=firme/custoTot;
+  const fx=(window._USD?window._USD/7.2:0.76);
+  const linhas=its.map((i,ix)=>{
+    const d=dd[ix];const base=d&&_melhor(d.parsed).preco_unit_rmb?_melhor(d.parsed).preco_unit_rmb*fx:Number(i.brl_estimado_un);
+    const un=Math.round(base*fator*100)/100;
+    return `▪️ ${i.nome} — ${i.qtd} un · R$ ${brl(un)}/un`;
+  }).join("\n");
+  const nome=(c.lead_nome||"").split(" ")[0]||"";
+  const msg=`Olá${nome?" "+nome:""}! 🇨🇳 Sua cotação ${c.numero} na Efeito Vendas na China ficou pronta:\n\n${linhas}\n\n💰 *Valor final da importação: R$ ${brl(firme)}*\n(produto + frete internacional + impostos — sem surpresa)\n⏱ Prazo estimado: ${$("cPrazo").value||"35–45 dias"}\n\nFazemos tudo com você — do pedido na fábrica à chegada no Brasil, com nosso apoio e segurança. Quer seguir? É só responder aqui! 🚀`;
+  navigator.clipboard.writeText(msg);
+  alert("Mensagem copiada! ✓\n\nCola no WhatsApp do cliente.\n\n———\n"+msg.slice(0,400));
+}
 
 boot();
 </script>
