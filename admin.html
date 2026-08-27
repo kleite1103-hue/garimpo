@@ -381,7 +381,7 @@ async function abreCot(id){
   const marg=Number((CFGS.margem_time||{}).pct||35);
   $("cotDetail").innerHTML=`<div class="detail">
     <div class="panel">
-      <div class="ph2">Detalhe ${c.numero}${c.lead_nome?` · <span style="font-size:12px;font-weight:600">👤 ${c.lead_nome} · 📱 <a href="https://wa.me/55${(c.lead_whatsapp||'').replace(/\D/g,'')}" target="_blank" style="color:var(--green)">${c.lead_whatsapp}</a>${c.lead_loja?' · '+c.lead_loja:''}</span>`:''}<span style="margin-left:auto;font-weight:400;font-size:11px;color:var(--faint)">${new Date(c.criado_em).toLocaleString('pt-BR')}</span></div>
+      <div class="ph2">Detalhe ${c.numero}${c.lead_nome?` · <span style="font-size:12px;font-weight:600">👤 ${c.lead_nome} · 📱 <a href="https://wa.me/55${(c.lead_whatsapp||'').replace(/\D/g,'')}" target="_blank" style="color:var(--green)">${c.lead_whatsapp}</a>${c.lead_quiz?` · 💰 ${c.lead_quiz.faturamento} · 🛒 ${c.lead_quiz.canal} · ✈️ ${c.lead_quiz.importa} · 🏛 ${c.lead_quiz.regime}`:(c.lead_loja?' · '+c.lead_loja:'')}</span>`:''}<span style="margin-left:auto;font-weight:400;font-size:11px;color:var(--faint)">${new Date(c.criado_em).toLocaleString('pt-BR')}</span></div>
       <div class="solic">
         <div class="f2"><div class="k">Solicitante</div><div class="v">${perfil.nome||'—'}</div></div>
         <div class="f2"><div class="k">WhatsApp</div><div class="v">${perfil.whatsapp||'—'}</div></div>

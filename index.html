@@ -249,7 +249,7 @@ input,textarea,select{font-family:inherit}
       <div class="panel"><div class="ph2">Resumo</div>
         <div class="sumrow"><span>Itens</span><b id="sumItens">—</b></div>
         <div class="sumtotal"><span>Total estimado*</span><span id="sumTotal">R$ 0,00</span></div>
-        <div class="estnote">*Estimativa com câmbio do dia. O valor firme, com frete e prazo, vem na resposta do nosso time.</div>
+        <div class="estnote">*Estimativa com o câmbio do dia. O preço final da sua importação — produto, frete e impostos — vem fechado na resposta da cotação.</div>
         <button class="btn p send" onclick="enviarCotacao()">Enviar pedido de cotação</button>
         <div style="text-align:center;font-size:11px;color:var(--faint);padding-bottom:14px" id="slaTxt">Resposta em até 1 dia útil.</div>
       </div>
@@ -356,7 +356,11 @@ function card(p){
   const w=p.certificacao?`<span class="warnb">⚠ ${p.certificacao}</span>`:"";
   return `<article class="card" onclick="abreProd(\'${p.offer_id}\')" style="cursor:pointer"><div class="thumb"><img loading="lazy" src="${p.img}" alt=""/><span class="bdg">▲ ${p.vendas||''}</span>${w}</div>
    <div class="cbody"><div class="pname">${p.nome}</div>
-    <div class="chegada"><span class="big">R$ ${brl(p.brl)}</span><span class="lab">chegada/un*</span></div>
+    <div class="chegada" style="background:#F1F7F3;border:1.5px solid #CDE6D9;border-radius:12px;padding:10px 12px">
+      <div style="font-size:10.5px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:var(--green)">✈️ Valor final no Brasil</div>
+      <span class="big">R$ ${brl(p.brl)}</span><span class="lab">/un*</span>
+      <div style="font-size:11px;color:var(--soft);margin-top:2px">já considerando <b>frete internacional + impostos</b></div>
+    </div>
     <div class="tiers"><div class="th">Preço por quantidade</div>${fx}</div>
     <div class="metarow"><span class="moq">MOQ <b>${p.moq} un</b></span><span class="sales">▲ ${p.vendas||'—'}</span></div>
     <div class="forn">✓ Fornecedor verificado${p.forn_anos?' · '+p.forn_anos+(p.forn_anos>1?' anos':' ano'):''}</div>
@@ -438,9 +442,10 @@ async function leadGate(){
 async function leadSalva(){
   const nome=$("ldNome").value.trim(),whats=$("ldWhats").value.replace(/\D/g,"");
   if(nome.length<5||whats.length<10){alert("Preencha nome completo e WhatsApp com DDD.");return;}
-  const loja=$("ldLoja").value.trim();
-  if(USER){await sb.from("perfis").update({nome,whatsapp:whats+(loja?" · "+loja:"")}).eq("id",USER.id);}
-  else{window._ldNome=nome;window._ldWhats=whats;window._ldLoja=loja;}
+  const quiz={faturamento:$("ldFat").value,canal:$("ldCanal").value,importa:$("ldImp").value,regime:$("ldReg").value};
+  if(!quiz.faturamento||!quiz.canal||!quiz.importa||!quiz.regime){alert("Responde as 4 perguntinhas — é o que nosso time usa pra montar sua importação certa.");return;}
+  if(USER){await sb.from("perfis").update({nome,whatsapp:whats}).eq("id",USER.id);}
+  window._ldNome=nome;window._ldWhats=whats;window._ldQuiz=quiz;
   $("leadmodal").classList.remove("show");
   enviarCotacao(true);
 }
@@ -460,7 +465,7 @@ async function enviarCotacao(pos){
       $("leadmodal").classList.add("show");return;
     }
     try{
-      const {data:num,error:eL}=await sb.rpc("cotacao_lead",{p_nome:window._ldNome,p_whats:window._ldWhats,p_loja:window._ldLoja||"",p_obs:$("obsAluno").value.trim()||"",p_total:tot,p_itens:CART.map(c=>({offer_id:c.offer_id,nome:c.nome,img:c.img,qtd:c.qtd,moq:c.moq,brl:c.brl}))});
+      const {data:num,error:eL}=await sb.rpc("cotacao_lead",{p_nome:window._ldNome,p_whats:window._ldWhats,p_quiz:window._ldQuiz||{},p_obs:$("obsAluno").value.trim()||"",p_total:tot,p_itens:CART.map(c=>({offer_id:c.offer_id,nome:c.nome,img:c.img,qtd:c.qtd,moq:c.moq,brl:c.brl}))});
       if(eL){alert("Não foi possível enviar: "+eL.message);return;}
       localStorage.setItem("ev_lead_ok","1");
       CART=[];updCart();$("obsAluno").value="";
@@ -716,7 +721,22 @@ function abreAmostra(...a){
     <div style="font-size:12.5px;color:var(--soft);margin:6px 0 12px">Nosso time monta sua importação pessoalmente: você recebe no WhatsApp o preço final fechado — produto, frete e prazos — e todos os detalhes pra importar com o apoio e a segurança da Efeito Vendas. Completa seus dados:</div>
     <input id="ldNome" placeholder="Seu nome completo *" style="width:100%;border:1.5px solid var(--line);border-radius:10px;padding:11px;font-size:13px;margin-bottom:8px"/>
     <input id="ldWhats" placeholder="WhatsApp com DDD *" style="width:100%;border:1.5px solid var(--line);border-radius:10px;padding:11px;font-size:13px;margin-bottom:8px"/>
-    <input id="ldLoja" placeholder="Sua loja/Instagram (opcional)" style="width:100%;border:1.5px solid var(--line);border-radius:10px;padding:11px;font-size:13px;margin-bottom:12px"/>
+    <select id="ldFat" style="width:100%;border:1.5px solid var(--line);border-radius:10px;padding:11px;font-size:13px;margin-bottom:8px;background:#fff;color:var(--ink)">
+      <option value="">Quanto você fatura por mês? *</option>
+      <option>Ainda não vendo</option><option>Até R$ 10 mil</option><option>R$ 10 a 50 mil</option><option>R$ 50 a 200 mil</option><option>Acima de R$ 200 mil</option>
+    </select>
+    <select id="ldCanal" style="width:100%;border:1.5px solid var(--line);border-radius:10px;padding:11px;font-size:13px;margin-bottom:8px;background:#fff;color:var(--ink)">
+      <option value="">Onde você vende hoje? *</option>
+      <option>Shopee</option><option>Mercado Livre</option><option>Shopee + Mercado Livre</option><option>Loja própria / Instagram</option><option>Ainda não vendo</option>
+    </select>
+    <select id="ldImp" style="width:100%;border:1.5px solid var(--line);border-radius:10px;padding:11px;font-size:13px;margin-bottom:8px;background:#fff;color:var(--ink)">
+      <option value="">Você já importa? *</option>
+      <option>Nunca importei</option><option>Já tentei, não deu certo</option><option>Importo às vezes</option><option>Importo sempre</option>
+    </select>
+    <select id="ldReg" style="width:100%;border:1.5px solid var(--line);border-radius:10px;padding:11px;font-size:13px;margin-bottom:12px;background:#fff;color:var(--ink)">
+      <option value="">Seu regime tributário? *</option>
+      <option>Não tenho CNPJ</option><option>MEI</option><option>Simples Nacional</option><option>Lucro Presumido</option><option>Lucro Real</option>
+    </select>
     <button class="btn p full" onclick="leadSalva()">Enviar minha cotação</button>
     <button class="btn full" style="margin-top:6px;background:none;border:none;color:var(--faint);font-size:12px" onclick="$('leadmodal').classList.remove('show')">voltar</button>
   </div>
