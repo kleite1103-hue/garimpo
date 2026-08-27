@@ -433,6 +433,8 @@ async function abreCot(id){
   </div>`;
   window._custoBrl=custoBrl;
   if(totalL>0){$("cVol").value=totalL.toFixed(1);calcVol();}else{calcFirme();}
+  window._cpDados={};
+  try{const CP=(c.copiloto&&typeof c.copiloto==="object")?c.copiloto:{};(c.cotacao_itens||[]).forEach((i,ix)=>{if(CP[i.id]&&CP[i.id].parsed)window._cpDados[ix]={parsed:CP[i.id].parsed,qtd:i.qtd};});}catch(e){}
   $("cotDetail").scrollIntoView({behavior:"smooth"});
 }
 function calcVol(){
@@ -744,7 +746,8 @@ async function amoUpload(id,inp){
 
 function abreCopiloto(){
   if(!selCot)return;
-  window._cpDados={};
+  window._cpDados=window._cpDados||{};
+  const CP=(selCot.copiloto&&typeof selCot.copiloto==="object")?selCot.copiloto:{};
   const its=selCot.cotacao_itens||[];
   sb.from("catalogo_origem").select("offer_id,url_origem").in("offer_id",its.map(i=>i.offer_id)).then(({data})=>{
     const urls={};(data||[]).forEach(o=>urls[o.offer_id]=o.url_origem);
@@ -766,13 +769,17 @@ function abreCopiloto(){
           <button class="btn sm ghost" onclick="cpExtra(${ix},$('cpLivre${ix}').value,null);$('cpLivre${ix}').value=''">+ incluir</button>
         </div>
         <div style="margin-top:8px;font-size:11.5px;font-weight:700">📥 Resposta deste fornecedor:</div>
-        <textarea id="cpResp${ix}" style="width:100%;min-height:56px;border:1.5px solid var(--line);border-radius:8px;padding:8px;font-size:11.5px;font-family:inherit" placeholder="cola a resposta do chat ${ref} aqui…"></textarea>
+        <textarea id="cpResp${ix}" style="width:100%;min-height:56px;border:1.5px solid var(--line);border-radius:8px;padding:8px;font-size:11.5px;font-family:inherit" placeholder="cola a resposta do chat ${ref} aqui…">${(CP[i.id]&&CP[i.id].raw)?CP[i.id].raw:""}</textarea>
         <button class="btn sm p" style="margin-top:5px" onclick="cpParseItem(${ix})">Extrair deste item</button>
         <span id="cpOk${ix}" style="font-size:11.5px;margin-left:6px;color:var(--green)"></span>
       </div>`;
     }).join("")+`<div id="cpResumo" style="background:var(--goldbg);border:1px solid #F0E2C4;border-radius:10px;padding:10px 12px;font-size:12.5px;display:none"></div>
       <button class="btn p full" id="cpAplica" style="display:none;margin-top:8px" onclick="cpAplicar()">Aplicar tudo na calculadora</button>`;
     $("cpmodal").classList.add("show");
+    its.forEach((i,ix)=>{const d=CP[i.id];if(d&&d.parsed){window._cpDados[ix]={parsed:d.parsed,qtd:i.qtd};
+      const vs=d.parsed.variacoes||[];
+      const el=$("cpOk"+ix);if(el)el.innerHTML=vs.length>1?`✓ salvo · ${vs.length} variações`:`✓ salvo · ¥${d.parsed.preco_unit_rmb||"?"}/un · ${d.parsed.prazo_dias||"?"}d`;}});
+    cpResumo&&cpResumo();
   });
 }
 async function cpParseItem(ix){
@@ -787,6 +794,12 @@ async function cpParseItem(ix){
   const p=j.parsed||{};
   const it=(selCot.cotacao_itens||[])[ix];
   window._cpDados[ix]={parsed:p,qtd:it.qtd};
+  try{
+    const CP=(selCot.copiloto&&typeof selCot.copiloto==="object")?selCot.copiloto:{};
+    CP[it.id]={raw:txt,parsed:p,quando:new Date().toISOString()};
+    selCot.copiloto=CP;
+    sb.from("cotacoes").update({copiloto:CP}).eq("id",selCot.id).then(({error})=>{if(!error)toast&&toast("Resposta salva ✓ — pode fechar e retomar quando quiser");});
+  }catch(e){}
   const vs=p.variacoes||[];
   $("cpOk"+ix).innerHTML=vs.length>1?`✓ ${vs.length} variações: `+vs.map(v=>`${v.nome} ¥${v.preco_unit_rmb}${v.un_por_caixa?` (${v.un_por_caixa}/cx)`:''}`).join(" · ")+` · ${p.prazo_dias||"?"}d`
   :`✓ ¥${p.preco_unit_rmb||"?"}/un · ${p.cbm_total||"?"} m³ · ${p.prazo_dias||"?"}d`;
@@ -992,7 +1005,10 @@ function abreProposta(){
     return `<div class="panel" style="margin-top:10px;padding:12px">
       <div style="display:flex;gap:8px;align-items:center"><img src="${it.img}" style="width:40px;height:40px;border-radius:8px;object-fit:cover"/><b style="font-size:12.5px">${it.nome}</b><span style="margin-left:auto;font-size:11px;color:var(--faint)">${it.qtd} un</span></div>
       ${fr(0)}${fr(1)}${fr(2)}
-      <textarea id="pp_md${it.id}" placeholder="Links de fotos/vídeos REAIS da fábrica (um por linha — peça no Copiloto, suba no Drive e cole aqui)" style="width:100%;border:1px solid var(--line);border-radius:8px;padding:7px;font-size:11px;margin-top:6px;min-height:44px">${pit.midias||""}</textarea>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:5px;margin-top:6px">
+        <textarea id="pp_ft${it.id}" placeholder="📸 FOTOS reais (links, um por linha)" style="border:1px solid var(--line);border-radius:8px;padding:7px;font-size:11px;min-height:52px">${pit.fotos||pit.midias||""}</textarea>
+        <textarea id="pp_vd${it.id}" placeholder="🎬 VÍDEO real (link do Drive/YouTube, um por linha)" style="border:1.5px solid #D91F26;border-radius:8px;padding:7px;font-size:11px;min-height:52px">${pit.video||""}</textarea>
+      </div>
     </div>`;
   }).join("");
   $("cotDetail").insertAdjacentHTML("beforeend",`<div id="ppBox" class="panel" style="margin-top:14px;padding:14px;border-color:#F0D9B8">
@@ -1008,7 +1024,7 @@ async function salvaProposta(){
   const c=selCot;const its=c.cotacao_itens||[];const P={};
   its.forEach(it=>{
     P[it.id]={forn:[0,1,2].map(i=>({nome:$(`pp_n${it.id}_${i}`).value.trim(),preco:$(`pp_p${it.id}_${i}`).value.trim(),moq:$(`pp_m${it.id}_${i}`).value.trim(),prazo:$(`pp_z${it.id}_${i}`).value.trim()})).filter(f=>f.nome||f.preco),
-      midias:$(`pp_md${it.id}`).value.trim()};
+      fotos:$(`pp_ft${it.id}`).value.trim(),video:$(`pp_vd${it.id}`).value.trim()};
   });
   const {error}=await sb.from("cotacoes").update({proposta:P}).eq("id",c.id);
   if(error){alert("Salvar falhou: "+error.message+"\n(rodou o SQL da proposta?)");return;}
@@ -1026,9 +1042,10 @@ function gerarPDF(){
     const forn=(pit.forn||[]).filter(f=>f.nome||f.preco);
     const rows=forn.map((f,i)=>`<tr ${i===0?'class="best"':''}><td>${"ABC"[i]}</td><td>${f.nome||"—"}</td><td><b>R$ ${f.preco||"—"}/un</b></td><td>${f.moq||"—"}</td><td>${f.prazo||"—"}</td></tr>`).join("")
       ||`<tr class="best"><td>A</td><td>Fornecedor verificado</td><td><b>R$ ${Number(it.brl_estimado_un).toFixed(2)}/un</b></td><td>${it.moq}</td><td>—</td></tr>`;
-    const fotos=(pit.midias||"").split("\n").map(s=>s.trim()).filter(Boolean);
-    const imgs=fotos.filter(u=>/\.(jpe?g|png|webp)(\?|$)/i.test(u)).slice(0,4).map(u=>`<img src="${u}"/>`).join("");
-    const vids=fotos.filter(u=>!/\.(jpe?g|png|webp)(\?|$)/i.test(u)).map(u=>`<a href="${u}">🎬 Ver vídeo real do produto</a>`).join(" · ");
+    const fotos=((pit.fotos||pit.midias||"")).split("\n").map(s=>s.trim()).filter(Boolean);
+    const imgs=fotos.slice(0,4).map(u=>`<img src="${u}"/>`).join("");
+    const vids=((pit.video||"")).split("\n").map(s=>s.trim()).filter(Boolean)
+      .map(u=>`<a class="vbtn" href="${u}">▶ &nbsp;ASSISTIR AO VÍDEO REAL DO PRODUTO</a><div class="vurl">${u}</div>`).join("");
     return `<section>
       <div class="prod"><img src="${it.img}"/><div><h3>${it.nome}</h3><span>${it.qtd} unidades</span></div></div>
       <table><tr><th></th><th>Fornecedor</th><th>Valor final no Brasil*</th><th>Mínimo</th><th>Produção</th></tr>${rows}</table>
@@ -1051,7 +1068,9 @@ function gerarPDF(){
     th{text-align:left;color:#888;font-weight:600;padding:4px 6px;border-bottom:1px solid #eee}
     td{padding:6px}tr.best td{background:#F1F7F3;font-weight:600}
     .midias{display:flex;gap:6px;margin-top:8px}.midias img{width:86px;height:86px;object-fit:cover;border-radius:8px;border:1px solid #eee}
-    .vids{font-size:11.5px;margin-top:6px}.vids a{color:#D91F26}
+    .vids{margin-top:8px}
+    .vbtn{display:inline-block;background:#D91F26;color:#fff !important;text-decoration:none;font-weight:700;font-size:11.5px;padding:8px 14px;border-radius:8px}
+    .vurl{font-size:9px;color:#999;margin-top:3px}
     .total{background:#1A1A1A;color:#fff;border-radius:10px;padding:14px;display:flex;justify-content:space-between;align-items:center;margin-top:16px}
     .total b{font-size:19px}.total small{color:#bbb}
     .foot{font-size:10.5px;color:#777;margin-top:12px;line-height:1.5}
