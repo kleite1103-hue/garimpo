@@ -132,7 +132,14 @@ input,textarea,select{font-family:inherit}
 .tlab{font-size:9.5px;font-weight:600;margin-top:6px;color:var(--soft)}
 .tstep.done .tlab,.tstep.cur .tlab{color:var(--ink)}
 .loading{padding:44px;text-align:center;color:var(--soft)}
-@media(max-width:840px){.shell,.cotgrid{grid-template-columns:1fr}.side{position:static}}
+@media(max-width:840px){
+  .shell,.cotgrid{grid-template-columns:1fr}
+  .side{position:static;max-height:none;overflow:visible;display:flex;gap:7px;overflow-x:auto;padding:7px;-webkit-overflow-scrolling:touch}
+  .side .cat{flex:0 0 auto;white-space:nowrap;border-radius:999px;padding:8px 13px;font-size:12.5px}
+  .side .cat .num{margin-left:5px;opacity:.65}
+  .side .cat.sub{background:#F6F1E9}
+  .grid{grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:11px}
+  .card .nm{font-size:12px}}
 
 .toast{position:fixed;bottom:26px;left:50%;transform:translateX(-50%) translateY(80px);background:var(--ink);color:#fff;font-size:13.5px;font-weight:600;padding:13px 22px;border-radius:12px;box-shadow:0 10px 30px rgba(0,0,0,.25);z-index:99;transition:transform .25s;display:flex;align-items:center;gap:9px}
 .toast.show{transform:translateX(-50%) translateY(0)}
@@ -370,8 +377,13 @@ function renderCats(){
   });
   $("cats").innerHTML=h;
 }
-function setCat(k){curCat=k;curSub=null;$("q").value="";renderCats();render();irCatalogo();}
-function setSub(k,s){curCat=k;curSub=s;$("q").value="";renderCats();render();irCatalogo();}
+function setCat(k){curCat=k;curSub=null;$("q").value="";renderCats();render();irCatalogo();rolaProdutos();}
+function setSub(k,s){curCat=k;curSub=s;$("q").value="";renderCats();render();irCatalogo();rolaProdutos();}
+function rolaProdutos(){
+  if(window.innerWidth>840)return;
+  setTimeout(()=>{const g=document.querySelector("#grid")||document.querySelector(".grid");
+    if(g)window.scrollTo({top:g.getBoundingClientRect().top+window.scrollY-70,behavior:"smooth"});},120);
+}
 function setSort(el){document.querySelectorAll('.sp').forEach(x=>x.classList.remove('on'));el.classList.add('on');curSort=el.dataset.s;render();}
 function filtered(){
   const t=$("q").value.trim().toLowerCase();
