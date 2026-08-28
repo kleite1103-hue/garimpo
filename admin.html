@@ -425,6 +425,7 @@ async function abreCot(id){
           <div class="crow"><span>Frete China→BR (rateio m³)</span><input id="cFrete" value="${frete.toFixed(2)}" oninput="calcFirme()"/></div>
           <div style="font-size:10px;color:var(--faint);padding:2px 0 4px" id="cCanal">Custo do canal: US$ ${((CFGS.custo_m3||{}).usd||900)} /m³ all-in · digite os litros que o frete calcula sozinho</div>
           <div class="crow"><span>Margem do time %</span><input id="cMarg" value="${marg}" oninput="calcFirme()"/></div>
+          <div id="cAlerta" style="display:none;font-size:11.5px;border-radius:9px;padding:8px 10px;margin:6px 0;line-height:1.5"></div>
           <div class="cfinal"><span>Preço firme ao aluno</span><span class="v" id="cFinal">R$ —</span></div>
         </div>
         <div class="selrow">
@@ -464,6 +465,7 @@ function calcFirme(){
   const v=(window._custoBrl+f)*(1+m/100);
   window._firme=Math.round(v*100)/100;
   $("cFinal").textContent="R$ "+brl(window._firme);
+  try{comparaModal();}catch(e){}
 }
 async function responder(){
   const dias=Number((CFGS.validade_preco||{}).dias||5);
@@ -1206,7 +1208,7 @@ function trocaModal(){
   $("cCanal").textContent=aer
     ? `Aéreo: US$ ${kg}/kg all-in (frete + impostos + nacionalização) · mínimo 20 kg`
     : `Marítimo: US$ ${((CFGS.custo_m3||{}).usd||900)}/m³ all-in · digite os litros que o frete calcula sozinho`;
-  if(aer){$("cPrazo").value="20–30 dias (aéreo)";calcKg();}
+  if(aer){$("cPrazo").value="20–30 dias (aéreo)";const e=pesoEstimado();if(e.kg&&!$("cKg").value)$("cKg").value=e.kg.toFixed(1);calcKg();}
   else{$("cPrazo").value="60–75 dias (marítimo)";calcVol();}
 }
 function calcKg(){
@@ -1219,6 +1221,52 @@ function calcKg(){
     if(kg<min)toast&&toast(`Abaixo do mínimo de ${min}kg — cobrando ${min}kg`);
   }
   calcFirme();
+}
+
+
+function pesoEstimado(){
+  const dd=window._cpDados||{};let kg=0,qtdTot=0,temPeso=false;
+  Object.keys(dd).forEach(ix=>{
+    const d=dd[ix],p=(d&&d.parsed)||{};const m=(typeof _melhor==="function")?_melhor(p):{};
+    qtdTot+=d.qtd||0;
+    const pu=m.peso_un_kg||p.peso_un_kg;
+    const upc=m.un_por_caixa||p.un_por_caixa;
+    if(pu){kg+=pu*d.qtd;temPeso=true;}
+    else if(p.peso_caixa_kg&&upc){kg+=(p.peso_caixa_kg/upc)*d.qtd;temPeso=true;}
+  });
+  return {kg,qtdTot,temPeso};
+}
+function comparaModal(){
+  const el=$("cAlerta");if(!el)return;
+  const aer=$("cModal").value==="aer";
+  const usdkg=Number((CFGS.custo_kg_aereo||{}).usd||45), minkg=Number((CFGS.custo_kg_aereo||{}).min_kg||20);
+  const usdm3=Number((CFGS.custo_m3||{}).usd||900), USD=window._USD||5.4;
+  const L=parseFloat(($("cVol").value||"0").replace(",","."))||0;
+  const kgDigi=parseFloat(($("cKg").value||"0").replace(",","."))||0;
+  const est=pesoEstimado();
+  const kg=kgDigi||est.kg;
+  if(!kg&&!L){el.style.display="none";return;}
+  const custoAer=Math.max(kg||0,minkg)*usdkg*USD;
+  const custoMar=Math.max(L||(kg?kg*3:0),1000)/1000*usdm3*USD;   // ~3 L/kg quando só há peso
+  const qtd=est.qtdTot||1;
+  const dif=custoAer-custoMar;
+  const perUnAer=custoAer/qtd, perUnMar=custoMar/qtd;
+  let cor,txt;
+  if(aer&&dif>0){
+    cor="#FDF3E0;color:#8A6100;border:1px solid #F0D9B8";
+    txt=`⚠️ <b>Marítimo sai R$ ${brl(dif)} mais barato</b> nesta cotação (aéreo R$ ${brl(perUnAer)}/un vs marítimo R$ ${brl(perUnMar)}/un de logística).<br>Aéreo compensa se o cliente quer velocidade (20–30d) ou o produto é leve e caro.`;
+  }else if(aer){
+    cor="#F1F7F3;color:#1F6B4A;border:1px solid #CDE6D9";
+    txt=`✅ <b>Aéreo compensa aqui</b> — R$ ${brl(perUnAer)}/un de logística, e o cliente recebe em 20–30 dias.`;
+  }else{
+    if(!kg){el.style.display="none";return;}
+    cor= dif<0 ? "#F1F7F3;color:#1F6B4A;border:1px solid #CDE6D9" : "#F6F1E9;color:var(--soft);border:1px solid var(--line)";
+    txt= dif<0
+      ? `💡 <b>Aéreo sairia R$ ${brl(-dif)} mais barato</b> e chega em 20–30 dias — produto leve, vale oferecer.`
+      : `🚢 Marítimo é o certo aqui — no aéreo custaria R$ ${brl(dif)} a mais (≈R$ ${brl(perUnAer)}/un só de logística).`;
+  }
+  el.style.cssText="display:block;font-size:11.5px;border-radius:9px;padding:8px 10px;margin:6px 0;line-height:1.5;background:"+cor;
+  el.innerHTML=txt+(est.temPeso&&!kgDigi?` <span style="opacity:.7">(peso estimado das respostas: ${est.kg.toFixed(1)} kg)</span>`:"");
 }
 
 boot();
