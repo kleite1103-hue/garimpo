@@ -397,14 +397,23 @@ function filtered(){
   return L;
 }
 function mini(u){return u&&u.includes('alicdn.com')?u+'_360x360q75.jpg':u;}
+function fmtVendas(v){
+  const s=String(v||"").trim();if(!s)return "";
+  let n=null,m;
+  m=s.match(/^([\d.,]+)\s*万\s*\+?$/); if(m)n=parseFloat(m[1].replace(",","."))*10000;
+  if(n===null){m=s.match(/^([\d.,]+)\s*千\s*\+?$/); if(m)n=parseFloat(m[1].replace(",","."))*1000;}
+  if(n===null){m=s.match(/^([\d.,]+)\s*\+?$/); if(m)n=parseFloat(m[1].replace(/[.,]/g,""));}
+  if(n===null||isNaN(n))return s.replace(/[万千]/g,"");
+  return n>=1000?Math.round(n).toLocaleString("pt-BR"):String(Math.round(n));
+}
 function card(p){
   const fx=(p.faixas_brl||[]).slice(0,2).map(f=>`<div class="trow"><span>${f.faixa||'qualquer'}</span><b>R$ ${brl(f.brl)}</b></div>`).join("")||`<div class="trow"><span>unidade</span><b>R$ ${brl(p.brl)}</b></div>`;
   const w=p.certificacao?`<span class="warnb">⚠ ${p.certificacao}</span>`:"";
-  return `<article class="card" onclick="abreProd(\'${p.offer_id}\')" style="cursor:pointer"><div class="thumb"><img loading="lazy" src="${mini(p.img)}" alt=""/><span class="bdg">▲ ${p.vendas||''}</span>${w}</div>
+  return `<article class="card" onclick="abreProd(\'${p.offer_id}\')" style="cursor:pointer"><div class="thumb"><img loading="lazy" src="${mini(p.img)}" alt=""/><span class="bdg">▲ ${fmtVendas(p.vendas)}</span>${w}</div>
    <div class="cbody"><div class="pname">${p.nome}</div>
     <div class="chegada"><span class="big">R$ ${brl(p.brl)}</span><span class="lab">/un no Brasil*</span><div class="pnote">✈️ c/ frete + impostos</div></div>
     <div class="tiers"><div class="th">Preço por quantidade</div>${fx}</div>
-    <div class="metarow"><span class="moq">MOQ <b>${p.moq} un</b></span><span class="sales">▲ ${p.vendas||'—'}</span></div>
+    <div class="metarow"><span class="moq">MOQ <b>${p.moq} un</b></span><span class="sales">▲ ${fmtVendas(p.vendas)||'—'}</span></div>
     <div class="forn">✓ Fornecedor verificado${p.forn_anos?' · '+p.forn_anos+(p.forn_anos>1?' anos':' ano'):''}</div>
     <button class="addbtn" onclick="event.stopPropagation();add('${p.offer_id}')">+ Adicionar à cotação</button>
    </div></article>`;
