@@ -417,9 +417,13 @@ async function abreCot(id){
         <div class="ph2">Fechar preço</div>
         <div class="calc">
           <div class="crow"><span>Custo de origem</span><b>¥ ${custoRmb.toFixed(2)} · R$ ${brl(custoBrl)}</b></div>
-          <div class="crow"><span>Volume do pedido (litros)</span><input id="cVol" placeholder="ex.: 12" oninput="calcVol()"/></div>
+          <div class="crow"><span>Modalidade</span><select id="cModal" onchange="trocaModal()" style="border:1.5px solid var(--line);border-radius:8px;padding:6px;font-size:12px">
+            <option value="mar">🚢 Marítimo (mais barato · 60–75d)</option>
+            <option value="aer">✈️ Aéreo (rápido · 20–30d · mín. 20kg)</option></select></div>
+          <div class="crow" id="rowVol"><span>Volume do pedido (litros)</span><input id="cVol" placeholder="ex.: 12" oninput="calcVol()"/></div>
+          <div class="crow hidden" id="rowKg"><span>Peso do pedido (kg)</span><input id="cKg" placeholder="ex.: 25" oninput="calcKg()"/></div>
           <div class="crow"><span>Frete China→BR (rateio m³)</span><input id="cFrete" value="${frete.toFixed(2)}" oninput="calcFirme()"/></div>
-          <div style="font-size:10px;color:var(--faint);padding:2px 0 4px">Custo do canal: US$ ${((CFGS.custo_m3||{}).usd||900)} /m³ all-in · digite os litros que o frete calcula sozinho</div>
+          <div style="font-size:10px;color:var(--faint);padding:2px 0 4px" id="cCanal">Custo do canal: US$ ${((CFGS.custo_m3||{}).usd||900)} /m³ all-in · digite os litros que o frete calcula sozinho</div>
           <div class="crow"><span>Margem do time %</span><input id="cMarg" value="${marg}" oninput="calcFirme()"/></div>
           <div class="cfinal"><span>Preço firme ao aluno</span><span class="v" id="cFinal">R$ —</span></div>
         </div>
@@ -466,7 +470,7 @@ async function responder(){
   const validade=new Date(Date.now()+dias*864e5).toISOString().slice(0,10);
   const {error}=await sb.from("cotacoes").update({
     status:"respondida",total_firme:window._firme,prazo_estimado:$("cPrazo").value.trim()||null,
-    frete_estimado:parseFloat(($("cFrete").value||"0").replace(",","."))||null,
+    frete_estimado:parseFloat(($("cFrete").value||"0").replace(",","."))||null,modalidade:($("cModal")&&$("cModal").value==="aer")?"aereo":"maritimo",
     margem_pct:parseFloat(($("cMarg").value||"0").replace(",","."))||null,
     validade,responsavel:$("cResp").value.trim()||null,respondido_em:new Date().toISOString()
   }).eq("id",selCot.id);
@@ -1191,6 +1195,30 @@ async function cpPrint(ix,inp){
     cpResumo&&cpResumo();
     toast&&toast("Print lido e salvo ✓");
   }catch(e){$("cpOk"+ix).textContent="erro no print";}
+}
+
+
+function trocaModal(){
+  const aer=$("cModal").value==="aer";
+  $("rowVol").classList.toggle("hidden",aer);
+  $("rowKg").classList.toggle("hidden",!aer);
+  const kg=((CFGS.custo_kg_aereo||{}).usd)||45;
+  $("cCanal").textContent=aer
+    ? `Aéreo: US$ ${kg}/kg all-in (frete + impostos + nacionalização) · mínimo 20 kg`
+    : `Marítimo: US$ ${((CFGS.custo_m3||{}).usd||900)}/m³ all-in · digite os litros que o frete calcula sozinho`;
+  if(aer){$("cPrazo").value="20–30 dias (aéreo)";calcKg();}
+  else{$("cPrazo").value="60–75 dias (marítimo)";calcVol();}
+}
+function calcKg(){
+  const kg=parseFloat(($("cKg").value||"0").replace(",","."))||0;
+  const min=Number((CFGS.custo_kg_aereo||{}).min_kg||20);
+  const usdkg=Number((CFGS.custo_kg_aereo||{}).usd||45);
+  const cob=Math.max(kg,min);
+  if(kg>0){
+    $("cFrete").value=(cob*usdkg*(window._USD||5.4)).toFixed(2);
+    if(kg<min)toast&&toast(`Abaixo do mínimo de ${min}kg — cobrando ${min}kg`);
+  }
+  calcFirme();
 }
 
 boot();
