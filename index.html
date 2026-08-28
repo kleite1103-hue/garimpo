@@ -209,6 +209,9 @@ body{-webkit-font-smoothing:antialiased}
 #pmBanner{background:#F1F7F3;border:1.5px solid #CDE6D9;border-radius:12px;padding:10px 14px;margin:8px 0}
 #pmBanner .t{font-size:10.5px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:var(--green)}
 #pmBanner .s{font-size:11.5px;color:var(--soft);margin-top:2px}
+.tip{display:inline-block;width:14px;height:14px;line-height:14px;text-align:center;border-radius:50%;background:#EFE9E0;color:#8A8378;font-size:9.5px;cursor:help;vertical-align:middle}
+.metarow .sales{font-size:10.5px;color:#8A6100;font-weight:700}
+.metarow .moq{font-size:10.5px;color:var(--faint)}
 </style></head>
 <body>
 
@@ -250,7 +253,7 @@ body{-webkit-font-smoothing:antialiased}
   <main>
     <div class="crumbs" id="crumbs"><b>Todas as categorias</b></div>
     <div class="toolbar">
-      <span class="sp on" data-s="vendas" onclick="setSort(this)">Mais vendidos</span>
+      <span class="sp on" data-s="vendas" onclick="setSort(this)">Mais vendidos na China</span>
       <span class="sp" data-s="menor" onclick="setSort(this)">Menor preço</span>
       <span class="sp" data-s="maior" onclick="setSort(this)">Maior preço</span>
       <span class="count" id="count"></span>
@@ -413,7 +416,7 @@ function card(p){
    <div class="cbody"><div class="pname">${p.nome}</div>
     <div class="chegada"><span class="big">R$ ${brl(p.brl)}</span><span class="lab">/un no Brasil*</span><div class="pnote">✈️ c/ frete + impostos</div></div>
     <div class="tiers"><div class="th">Preço por quantidade</div>${fx}</div>
-    <div class="metarow"><span class="moq">MOQ <b>${p.moq} un</b></span><span class="sales">▲ ${fmtVendas(p.vendas)||'—'}</span></div>
+    <div class="metarow"><span class="moq">a partir de <b>${p.moq} un</b></span><span class="sales">${fmtVendas(p.vendas)?`🔥 ${fmtVendas(p.vendas)} vendidos`:''}</span></div>
     <div class="forn">✓ Fornecedor verificado${p.forn_anos?' · '+p.forn_anos+(p.forn_anos>1?' anos':' ano'):''}</div>
     <button class="addbtn" onclick="event.stopPropagation();add('${p.offer_id}')">+ Adicionar à cotação</button>
    </div></article>`;
@@ -587,7 +590,7 @@ function abreProd(id){
   if(!p._full){hidrataProduto(id).then(full=>{if(full&&pmProd&&pmProd.offer_id===id){Object.assign(p,full,{_full:true});abreProd(id);}});}
   $("pmImg").src=p.img||"";$("pmNome").textContent=p.nome;
   $("pmBrl").textContent="R$ "+brl(p.brl);
-  $("pmBadges").innerHTML=`<span class="pb hot">▲ ${fmtV(p.vendas)||"—"} vendas</span><span class="pb ver">✓ Fornecedor verificado</span>${p.certificacao?`<span class="pb warn">⚠ Exige ${p.certificacao} pra importar</span>`:""}`;
+  $("pmBadges").innerHTML=`${fmtV(p.vendas)?`<span class="pb hot">🔥 ${fmtV(p.vendas)} unidades já vendidas na fábrica</span>`:""}<span class="pb ver">✓ Fornecedor verificado</span>${p.certificacao?`<span class="pb warn">⚠ Exige ${p.certificacao} pra importar</span>`:""}`;
   $("pmTiers").innerHTML=(p.faixas_brl&&p.faixas_brl.length?p.faixas_brl:[{faixa:"qualquer quantidade",brl:p.brl}]).map(f=>`<div class="ptr"><span>${f.faixa||"qualquer"}</span><b>R$ ${brl(f.brl)}/un</b></div>`).join("");
   document.querySelectorAll(".grupo-opcoes").forEach(e=>e.remove());
   const og=opcoesGrupo(p);if(og){const d=document.createElement("div");d.className="grupo-opcoes";d.innerHTML=og;document.querySelector("#pmodal .ptiers").after(d);}
@@ -741,7 +744,7 @@ function abreAmostra(...a){
       <div id="pmDesc" style="font-size:12px;color:var(--soft);line-height:1.55;margin:10px 0 2px"></div>
       <div class="pqty">
         <div class="stepper"><button onclick="pmQ(-1)">−</button><input id="pmQty" value="1"/><button onclick="pmQ(1)">+</button></div>
-        <span style="font-size:12px;color:var(--soft)">mínimo <b id="pmMoq">1</b> un</span>
+        <span style="font-size:12px;color:var(--soft)">pedido mínimo desta fábrica: <b id="pmMoq">1</b> un <span class="tip" title="Quantidade mínima que a fábrica aceita produzir/vender deste item">ⓘ</span></span>
       </div>
       <button class="btn p full" onclick="addDoModal()">+ Adicionar à minha cotação</button>
       <button class="btn full" style="margin-top:8px;background:var(--panel);border:1.5px solid var(--ink)" onclick="pedirAmostra()">📦 Pedir amostra real (fotos e vídeo do produto)</button>
