@@ -724,9 +724,12 @@ function fmtV(v){if(!v)return "";const s=String(v);const m=s.match(/([\d.]+)\s*�
 
 async function pedirAmostra(){
   if(!pmProd)return;
-  let taxa=97;try{const {data}=await sb.from("config").select("valor").eq("chave","amostra").single();taxa=Number((data.valor||{}).taxa_brl)||97;}catch(e){}
-  const total=taxa+Number(pmProd.brl||0);
-  if(!confirm(`Amostra real de "${pmProd.nome}"\n\nTaxa do serviço: R$ ${brl(taxa)}\nProduto (1 un): R$ ${brl(pmProd.brl)}\nTotal: R$ ${brl(total)}\n\nSeu time na China recebe, fotografa, filma e mede o produto. Em até 7 dias após a chegada no depósito, tudo aparece aqui pra você. E fechando o pedido grande, a taxa vira crédito.\n\nConfirmar solicitação?`))return;
+  let taxa=147,frete=120,cred=true;
+  try{const {data}=await sb.from("config").select("valor").eq("chave","amostra").single();
+    const v=data.valor||{};taxa=Number(v.taxa_brl)||147;frete=Number(v.frete_brl)||0;cred=v.credito_no_pedido!==false;}catch(e){}
+  const prod=Number(pmProd.brl||0);
+  const total=taxa+frete+prod;
+  if(!confirm(`📦 Amostra real de "${pmProd.nome}"\n\n• Produto (1 un): R$ ${brl(prod)}\n• Frete internacional da amostra: R$ ${brl(frete)}\n• Serviço (compra, conferência, fotos e vídeo): R$ ${brl(taxa)}\n\nTOTAL: R$ ${brl(total)}\n\nNosso time na China compra, confere, mede, fotografa e filma seu produto — e te entrega tudo aqui em até 7 dias depois da chegada.${cred?"\n\n💰 Fechando sua importação, o serviço vira crédito no pedido.":""}\n\nQuer solicitar?`))return;
   const {data:am,error}=await sb.from("amostras").insert({user_id:USER.id,offer_id:pmProd.offer_id,taxa_brl:total,obs_aluno:""}).select().single();
   if(error){alert("Erro: "+error.message);return;}
   fechaProd();
