@@ -729,7 +729,7 @@ async function pedirAmostra(){
     const v=data.valor||{};taxa=Number(v.taxa_brl)||147;frete=Number(v.frete_brl)||0;cred=v.credito_no_pedido!==false;}catch(e){}
   const prod=Number(pmProd.brl||0);
   const total=taxa+frete+prod;
-  if(!confirm(`📦 Amostra real de "${pmProd.nome}"\n\n• Produto (1 un): R$ ${brl(prod)}\n• Frete internacional da amostra: R$ ${brl(frete)}\n• Serviço (compra, conferência, fotos e vídeo): R$ ${brl(taxa)}\n\nTOTAL: R$ ${brl(total)}\n\nNosso time na China compra, confere, mede, fotografa e filma seu produto — e te entrega tudo aqui em até 7 dias depois da chegada.${cred?"\n\n💰 Fechando sua importação, o serviço vira crédito no pedido.":""}\n\nQuer solicitar?`))return;
+  if(!confirm(`📦 Amostra real de "${pmProd.nome}"\n\n• Produto (1 un): R$ ${brl(prod)}\n• Frete até nosso depósito na China: R$ ${brl(frete)}\n• Serviço (compra, conferência, fotos e vídeo): R$ ${brl(taxa)}\n\nTOTAL: R$ ${brl(total)}\n\nNosso time na China compra, confere, mede, fotografa e filma seu produto — e te entrega tudo aqui em até 7 dias depois da chegada.${cred?"\n\n💰 Fechando sua importação, o serviço vira crédito no pedido.":""}\n\nQuer solicitar?`))return;
   const {data:am,error}=await sb.from("amostras").insert({user_id:USER.id,offer_id:pmProd.offer_id,taxa_brl:total,obs_aluno:""}).select().single();
   if(error){alert("Erro: "+error.message);return;}
   fechaProd();
