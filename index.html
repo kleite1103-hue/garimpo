@@ -737,7 +737,8 @@ function abrePagamento(total,pg,amostraId){
   const temPix=!!(pg.pix_copia_cola||pg.qr_url), temLink=!!pg.link;
   $("pgValor").textContent="R$ "+brl(total);
   $("pgBox").innerHTML=`
-    ${pg.qr_url?`<img src="${pg.qr_url}" alt="QR Code Pix" style="width:190px;height:190px;object-fit:contain;border:1px solid var(--line);border-radius:12px;background:#fff;padding:6px"/>`:""}
+    ${(pg.qr_url||pg.pix_copia_cola)?`<img src="${pg.qr_url||('https://api.qrserver.com/v1/create-qr-code/?size=380x380&margin=6&data='+encodeURIComponent(pg.pix_copia_cola))}" alt="QR Code Pix" style="width:200px;height:200px;object-fit:contain;border:1px solid var(--line);border-radius:12px;background:#fff;padding:6px"/>
+    <div style="font-size:11px;color:var(--soft);margin-top:4px">Abre o app do banco e paga com o QR 👆</div>`:""}
     ${pg.pix_copia_cola?`<div style="margin-top:10px">
       <div style="font-size:11px;color:var(--soft);font-weight:700;margin-bottom:4px">PIX COPIA E COLA</div>
       <div style="background:#F6F6F7;border:1px solid var(--line);border-radius:9px;padding:9px;font-size:10.5px;word-break:break-all;max-height:74px;overflow:auto">${pg.pix_copia_cola}</div>
