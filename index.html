@@ -3,18 +3,8 @@
 <meta charset="utf-8"/><meta name="referrer" content="no-referrer"/><meta name="viewport" content="width=device-width, initial-scale=1"/>
 <title>Efeito Vendas na China</title>
 <link rel="stylesheet" href="assets/fonts.css"/>
-<script src="assets/js/supabase.min.js">
-function abreAmostra(...a){
-  if(!USER){alert("📦 As amostras fazem parte da sua importação!\n\nEnvia sua cotação que nosso time cuida de tudo — inclusive de trazer amostras com fotos e vídeos reais pra você decidir com segurança.");return;}
-  return abreAmostra_real(...a);
-}
-</script>
-<script src="config.js">
-function abreAmostra(...a){
-  if(!USER){alert("📦 As amostras fazem parte da sua importação!\n\nEnvia sua cotação que nosso time cuida de tudo — inclusive de trazer amostras com fotos e vídeos reais pra você decidir com segurança.");return;}
-  return abreAmostra_real(...a);
-}
-</script>
+<script src="assets/js/supabase.min.js"></script>
+<script src="config.js"></script>
 <style>
 :root{--bg:#F4F5F7;--panel:#FFF;--ink:#161514;--soft:#6C6A66;--faint:#9C9995;--line:#E7E7E9;--line2:#EFEFF1;--orange:#FF4D1C;--orangebg:#FFF1EC;--gold:#C4933B;--goldbg:#FBF3E3;--green:#1F8A4C;--greenbg:#E7F6ED;--warn:#B26B00;--warnbg:#FFF6E5;--blue:#2563C9;--bluebg:#EAF1FD;--red:#C0392B;--redbg:#FDECEA}
 *{box-sizing:border-box;margin:0;padding:0}
@@ -737,9 +727,25 @@ async function pedirAmostra(){
   let taxa=97;try{const {data}=await sb.from("config").select("valor").eq("chave","amostra").single();taxa=Number((data.valor||{}).taxa_brl)||97;}catch(e){}
   const total=taxa+Number(pmProd.brl||0);
   if(!confirm(`Amostra real de "${pmProd.nome}"\n\nTaxa do serviço: R$ ${brl(taxa)}\nProduto (1 un): R$ ${brl(pmProd.brl)}\nTotal: R$ ${brl(total)}\n\nSeu time na China recebe, fotografa, filma e mede o produto. Em até 7 dias após a chegada no depósito, tudo aparece aqui pra você. E fechando o pedido grande, a taxa vira crédito.\n\nConfirmar solicitação?`))return;
-  const {error}=await sb.from("amostras").insert({user_id:USER.id,offer_id:pmProd.offer_id,taxa_brl:total,obs_aluno:""});
+  const {data:am,error}=await sb.from("amostras").insert({user_id:USER.id,offer_id:pmProd.offer_id,taxa_brl:total,obs_aluno:""}).select().single();
   if(error){alert("Erro: "+error.message);return;}
-  fechaProd();showToast("Amostra solicitada, o time vai confirmar o pagamento");
+  fechaProd();
+  let pg={};try{const {data}=await sb.from("config").select("valor").eq("chave","pagamento").single();pg=data.valor||{};}catch(e){}
+  abrePagamento(total,pg,am&&am.id);
+}
+function abrePagamento(total,pg,amostraId){
+  const temPix=!!(pg.pix_copia_cola||pg.qr_url), temLink=!!pg.link;
+  $("pgValor").textContent="R$ "+brl(total);
+  $("pgBox").innerHTML=`
+    ${pg.qr_url?`<img src="${pg.qr_url}" alt="QR Code Pix" style="width:190px;height:190px;object-fit:contain;border:1px solid var(--line);border-radius:12px;background:#fff;padding:6px"/>`:""}
+    ${pg.pix_copia_cola?`<div style="margin-top:10px">
+      <div style="font-size:11px;color:var(--soft);font-weight:700;margin-bottom:4px">PIX COPIA E COLA</div>
+      <div style="background:#F6F6F7;border:1px solid var(--line);border-radius:9px;padding:9px;font-size:10.5px;word-break:break-all;max-height:74px;overflow:auto">${pg.pix_copia_cola}</div>
+      <button class="btn p full" style="margin-top:7px" onclick="navigator.clipboard.writeText(${JSON.stringify(pg.pix_copia_cola)});this.textContent='✓ Código copiado!'">Copiar código Pix</button></div>`:""}
+    ${pg.chave?`<div style="font-size:12px;margin-top:8px">Chave Pix: <b>${pg.chave}</b>${pg.titular?` · ${pg.titular}`:""}</div>`:""}
+    ${temLink?`<a class="btn full" href="${pg.link}" target="_blank" style="margin-top:8px;display:block;text-align:center;background:var(--ink);color:#fff">Pagar pelo link seguro</a>`:""}
+    ${(!temPix&&!temLink)?`<div style="font-size:12.5px;color:var(--soft)">Nosso time vai te enviar os dados de pagamento pelo WhatsApp em instantes. 🙌</div>`:""}`;
+  $("pgmodal").classList.add("show");
 }
 async function abreMeus(){
   $("amodal").classList.add("show");
@@ -840,6 +846,18 @@ function abreAmostra(...a){
     </select>
     <button class="btn p full" onclick="leadSalva()">Enviar minha cotação</button>
     <button class="btn full" style="margin-top:6px;background:none;border:none;color:var(--faint);font-size:12px" onclick="$('leadmodal').classList.remove('show')">voltar</button>
+  </div>
+</div>
+
+<div class="fmodal" id="pgmodal" onclick="if(event.target===this)$('pgmodal').classList.remove('show')">
+  <div class="fbox" style="max-width:400px;text-align:center">
+    <button class="fclose" onclick="$('pgmodal').classList.remove('show')">✕</button>
+    <h3 style="font-size:17px;font-weight:800">Amostra solicitada! 🎉</h3>
+    <div style="font-size:12.5px;color:var(--soft);margin:6px 0 4px">Pra sua amostra entrar na fila de compra na China, é só concluir o pagamento:</div>
+    <div style="font-size:26px;font-weight:800;margin:6px 0 12px" id="pgValor">R$ 0,00</div>
+    <div id="pgBox"></div>
+    <div style="font-size:11px;color:var(--faint);margin-top:12px;line-height:1.5">Depois de pagar, nosso time confirma e compra sua amostra no fornecedor. Você acompanha tudo em "Minhas amostras" — e recebe fotos e vídeo reais quando ela chegar. 🇨🇳</div>
+    <button class="btn p full" style="margin-top:10px" onclick="$('pgmodal').classList.remove('show');showToast('Assim que o pagamento cair, o time confirma ✓')">Já paguei</button>
   </div>
 </div>
 </body></html>
