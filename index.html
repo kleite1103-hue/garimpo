@@ -498,11 +498,30 @@ async function leadSalva(){
   const nome=$("ldNome").value.trim(),whats=$("ldWhats").value.replace(/\D/g,"");
   if(nome.length<5||whats.length<10){alert("Preencha nome completo e WhatsApp com DDD.");return;}
   const quiz={cliente:$("ldCli").value,faturamento:$("ldFat").value,canal:$("ldCanal").value,importa:$("ldImp").value,regime:$("ldReg").value};
-  if(!quiz.cliente||!quiz.faturamento||!quiz.canal||!quiz.importa||!quiz.regime){alert("Responde as perguntinhas — é o que nosso time usa pra montar sua importação certa.");return;}
+    const falta=["liCli","liFat","liCanal","liImp","liReg"].find(id=>!$(id).value);
+    if(falta){marcaFalta(falta);return;}
   if(USER){await sb.from("perfis").update({nome,whatsapp:whats}).eq("id",USER.id);}
   window._ldNome=nome;window._ldWhats=whats;window._ldQuiz=quiz;
   $("leadmodal").classList.remove("show");
   enviarCotacao(true);
+}
+function marcaFalta(id){
+  const el=$(id);if(!el)return;
+  const li=document.getElementById("leadInline");if(li)li.classList.remove("hidden");
+  el.style.borderColor="#D91F26";el.style.background="#FFF5F5";
+  el.scrollIntoView({behavior:"smooth",block:"center"});
+  setTimeout(()=>el.focus(),300);
+  const limpa=()=>{el.style.borderColor="";el.style.background="#fff";};
+  el.addEventListener("input",limpa,{once:true});el.addEventListener("change",limpa,{once:true});
+  toastLead("Falta preencher este campo 👆");
+}
+function toastLead(msg){
+  let t=document.getElementById("tLead");
+  if(!t){t=document.createElement("div");t.id="tLead";
+    t.style.cssText="position:fixed;left:50%;transform:translateX(-50%);bottom:22px;background:#1A1A1A;color:#fff;padding:10px 16px;border-radius:10px;font-size:12.5px;z-index:9999;box-shadow:0 6px 20px rgba(0,0,0,.2)";
+    document.body.appendChild(t);}
+  t.textContent=msg;t.style.display="block";
+  clearTimeout(window._tl);window._tl=setTimeout(()=>{t.style.display="none";},2600);
 }
 async function enviarCotacao(pos){
   if(!CART.length){alert("Adicione produtos antes de enviar.");return;}
@@ -515,16 +534,17 @@ async function enviarCotacao(pos){
   if(_m3>0&&_m3<1&&!confirm(`Seu pedido ocupa ${_m3.toFixed(2)} m³ e o mínimo de importação é 1 m³ (o frete do cubo é cobrado cheio).\n\nQuer enviar mesmo assim? Nosso time vai avaliar, mas o frete por unidade pode ficar alto.`))return;
   const tot=CART.reduce((s,c)=>s+c.brl*c.qtd,0);
   if(!USER){
-    if(localStorage.getItem("ev_lead_ok")&&!pos){alert("Sua cotação já está com nosso time! 🎉\n\nVocê vai receber no WhatsApp o preço final da sua importação e todos os detalhes pra fazer tudo com nosso apoio e segurança — do pedido à chegada no Brasil.");return;}
+    
     const nome=$("liNome").value.trim(),whats=$("liWhats").value.replace(/\D/g,"");
     const quiz={cliente:$("liCli").value,faturamento:$("liFat").value,canal:$("liCanal").value,importa:$("liImp").value,regime:$("liReg").value};
-    if(nome.length<5||whats.length<10){alert("Preencha seu nome completo e WhatsApp com DDD.");$("liNome").focus();return;}
-    if(!quiz.cliente||!quiz.faturamento||!quiz.canal||!quiz.importa||!quiz.regime){alert("Responde as perguntinhas — é o que nosso time usa pra montar sua importação certa.");return;}
+    if(nome.length<5||whats.length<10){marcaFalta(nome.length<5?"liNome":"liWhats");return;}
+      const falta=["liCli","liFat","liCanal","liImp","liReg"].find(id=>!$(id).value);
+    if(falta){marcaFalta(falta);return;}
     window._ldNome=nome;window._ldWhats=whats;window._ldQuiz=quiz;
     {
     try{
       const {data:num,error:eL}=await sb.rpc("cotacao_lead",{p_nome:window._ldNome,p_whats:window._ldWhats,p_quiz:window._ldQuiz||{},p_obs:$("obsAluno").value.trim()||"",p_total:tot,p_itens:CART.map(c=>({offer_id:c.offer_id,nome:c.nome,img:c.img,qtd:c.qtd,moq:c.moq,brl:c.brl}))});
-      if(eL){alert("Não foi possível enviar: "+eL.message);return;}
+      if(eL){alert("Não consegui enviar sua cotação 😕\n\n"+eL.message+"\n\nTenta de novo — se persistir, chama a gente no WhatsApp!");return;}
       localStorage.setItem("ev_lead_ok","1");
       CART=[];updCart();$("obsAluno").value="";
       alert("Cotação "+(num||"")+" enviada! 🎉\n\nNosso time vai entrar em contato pelo seu WhatsApp com o preço final da sua importação e todos os detalhes pra importar com nosso apoio e segurança.");
