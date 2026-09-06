@@ -210,6 +210,7 @@ body{-webkit-font-smoothing:antialiased}
   .side.aberto{display:flex !important;flex-wrap:wrap;max-height:44vh;overflow-y:auto}
   .side.aberto .cat{flex:0 0 auto}
 }
+.cat .arr{font-style:normal;font-size:9px;color:var(--faint);display:inline-block;width:9px}
 </style></head>
 <body>
 
@@ -376,15 +377,20 @@ function renderCats(){
   PROD.forEach(p=>{const c=p.categoria||"Outros",s=p.subcategoria||"Geral";tree[c]=tree[c]||{n:0,subs:{}};tree[c].n++;tree[c].subs[s]=(tree[c].subs[s]||0)+1;});
   let h=`<div class="cat ${curCat==='todas'?'on':''}" onclick="setCat('todas')"><span>Todas</span><span class="num">${PROD.length}</span></div>`;
   Object.keys(tree).sort((a,b)=>tree[b].n-tree[a].n).forEach(k=>{
-    const on=curCat===k;
-    h+=`<div class="cat ${on&&!curSub?'on':''}" onclick="setCat('${esc(k)}')"><span>${k}</span><span class="num">${tree[k].n}</span></div>`;
-    if(on){Object.keys(tree[k].subs).sort((a,b)=>tree[k].subs[b]-tree[k].subs[a]).forEach(s=>{
-      h+=`<div class="cat sub ${curSub===s?'on':''}" onclick="setSub('${esc(k)}','${esc(s)}')"><span>${s}</span><span class="num">${tree[k].subs[s]}</span></div>`;});}
+    const on=curCat===k, aberta=(window._catAberta===k);
+    const subs=Object.keys(tree[k].subs).filter(s=>s!=="Geral");
+    h+=`<div class="cat ${on&&!curSub?'on':''}" onclick="toggleCat('${esc(k)}')"><span>${subs.length?`<i class="arr">${aberta?'▾':'▸'}</i> `:''}${k}</span><span class="num">${tree[k].n}</span></div>`;
+    if(aberta&&subs.length){subs.sort((a,b)=>tree[k].subs[b]-tree[k].subs[a]).forEach(s=>{
+      h+=`<div class="cat sub ${curSub===s?'on':''}" onclick="event.stopPropagation();setSub('${esc(k)}','${esc(s)}')"><span>${s}</span><span class="num">${tree[k].subs[s]}</span></div>`;});}
   });
   $("cats").innerHTML=h;
 }
+function toggleCat(k){
+  if(window._catAberta===k&&curCat===k&&!curSub){window._catAberta=null;renderCats();return;}
+  window._catAberta=k;setCat(k);
+}
 function setCat(k){fechaCats();curCat=k;curSub=null;$("q").value="";renderCats();render();irCatalogo();rolaProdutos();}
-function setSub(k,s){fechaCats();curCat=k;curSub=s;$("q").value="";renderCats();render();irCatalogo();rolaProdutos();}
+function setSub(k,s){window._catAberta=k;fechaCats();curCat=k;curSub=s;$("q").value="";renderCats();render();irCatalogo();rolaProdutos();}
 function toggleCats(){
   const s=$("cats");s.classList.toggle("aberto");
   $("catToggle").textContent=(s.classList.contains("aberto")?"✕ Fechar categorias":"☰ Categorias");
