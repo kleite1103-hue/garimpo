@@ -357,9 +357,10 @@ const CARD_COLS="offer_id,nome,categoria,subcategoria,brl,brl_max,img,moq,vendas
 async function carregaCatalogo(){
   let off=0;PROD=[];
   while(true){
-    const {data,error}=await sb.from("catalogo").select(CARD_COLS).eq("visivel",true).order("destaque",{ascending:false}).order("nota_ia",{ascending:false,nullsFirst:false}).range(off,off+499);
+    const {data,error}=await sb.from("catalogo").select(CARD_COLS).eq("visivel",true).order("destaque",{ascending:false}).order("nota_ia",{ascending:false,nullsFirst:false}).order("offer_id",{ascending:true}).range(off,off+499);
     if(error||!data||!data.length)break;
-    PROD=PROD.concat(data);
+    const vistos=new Set(PROD.map(p=>p.offer_id));
+    PROD=PROD.concat(data.filter(p=>!vistos.has(p.offer_id)));
     renderCats();render();            // pinta já na primeira página
     off+=500;if(data.length<500)break;
   }
