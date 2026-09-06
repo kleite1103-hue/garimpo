@@ -211,6 +211,9 @@ body{-webkit-font-smoothing:antialiased}
   .side.aberto .cat{flex:0 0 auto}
 }
 .cat .arr{font-style:normal;font-size:9px;color:var(--faint);display:inline-block;width:9px}
+.chegada .ffab{font-size:11px;color:var(--soft);margin-bottom:1px}
+.chegada .ffab b{color:var(--ink)}
+#pmBanner .ffab2{font-size:12px;color:var(--soft);margin-bottom:3px}
 </style></head>
 <body>
 
@@ -354,7 +357,7 @@ async function boot(){
   await carregaCatalogo();
 }
 // ---------- CATALOGO ----------
-const CARD_COLS="offer_id,nome,categoria,subcategoria,brl,brl_max,img,moq,vendas,destaque,forn_fabrica,forn_anos,eh_kit,grupo_id,nota_ia,certificacao";
+const CARD_COLS="offer_id,nome,categoria,subcategoria,brl,brl_max,img,moq,vendas,destaque,forn_fabrica,forn_anos,eh_kit,grupo_id,nota_ia,certificacao,descricao";
 async function carregaCatalogo(){
   let off=0;PROD=[];
   while(true){
@@ -418,6 +421,7 @@ function filtered(){
   else L.sort((a,b)=>vnum(b.vendas)-vnum(a.vendas));
   return L;
 }
+function fab(p){const m=String(p.descricao||'').match(/\|FAB:([\d.]+)/);return m?parseFloat(m[1]):null;}
 function mini(u){return u&&u.includes('alicdn.com')?u+'_360x360q75.jpg':u;}
 function fmtVendas(v){
   const s=String(v||"").trim();if(!s)return "";
@@ -433,7 +437,7 @@ function card(p){
   const w=p.certificacao?`<span class="warnb">⚠ ${p.certificacao}</span>`:"";
   return `<article class="card" onclick="abreProd(\'${p.offer_id}\')" style="cursor:pointer"><div class="thumb"><img loading="lazy" src="${mini(p.img)}" alt=""/><span class="bdg">▲ ${fmtVendas(p.vendas)}</span>${w}</div>
    <div class="cbody"><div class="pname">${p.nome}</div>
-    <div class="chegada"><span class="big">R$ ${brl(p.brl)}</span><span class="lab">/un no Brasil*</span><div class="pnote">✈️ c/ frete + impostos</div></div>
+    <div class="chegada">${fab(p)?`<div class="ffab">🏭 Na fábrica <b>R$ ${brl(fab(p))}</b></div>`:""}<span class="big">R$ ${brl(p.brl)}</span><span class="lab">/un no Brasil*</span><div class="pnote">✈️ c/ frete + impostos</div></div>
     <div class="tiers"><div class="th">Preço por quantidade</div>${fx}</div>
     <div class="metarow"><span class="moq">a partir de <b>${p.moq} un</b></span><span class="sales">${fmtVendas(p.vendas)?`🔥 ${fmtVendas(p.vendas)} vendidos`:''}</span></div>
     <div class="forn">✓ Fornecedor verificado${p.forn_anos?' · '+p.forn_anos+(p.forn_anos>1?' anos':' ano'):''}</div>
@@ -644,6 +648,7 @@ function abreProd(id){
   if(!p._full){hidrataProduto(id).then(full=>{if(full&&pmProd&&pmProd.offer_id===id){Object.assign(p,full,{_full:true});abreProd(id);}});}
   $("pmImg").src=p.img||"";$("pmNome").textContent=p.nome;
   $("pmBrl").textContent="R$ "+brl(p.brl);
+  try{const f=fab(p);const e=$("pmFab");if(e)e.innerHTML=f?`🏭 Preço na fábrica na China: <b>R$ ${brl(f)}</b>/un`:"";}catch(e){}
   $("pmBadges").innerHTML=`${fmtV(p.vendas)?`<span class="pb hot">🔥 ${fmtV(p.vendas)} unidades já vendidas na fábrica</span>`:""}<span class="pb ver">✓ Fornecedor verificado</span>${p.certificacao?`<span class="pb warn">⚠ Exige ${p.certificacao} pra importar</span>`:""}`;
   $("pmTiers").innerHTML=(p.faixas_brl&&p.faixas_brl.length?p.faixas_brl:[{faixa:"qualquer quantidade",brl:p.brl}]).map(f=>`<div class="ptr"><span>${f.faixa||"qualquer"}</span><b>R$ ${brl(f.brl)}/un</b></div>`).join("");
   document.querySelectorAll(".grupo-opcoes").forEach(e=>e.remove());
@@ -811,7 +816,7 @@ function abreAmostra(...a){
     <div class="pinfo">
       <h2 id="pmNome"></h2>
       <div class="pbadges" id="pmBadges"></div>
-      <div class="pprice"><div class="row1"><span style="font-size:11px;color:var(--faint)">a partir de</span><div id="pmBanner"><div class="t">✈️ Valor final no Brasil</div><span class="big" id="pmBrl"></span><div class="s">já considerando <b>frete internacional + impostos</b> — fechado na resposta da sua cotação</div></div><span class="lab">/un · chegada no Brasil</span></div>
+      <div class="pprice"><div class="row1"><span style="font-size:11px;color:var(--faint)">a partir de</span><div id="pmBanner"><div class="ffab2" id="pmFab"></div><div class="t">✈️ Estimativa chegando no Brasil</div><span class="big" id="pmBrl"></span><div class="s">já com <b>frete internacional + impostos</b> · <b>o valor cai quando você fecha o cubo</b> — peça sua cotação e nosso time fecha o preço final</div></div><span class="lab">/un · chegada no Brasil</span></div>
         <div class="aviso"><b>*Estimativa</b> com câmbio do dia. O preço final vem na resposta da sua cotação.</div></div>
       <div class="ptiers"><div class="th">Preço por quantidade (estimado)</div><div id="pmTiers"></div></div>
       <div class="pforn">🛡️ <div><b>Fornecedor verificado</b><div style="font-size:11px;color:var(--soft)" id="pmForn"></div></div></div>
