@@ -333,6 +333,7 @@ function _el(id){return document.getElementById(id)||{classList:{add(){},remove(
 function abreLogin(){$('vApp').classList.add('hidden');$('vLogin').classList.remove('hidden');}
 async function sair(){await sb.auth.signOut();location.reload();}
 
+window.addEventListener('scroll',()=>{try{autoPag();}catch(e){}},{passive:true});
 async function boot(){
   try{localStorage.removeItem('ev_lead_ok');}catch(e){}
   $("vLogin").classList.add("hidden");$("vApp").classList.remove("hidden");
@@ -356,11 +357,11 @@ const CARD_COLS="offer_id,nome,categoria,subcategoria,brl,brl_max,img,moq,vendas
 async function carregaCatalogo(){
   let off=0;PROD=[];
   while(true){
-    const {data,error}=await sb.from("catalogo").select(CARD_COLS).eq("visivel",true).order("destaque",{ascending:false}).order("nota_ia",{ascending:false,nullsFirst:false}).range(off,off+999);
+    const {data,error}=await sb.from("catalogo").select(CARD_COLS).eq("visivel",true).order("destaque",{ascending:false}).order("nota_ia",{ascending:false,nullsFirst:false}).range(off,off+499);
     if(error||!data||!data.length)break;
     PROD=PROD.concat(data);
     renderCats();render();            // pinta já na primeira página
-    off+=1000;if(data.length<1000)break;
+    off+=500;if(data.length<500)break;
   }
   fetch("https://api.frankfurter.app/latest?from=USD&to=BRL").then(r=>r.json()).then(j=>{USD=j.rates.BRL;}).catch(()=>{USD=5.4;});
 }
@@ -443,8 +444,23 @@ function render(){
   }
   L=out;
   $("crumbs").innerHTML=curCat==="todas"?"<b>Todas as categorias</b>":(curSub?`Categorias / ${curCat} / <b>${curSub}</b>`:`Categorias / <b>${curCat}</b>`);
+  window._L=L;
+  const key=curCat+"|"+curSub+"|"+curSort+"|"+(($("q")&&$("q").value)||"");
+  if(window._pagKey!==key){window._pag=60;window._pagKey=key;}
+  const vis=L.slice(0,window._pag||60);
   $("count").innerHTML=`<b>${L.length}</b> produtos`;
-  $("grid").innerHTML=L.length?L.map(card).join(""):`<div class="empty"><b>Catálogo em carga.</b><br>Os produtos entram aqui automaticamente conforme o robô alimenta a base.</div>`;
+  $("grid").innerHTML=L.length?vis.map(card).join(""):`<div class="empty"><b>Catálogo em carga.</b><br>Os produtos entram aqui automaticamente conforme o robô alimenta a base.</div>`;
+  const mais=document.getElementById("verMais");
+  if(mais){
+    if(L.length>vis.length){mais.style.display="block";mais.textContent=`Ver mais produtos (${L.length-vis.length} restantes)`;}
+    else mais.style.display="none";
+  }
+}
+function verMais(){window._pag=(window._pag||60)+60;render();}
+function autoPag(){
+  const mais=document.getElementById("verMais");
+  if(!mais||mais.style.display==="none")return;
+  if(mais.getBoundingClientRect().top<window.innerHeight+400)verMais();
 }
 // ---------- CARRINHO ----------
 function add(id){
