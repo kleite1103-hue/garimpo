@@ -220,6 +220,7 @@ body{-webkit-font-smoothing:antialiased}
 #tickIn b{color:#F5C518;font-weight:700}
 #tickIn i{font-style:normal;opacity:.4;margin:0 18px}
 @keyframes tk{to{transform:translateX(-100%)}}
+#heroWrap{display:block}
 #hero{background:linear-gradient(135deg,#1A1A1A 0%,#2C2C2C 100%);color:#fff;padding:30px 20px 26px;margin-bottom:2px}
 #hero .hin{max-width:1340px;margin:0 auto}
 #hero h1{font-family:"Bebas Neue",sans-serif;font-size:38px;line-height:1;margin:0 0 8px;letter-spacing:.01em}
@@ -265,14 +266,15 @@ body{-webkit-font-smoothing:antialiased}
 </div></div>
 
 <!-- CATALOGO -->
-<div id="pCat" class="shell">
-    <section id="hero">
+<div id="heroWrap"><section id="hero">
       <div class="hin">
         <h1>Você não importa sozinha.</h1>
         <p>Nosso time negocia com a fábrica na China, confere cada produto e traz no nosso contêiner — do primeiro contato até a mercadoria na sua porta.</p>
         <div class="hsteps"><div><b>1</b> Você escolhe</div><div><b>2</b> Negociamos na China</div><div><b>3</b> Conferimos tudo</div><div><b>4</b> Entregamos pra você</div></div>
       </div>
-    </section>
+    </section></div>
+<div id="pCat" class="shell">
+    
     
   <aside class="side"><h4>Categorias</h4><div id="cats"></div></aside>
   <main>
@@ -425,7 +427,8 @@ function toggleCat(k){
   if(window._catAberta===k&&curCat===k&&!curSub){window._catAberta=null;renderCats();return;}
   window._catAberta=k;setCat(k);
 }
-function setCat(k){fechaCats();curCat=k;curSub=null;$("q").value="";renderCats();render();irCatalogo();rolaProdutos();}
+function setCat(k){fechaCats();try{document.getElementById('heroWrap').style.display=(k==='todas')?'block':'none';}catch(e){}
+  curCat=k;curSub=null;$("q").value="";renderCats();render();irCatalogo();rolaProdutos();}
 function setSub(k,s){window._catAberta=k;fechaCats();curCat=k;curSub=s;$("q").value="";renderCats();render();irCatalogo();rolaProdutos();}
 function toggleCats(){
   const s=$("cats");s.classList.toggle("aberto");
