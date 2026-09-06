@@ -211,6 +211,12 @@ body{-webkit-font-smoothing:antialiased}
   .side.aberto .cat{flex:0 0 auto}
 }
 .cat .arr{font-style:normal;font-size:9px;color:var(--faint);display:inline-block;width:9px}
+
+#aviso{background:#1A1A1A;color:#fff;min-height:44px;display:flex;align-items:center;justify-content:center;padding:8px 16px;text-align:center}
+#avisoTxt{font-size:14px;line-height:1.35;opacity:0;transition:opacity .6s ease}
+#avisoTxt.on{opacity:1}
+#avisoTxt b{color:#F5C518;font-weight:700}
+@media(max-width:840px){#aviso{min-height:52px;padding:8px 14px}#avisoTxt{font-size:13px}}
 </style></head>
 <body>
 
@@ -233,6 +239,7 @@ body{-webkit-font-smoothing:antialiased}
 
 <!-- APP -->
 <div id="vApp" class="hidden">
+<div id="aviso"><span id="avisoTxt"></span></div>
 <div class="top"><div class="topin">
   <div class="logo" onclick="irCatalogo()"><span class="ev">Efeito Vendas</span><span class="g" style="font-size:34px">na <i>China</i></span></div>
   <div class="searchbar"><input id="q" placeholder="Buscar produto…" oninput="render()"/><button onclick="render()">Buscar</button></div>
@@ -335,7 +342,24 @@ function abreLogin(){$('vApp').classList.add('hidden');$('vLogin').classList.rem
 async function sair(){await sb.auth.signOut();location.reload();}
 
 window.addEventListener('scroll',()=>{try{autoPag();}catch(e){}},{passive:true});
+
+const AVISOS=[
+ "🏭 <b>Cada fábrica aqui foi verificada</b> pelo nosso time na China",
+ "🇨🇳 <b>Negociamos em chinês por você</b> — preço, prazo e qualidade",
+ "📦 Sua mercadoria vem <b>no nosso contêiner</b>, com acompanhamento em cada etapa",
+ "🛡️ <b>Conferimos o produto antes de embarcar</b> — você vê fotos e vídeos reais",
+ "🤝 <b>Do primeiro contato até a entrega</b>, você não faz nada sozinha",
+ "💬 <b>Tudo em português</b>, com gente de verdade cuidando da sua importação"
+];
+function rodaAviso(){
+  const el=document.getElementById("avisoTxt");if(!el)return;
+  let i=0;
+  const mostra=()=>{el.classList.remove("on");
+    setTimeout(()=>{el.innerHTML=AVISOS[i%AVISOS.length];el.classList.add("on");i++;},600);};
+  mostra();setInterval(mostra,8000);
+}
 async function boot(){
+  try{rodaAviso();}catch(e){}
   try{localStorage.removeItem('ev_lead_ok');}catch(e){}
   $("vLogin").classList.add("hidden");$("vApp").classList.remove("hidden");
   const {data:{session}}=await sb.auth.getSession();
