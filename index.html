@@ -214,6 +214,20 @@ body{-webkit-font-smoothing:antialiased}
 .chegada .ffab{font-size:11px;color:var(--soft);margin-bottom:1px}
 .chegada .ffab b{color:var(--ink)}
 #pmBanner .ffab2{font-size:12px;color:var(--soft);margin-bottom:3px}
+
+#tick{background:#1A1A1A;color:#fff;overflow:hidden;height:32px;display:flex;align-items:center;font-size:12px}
+#tickIn{white-space:nowrap;padding-left:100%;animation:tk 30s linear infinite}
+#tickIn b{color:#F5C518;font-weight:700}
+#tickIn i{font-style:normal;opacity:.4;margin:0 18px}
+@keyframes tk{to{transform:translateX(-100%)}}
+#hero{background:linear-gradient(135deg,#1A1A1A 0%,#2C2C2C 100%);color:#fff;padding:30px 20px 26px;margin-bottom:2px}
+#hero .hin{max-width:1340px;margin:0 auto}
+#hero h1{font-family:"Bebas Neue",sans-serif;font-size:38px;line-height:1;margin:0 0 8px;letter-spacing:.01em}
+#hero p{font-size:14px;line-height:1.6;color:#D8D3CC;max-width:660px;margin:0 0 15px}
+#hero .hsteps{display:flex;gap:9px;flex-wrap:wrap}
+#hero .hsteps div{background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.13);border-radius:999px;padding:7px 13px;font-size:12px;color:#F2EFEA}
+#hero .hsteps b{color:#D91F26;margin-right:5px}
+@media(max-width:840px){#hero{padding:22px 16px}#hero h1{font-size:28px}#hero p{font-size:12.5px}#hero .hsteps div{font-size:11px;padding:6px 10px}}
 </style></head>
 <body>
 
@@ -236,6 +250,7 @@ body{-webkit-font-smoothing:antialiased}
 
 <!-- APP -->
 <div id="vApp" class="hidden">
+<div id="tick"><div id="tickIn"><span></span></div></div>
 <div class="top"><div class="topin">
   <div class="logo" onclick="irCatalogo()"><span class="ev">Efeito Vendas</span><span class="g" style="font-size:34px">na <i>China</i></span></div>
   <div class="searchbar"><input id="q" placeholder="Buscar produto…" oninput="render()"/><button onclick="render()">Buscar</button></div>
@@ -251,6 +266,14 @@ body{-webkit-font-smoothing:antialiased}
 
 <!-- CATALOGO -->
 <div id="pCat" class="shell">
+    <section id="hero">
+      <div class="hin">
+        <h1>Você não importa sozinha.</h1>
+        <p>Nosso time negocia com a fábrica na China, confere cada produto e traz no nosso contêiner — do primeiro contato até a mercadoria na sua porta.</p>
+        <div class="hsteps"><div><b>1</b> Você escolhe</div><div><b>2</b> Negociamos na China</div><div><b>3</b> Conferimos tudo</div><div><b>4</b> Entregamos pra você</div></div>
+      </div>
+    </section>
+    
   <aside class="side"><h4>Categorias</h4><div id="cats"></div></aside>
   <main>
     <div class="crumbs" id="crumbs"><b>Todas as categorias</b></div>
@@ -338,7 +361,17 @@ function abreLogin(){$('vApp').classList.add('hidden');$('vLogin').classList.rem
 async function sair(){await sb.auth.signOut();location.reload();}
 
 window.addEventListener('scroll',()=>{try{autoPag();}catch(e){}},{passive:true});
+
+const TICKS=["🏭 <b>Fábricas verificadas</b> uma a uma pelo nosso time",
+"🇨🇳 <b>Time nosso na China</b> negociando com a fábrica por você",
+"📦 Sua mercadoria vem <b>no nosso contêiner</b>",
+"🛡️ <b>Conferimos cada produto</b> antes de embarcar",
+"🤝 Acompanhamos <b>do primeiro contato até a entrega</b>",
+"📸 <b>Fotos e vídeos reais</b> do produto antes de você fechar",
+"💬 <b>Tudo em português</b>, com gente de verdade te ajudando"];
+function montaTick(){const el=document.querySelector("#tickIn span");if(el)el.innerHTML=TICKS.concat(TICKS).join('<i>•</i>');}
 async function boot(){
+  try{montaTick();}catch(e){}
   try{localStorage.removeItem('ev_lead_ok');}catch(e){}
   $("vLogin").classList.add("hidden");$("vApp").classList.remove("hidden");
   const {data:{session}}=await sb.auth.getSession();
