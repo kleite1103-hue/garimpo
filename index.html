@@ -215,28 +215,27 @@ body{-webkit-font-smoothing:antialiased}
 .chegada .ffab b{color:var(--ink)}
 #pmBanner .ffab2{font-size:12px;color:var(--soft);margin-bottom:3px}
 
-#tick{background:#1A1A1A;color:#fff;height:36px;display:flex;align-items:center;justify-content:center;font-size:12.5px;overflow:hidden}
-#tickTxt{opacity:0;transition:opacity .45s ease;text-align:center;padding:0 14px}
-#tickTxt.on{opacity:1}
-#tickTxt b{color:#F5C518;font-weight:700}
-#heroWrap{display:block}
 
-#hero{background:linear-gradient(120deg,#161616 0%,#2A2A2A 62%,#3A2020 100%);color:#fff;padding:0}
-#hero .hin{max-width:1340px;margin:0 auto;padding:26px 20px;display:grid;grid-template-columns:1fr auto;gap:26px;align-items:center}
-#hero .hbadge{display:inline-block;font-family:"Bebas Neue",sans-serif;font-size:11.5px;letter-spacing:.14em;color:#F5C518;border:1px solid rgba(245,197,24,.35);border-radius:999px;padding:3px 11px;margin-bottom:9px}
-#hero h1{font-family:"Bebas Neue",sans-serif;font-size:40px;line-height:.98;margin:0 0 7px;letter-spacing:.01em}
-#hero p{font-size:13.5px;line-height:1.55;color:#CFC9C1;max-width:600px;margin:0 0 13px}
-#hero .hsteps{display:flex;gap:8px;flex-wrap:wrap}
-#hero .hsteps div{background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.12);border-radius:999px;padding:6px 12px;font-size:11.5px;color:#EDE9E3}
-#hero .hsteps b{color:#D91F26;margin-right:5px}
-#hero .hnum{display:flex;gap:22px;padding-left:24px;border-left:1px solid rgba(255,255,255,.12)}
-#hero .hnum div{text-align:center}
-#hero .hnum b{display:block;font-family:"Bebas Neue",sans-serif;font-size:30px;line-height:1;color:#fff}
-#hero .hnum span{font-size:10.5px;color:#9C958C;letter-spacing:.03em}
-@media(max-width:900px){#hero .hin{grid-template-columns:1fr;gap:16px;padding:20px 16px}
  #hero h1{font-size:29px}#hero p{font-size:12.5px}
  #hero .hnum{padding:12px 0 0;border-left:none;border-top:1px solid rgba(255,255,255,.12);gap:18px;justify-content:space-around;width:100%}
  #hero .hnum b{font-size:23px}}
+
+#promo{position:relative;border:1.5px solid var(--line);border-radius:16px;background:#fff;overflow:hidden;margin:0 0 14px;box-shadow:0 1px 3px rgba(0,0,0,.03)}
+#promo .pgrad{position:absolute;inset:0;background:linear-gradient(115deg,#1A1A1A 0%,#242424 55%,#3B1E1E 100%)}
+#promo .pin{position:relative;display:grid;grid-template-columns:1fr auto;gap:20px;align-items:center;padding:18px 22px;color:#fff}
+#promo .pbadge{display:inline-block;font-family:"Bebas Neue",sans-serif;font-size:11px;letter-spacing:.13em;color:#F5C518;border:1px solid rgba(245,197,24,.35);border-radius:999px;padding:2px 10px;margin-bottom:7px}
+#promo h3{font-family:"Bebas Neue",sans-serif;font-size:27px;line-height:1;margin:0 0 5px;letter-spacing:.01em}
+#promo p{font-size:12.5px;line-height:1.5;color:#CFC9C1;margin:0;max-width:620px;min-height:36px}
+#promo .pnums{display:flex;gap:20px;padding-left:20px;border-left:1px solid rgba(255,255,255,.14)}
+#promo .pnums div{text-align:center}
+#promo .pnums b{display:block;font-family:"Bebas Neue",sans-serif;font-size:26px;line-height:1}
+#promo .pnums span{font-size:10px;color:#9C958C}
+#promo .pdots{position:absolute;right:14px;bottom:9px;display:flex;gap:5px}
+#promo .pdots i{width:5px;height:5px;border-radius:50%;background:rgba(255,255,255,.28);transition:background .3s}
+#promo .pdots i.on{background:#F5C518}
+@media(max-width:840px){#promo .pin{grid-template-columns:1fr;gap:12px;padding:15px 16px}
+ #promo h3{font-size:22px}#promo p{font-size:12px;min-height:0}
+ #promo .pnums{padding:11px 0 0;border-left:none;border-top:1px solid rgba(255,255,255,.14);justify-content:space-around;width:100%}}
 </style></head>
 <body>
 
@@ -259,7 +258,6 @@ body{-webkit-font-smoothing:antialiased}
 
 <!-- APP -->
 <div id="vApp" class="hidden">
-<div id="tick"><span id="tickTxt"></span></div>
 <div class="top"><div class="topin">
   <div class="logo" onclick="irCatalogo()"><span class="ev">Efeito Vendas</span><span class="g" style="font-size:34px">na <i>China</i></span></div>
   <div class="searchbar"><input id="q" placeholder="Buscar produto…" oninput="render()"/><button onclick="render()">Buscar</button></div>
@@ -274,27 +272,25 @@ body{-webkit-font-smoothing:antialiased}
 </div></div>
 
 <!-- CATALOGO -->
-<div id="heroWrap"><section id="hero">
-      <div class="hin">
-        <div class="htx">
-          <span class="hbadge">🇨🇳 EFEITO VENDAS NA CHINA</span>
-          <h1>Você não importa sozinha.</h1>
-          <p>Negociamos com a fábrica, conferimos cada produto e trazemos no nosso contêiner — do primeiro contato até a mercadoria na sua porta.</p>
-          <div class="hsteps"><div><b>1</b> Você escolhe</div><div><b>2</b> Negociamos</div><div><b>3</b> Conferimos</div><div><b>4</b> Entregamos</div></div>
-        </div>
-        <div class="hnum">
-          <div><b id="hnProd">—</b><span>produtos</span></div>
-          <div><b>129</b><span>fábricas verificadas</span></div>
-          <div><b>22</b><span>categorias</span></div>
-        </div>
-      </div>
-    </section></div>
+
 <div id="pCat" class="shell">
     
     
   <aside class="side"><h4>Categorias</h4><div id="cats"></div></aside>
   <main>
     <div class="crumbs" id="crumbs"><b>Todas as categorias</b></div>
+    <div id="promo">
+      <div class="pgrad"></div>
+      <div class="pin">
+        <div class="ptx">
+          <span class="pbadge">🇨🇳 Efeito Vendas na China</span>
+          <h3 id="promoT">Você não importa sozinha.</h3>
+          <p id="promoP">Negociamos com a fábrica, conferimos cada produto e trazemos no nosso contêiner — do primeiro contato até a mercadoria na sua porta.</p>
+        </div>
+        <div class="pnums"><div><b id="hnProd">—</b><span>produtos</span></div><div><b>129</b><span>fábricas verificadas</span></div></div>
+      </div>
+      <div class="pdots" id="promoDots"></div>
+    </div>
     <div class="toolbar">
       <span class="sp on" data-s="vendas" onclick="setSort(this)">Mais vendidos na China</span>
       <span class="sp" data-s="menor" onclick="setSort(this)">Menor preço</span>
@@ -387,15 +383,37 @@ const TICKS=["🏭 <b>Fábricas verificadas</b> uma a uma pelo nosso time",
 "🤝 Acompanhamos <b>do primeiro contato até a entrega</b>",
 "📸 <b>Fotos e vídeos reais</b> do produto antes de você fechar",
 "💬 <b>Tudo em português</b>, com gente de verdade te ajudando"];
-function montaTick(){
+function montaTickOLD(){
   const el=document.getElementById("tickTxt");if(!el)return;
   let i=0;
   const troca=()=>{el.classList.remove("on");
     setTimeout(()=>{el.innerHTML=TICKS[i%TICKS.length];el.classList.add("on");i++;},450);};
   troca();setInterval(troca,4200);
 }
+
+const PROMOS=[
+ {t:"Você não importa sozinha.",p:"Negociamos com a fábrica, conferimos cada produto e trazemos no nosso contêiner — do primeiro contato até a mercadoria na sua porta."},
+ {t:"Fábrica verificada, uma a uma.",p:"Nosso time analisou anos de mercado, recompra e reputação de cada fábrica antes de colocar os produtos aqui."},
+ {t:"Nosso time está na China.",p:"Negociamos em chinês, pedimos fotos e vídeos reais do seu produto e conferimos tudo antes de embarcar."},
+ {t:"Você escolhe, a gente cuida do resto.",p:"Da negociação ao desembaraço: acompanhamos cada etapa e entregamos a mercadoria no seu endereço."},
+ {t:"Preço de fábrica, sem intermediário.",p:"Compramos direto de quem produz — o mesmo produto que a concorrência compra caro de revendedor."}
+];
+function rodaPromo(){
+  const T=document.getElementById("promoT"),P=document.getElementById("promoP"),D=document.getElementById("promoDots");
+  if(!T||!P)return;
+  if(D)D.innerHTML=PROMOS.map((_,i)=>`<i class="${i===0?'on':''}"></i>`).join("");
+  let i=0;
+  setInterval(()=>{
+    i=(i+1)%PROMOS.length;
+    T.style.opacity=P.style.opacity="0";
+    setTimeout(()=>{T.textContent=PROMOS[i].t;P.textContent=PROMOS[i].p;
+      T.style.opacity=P.style.opacity="1";
+      if(D)[...D.children].forEach((d,k)=>d.classList.toggle("on",k===i));},380);
+  },5200);
+  T.style.transition=P.style.transition="opacity .38s ease";
+}
 async function boot(){
-  try{montaTick();}catch(e){}
+  try{rodaPromo();}catch(e){}
   try{localStorage.removeItem('ev_lead_ok');}catch(e){}
   $("vLogin").classList.add("hidden");$("vApp").classList.remove("hidden");
   const {data:{session}}=await sb.auth.getSession();
@@ -450,7 +468,7 @@ function toggleCat(k){
   if(window._catAberta===k&&curCat===k&&!curSub){window._catAberta=null;renderCats();return;}
   window._catAberta=k;setCat(k);
 }
-function setCat(k){fechaCats();try{document.getElementById('heroWrap').style.display=(k==='todas')?'block':'none';}catch(e){}
+function setCat(k){fechaCats();try{document.getElementById('promo').style.display=(k==='todas')?'block':'none';}catch(e){}
   curCat=k;curSub=null;$("q").value="";renderCats();render();irCatalogo();rolaProdutos();}
 function setSub(k,s){window._catAberta=k;fechaCats();curCat=k;curSub=s;$("q").value="";renderCats();render();irCatalogo();rolaProdutos();}
 function toggleCats(){
