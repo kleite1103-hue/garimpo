@@ -405,7 +405,7 @@ body{-webkit-font-smoothing:antialiased}
           <select id="liImp" style="width:100%;border:1.5px solid var(--line);border-radius:10px;padding:11px;font-size:13px;margin-bottom:8px;background:#fff;color:var(--ink)"><option value="">Você já importa? *</option><option>Nunca importei</option><option>Já tentei, não deu certo</option><option>Importo às vezes</option><option>Importo sempre</option></select>
           <select id="liReg" style="width:100%;border:1.5px solid var(--line);border-radius:10px;padding:11px;font-size:13px;margin-bottom:2px;background:#fff;color:var(--ink)"><option value="">Seu regime tributário? *</option><option>Não tenho CNPJ</option><option>MEI</option><option>Simples Nacional</option><option>Lucro Presumido</option><option>Lucro Real</option></select>
         </div>
-        <div class="estnote">*Estimativa com o câmbio do dia. O preço final da sua importação — produto, frete e impostos — vem fechado na resposta da cotação.</div>
+        <div class="estnote">*Preço na fábrica, convertido pelo câmbio do dia. O valor final da importação (produto + frete + impostos) vem na resposta da sua cotação.</div>
         <button class="btn p send" onclick="enviarCotacao()">Enviar pedido de cotação</button>
         <div style="text-align:center;font-size:11px;color:var(--faint);padding-bottom:14px" id="slaTxt">Resposta em até 1 dia útil.</div>
       </div>
@@ -526,7 +526,7 @@ async function boot(){
   await carregaCatalogo();
 }
 // ---------- CATALOGO ----------
-const CARD_COLS="offer_id,nome,categoria,subcategoria,brl,brl_max,img,moq,vendas,destaque,forn_fabrica,forn_anos,eh_kit,grupo_id,nota_ia,certificacao";
+const CARD_COLS="offer_id,nome,categoria,subcategoria,brl,brl_max,img,moq,vendas,destaque,forn_fabrica,forn_anos,eh_kit,grupo_id,nota_ia,certificacao,descricao";
 async function carregaCatalogo(){
   let off=0;PROD=[];
   while(true){
@@ -616,6 +616,7 @@ function filtered(){
   else L.sort((a,b)=>vnum(b.vendas)-vnum(a.vendas));
   return L;
 }
+function fab(p){const m=String(p.descricao||'').match(/\|FAB:([\d.]+)/);return m?parseFloat(m[1]):null;}
 function mini(u){return u&&u.includes('alicdn.com')?u+'_360x360q75.jpg':u;}
 function fmtVendas(v){
   const s=String(v||"").trim();if(!s)return "";
@@ -631,7 +632,7 @@ function card(p){
   const w=p.certificacao?`<span class="warnb">⚠ ${p.certificacao}</span>`:"";
   return `<article class="card" onclick="abreProd(\'${p.offer_id}\')" style="cursor:pointer"><div class="thumb"><img loading="lazy" src="${mini(p.img)}" alt=""/><span class="bdg">▲ ${fmtVendas(p.vendas)}</span>${w}</div>
    <div class="cbody"><div class="pname">${p.nome}</div>
-    <div class="chegada"><span class="big">R$ ${brl(p.brl)}</span><span class="lab">/un no Brasil*</span><div class="pnote">✈️ c/ frete + impostos</div></div>
+    <div class="chegada"><span class="big">R$ ${brl(fab(p)||p.brl)}</span><span class="lab">/un na China</span><div class="pnote">+ frete e impostos · peça sua cotação</div></div>
     <div class="tiers"><div class="th">Preço por quantidade</div>${fx}</div>
     <div class="metarow"><span class="moq">a partir de <b>${p.moq} un</b></span><span class="sales">${fmtVendas(p.vendas)?`🔥 ${fmtVendas(p.vendas)} vendidos`:''}</span></div>
     <div class="forn">✓ Fornecedor verificado${p.forn_anos?' · '+p.forn_anos+(p.forn_anos>1?' anos':' ano'):''}</div>
@@ -848,7 +849,7 @@ function abreProd(id){
   const p=PROD.find(x=>x.offer_id===id);if(!p)return;pmProd=p;
   if(!p._full){hidrataProduto(id).then(full=>{if(full&&pmProd&&pmProd.offer_id===id){Object.assign(p,full,{_full:true});abreProd(id);}});}
   $("pmImg").src=p.img||"";$("pmNome").textContent=p.nome;
-  $("pmBrl").textContent="R$ "+brl(p.brl);
+  $("pmBrl").textContent="R$ "+brl(fab(p)||p.brl);
   $("pmBadges").innerHTML=`${fmtV(p.vendas)?`<span class="pb hot">🔥 ${fmtV(p.vendas)} unidades já vendidas na fábrica</span>`:""}<span class="pb ver">✓ Fornecedor verificado</span>${p.certificacao?`<span class="pb warn">⚠ Exige ${p.certificacao} pra importar</span>`:""}`;
   $("pmTiers").innerHTML=(p.faixas_brl&&p.faixas_brl.length?p.faixas_brl:[{faixa:"qualquer quantidade",brl:p.brl}]).map(f=>`<div class="ptr"><span>${f.faixa||"qualquer"}</span><b>R$ ${brl(f.brl)}/un</b></div>`).join("");
   document.querySelectorAll(".grupo-opcoes").forEach(e=>e.remove());
