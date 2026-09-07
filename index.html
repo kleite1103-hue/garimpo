@@ -228,8 +228,10 @@ body{-webkit-font-smoothing:antialiased}
 .mtHead h1{font-family:"Bebas Neue",sans-serif;font-size:44px;line-height:1;margin:0 0 10px;letter-spacing:.01em}
 .mtHead p{font-size:14.5px;line-height:1.6;color:var(--soft);max-width:620px;margin:0 auto}
 .mtSteps{display:grid;gap:12px}
+@media(min-width:900px){.mtSteps{grid-template-columns:1fr 1fr}.mtSteps .mtStep:last-child{grid-column:1/-1}}
 .mtStep{display:grid;grid-template-columns:64px 1fr;gap:16px;align-items:start;background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:18px 20px}
-.mtStep .l{font-family:"Bebas Neue",sans-serif;font-size:38px;line-height:1;color:#fff;background:linear-gradient(140deg,#1A1A1A,#3B1E1E);border-radius:12px;width:52px;height:52px;display:flex;align-items:center;justify-content:center}
+.mtStep .l{color:#fff;background:linear-gradient(140deg,#1A1A1A,#3B1E1E);border-radius:13px;width:52px;height:52px;display:flex;align-items:center;justify-content:center}
+.mtStep .l svg{width:25px;height:25px;stroke-linecap:round;stroke-linejoin:round}
 .mtStep h3{font-size:16px;margin:2px 0 5px}
 .mtStep p{font-size:13.5px;line-height:1.6;color:var(--soft);margin:0}
 .mtCta{margin-top:22px;background:linear-gradient(120deg,#1A1A1A,#3B1E1E);border-radius:18px;padding:28px;text-align:center;color:#fff}
@@ -238,7 +240,7 @@ body{-webkit-font-smoothing:antialiased}
 .mtCta .btn.p{background:#D91F26;border:none;padding:12px 26px}
 @media(max-width:840px){.mtHead{padding:24px 0 18px}.mtHead h1{font-size:31px}.mtHead p{font-size:13px}
  .mtStep{grid-template-columns:46px 1fr;gap:12px;padding:14px 15px}
- .mtStep .l{width:40px;height:40px;font-size:28px}.mtStep h3{font-size:15px}.mtStep p{font-size:12.5px}
+ .mtStep .l{width:42px;height:42px}.mtStep .l svg{width:21px;height:21px}.mtStep h3{font-size:15px}.mtStep p{font-size:12.5px}
  .mtCta h2{font-size:23px}}
 </style></head>
 <body>
@@ -286,16 +288,21 @@ body{-webkit-font-smoothing:antialiased}
       <p>Cinco etapas que levam o produto da fábrica chinesa até a porta da sua loja — com o nosso time do lado em cada uma delas.</p>
     </div>
     <div class="mtSteps">
-      <div class="mtStep"><span class="l">P</span><div><h3>Produto certo</h3><p>Catálogo de fábricas verificadas, com produtos escolhidos pensando em margem e giro pro mercado brasileiro. Você escolhe sem medo de comprar encalhe.</p></div></div>
-      <div class="mtStep"><span class="l">O</span><div><h3>Orçamento fechado</h3><p>Nosso time negocia com a fábrica o preço real na sua quantidade, calcula a cubagem e te devolve o custo final da importação — sem surpresa no meio do caminho.</p></div></div>
-      <div class="mtStep"><span class="l">N</span><div><h3>Negociação na China</h3><p>Falamos chinês por você: cobramos amostra, pedimos fotos e vídeos reais do produto e comparamos fornecedores até achar o melhor conjunto de preço e qualidade.</p></div></div>
-      <div class="mtStep"><span class="l">T</span><div><h3>Transporte e trâmites</h3><p>Consolidamos sua mercadoria no nosso contêiner — ou no aéreo, quando faz mais sentido — e cuidamos de todo o processo até ela chegar ao Brasil.</p></div></div>
-      <div class="mtStep"><span class="l">E</span><div><h3>Entrega e recompra</h3><p>A mercadoria chega no seu endereço e o processo fica pronto pra repetir: a segunda importação é sempre maior, mais rápida e mais lucrativa que a primeira.</p></div></div>
+      <div class="mtStep"><span class="l"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M3 9h18M3 9l2-5h14l2 5M3 9v10a1 1 0 001 1h16a1 1 0 001-1V9M9 13h6"/></svg></span>
+        <div><h3>1 · Produto certo</h3><p>Nosso time analisa cada fábrica antes de colocar o produto aqui: anos de mercado, reputação e taxa de recompra. Você navega em um catálogo já filtrado, com preço de fábrica de verdade.</p></div></div>
+      <div class="mtStep"><span class="l"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M9 7h7M9 12h7M9 17h4M5 7h.01M5 12h.01M5 17h.01"/><rect x="2.5" y="3" width="19" height="18" rx="2.5"/></svg></span>
+        <div><h3>2 · Orçamento fechado</h3><p>Você monta sua cotação e nosso time negocia direto com a fábrica: preço real na quantidade que você quer, cubagem, prazo e o custo final da importação — tudo em um número só.</p></div></div>
+      <div class="mtStep"><span class="l"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M21 11.5a8.4 8.4 0 01-9 8.4L3 21l1.1-4.2A8.4 8.4 0 1121 11.5z"/><path d="M8.5 11.5h.01M12 11.5h.01M15.5 11.5h.01"/></svg></span>
+        <div><h3>3 · Negociação na China</h3><p>Falamos chinês por você. Pedimos fotos e vídeos reais do produto, cobramos amostra quando precisa e comparamos fornecedores até achar o melhor conjunto de preço, prazo e qualidade.</p></div></div>
+      <div class="mtStep"><span class="l"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M2.5 8.5h11v9h-11z"/><path d="M13.5 11h4l3.5 3v3.5h-7.5z"/><circle cx="6" cy="18.5" r="1.8"/><circle cx="17" cy="18.5" r="1.8"/></svg></span>
+        <div><h3>4 · Transporte e trâmites</h3><p>Sua mercadoria vem consolidada no nosso contêiner — ou pelo aéreo, quando é mais vantajoso. Cuidamos de todo o processo de chegada ao Brasil e te mantemos informada em cada etapa.</p></div></div>
+      <div class="mtStep"><span class="l"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M3 10.5L12 3l9 7.5"/><path d="M5 9.8V20a1 1 0 001 1h12a1 1 0 001-1V9.8"/><path d="M9.5 14.5l1.8 1.8 3.7-3.7"/></svg></span>
+        <div><h3>5 · Entrega e recompra</h3><p>A mercadoria chega no seu endereço, pronta pra vender. E o caminho fica aberto: a próxima importação é mais rápida, porque a fábrica, o preço e o processo já estão prontos.</p></div></div>
     </div>
     <div class="mtCta">
       <h2>Escolha seus produtos e peça sua cotação</h2>
       <p>Nosso time monta sua importação e responde no seu WhatsApp.</p>
-      <button class="btn p" onclick="irCatalogo()">Ver o catálogo</button>
+      <button class="btn p" onclick="localStorage.setItem('ev_viu_metodo','1');irCatalogo()">Ver o catálogo de produtos</button>
     </div>
   </div>
 </div>
@@ -403,12 +410,17 @@ function rodaAviso(){
 }
 
 function irMetodo(){
+  try{localStorage.setItem("ev_viu_metodo","1");}catch(e){}
   ["pCart","pMinhas","pCat"].forEach(id=>{const e=document.getElementById(id);if(e)e.classList.add("hidden");});
   document.getElementById("pMetodo").classList.remove("hidden");
   scrollTo(0,0);
 }
 async function boot(){
   try{rodaAviso();}catch(e){}
+  try{
+    const {data:{session:_s}}=await sb.auth.getSession();
+    if(!_s&&!localStorage.getItem("ev_viu_metodo")){irMetodo();}
+  }catch(e){}
   try{localStorage.removeItem('ev_lead_ok');}catch(e){}
   $("vLogin").classList.add("hidden");$("vApp").classList.remove("hidden");
   const {data:{session}}=await sb.auth.getSession();
