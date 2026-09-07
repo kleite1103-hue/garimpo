@@ -124,10 +124,9 @@ input,textarea,select{font-family:inherit}
 .loading{padding:44px;text-align:center;color:var(--soft)}
 @media(max-width:840px){
   .shell,.cotgrid{grid-template-columns:1fr}
-  .side{position:static;max-height:none;overflow:visible;display:flex;gap:7px;overflow-x:auto;padding:7px;-webkit-overflow-scrolling:touch}
-  .side .cat{flex:0 0 auto;white-space:nowrap;border-radius:999px;padding:8px 13px;font-size:12.5px}
-  .side .cat .num{margin-left:5px;opacity:.65}
-  .side .cat.sub{background:#F6F1E9}
+  .catToggle{display:block;width:100%;margin:0 0 10px;background:#fff;border:1.5px solid var(--line);border-radius:12px;padding:12px 14px;font-size:13.5px;font-weight:700;text-align:left;color:var(--ink)}
+  .side{position:static;display:none;max-height:none}
+  .side.aberto{display:block;max-height:56vh;overflow-y:auto;margin-bottom:12px}
   .grid{grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:11px}
   .card .nm{font-size:12px}}
 
@@ -239,10 +238,11 @@ body{-webkit-font-smoothing:antialiased}
 .mtCta p{font-size:14px;color:var(--soft);margin:0 0 18px}
 .mtCta .btn.p{background:var(--ink);border:none;padding:15px 40px;font-size:15px;border-radius:12px}
 .mtCta .btn.p:hover{background:#000}
-@media(max-width:840px){.mtHead{padding:24px 0 18px}.mtHead h1{font-size:31px}.mtHead p{font-size:13px}
- .mtStep{grid-template-columns:46px 1fr;gap:12px;padding:14px 15px}
- .mtStep .l{width:42px;height:42px}.mtStep .l svg{width:21px;height:21px}.mtStep h3{font-size:15px}.mtStep p{font-size:12.5px}
+@media(max-width:840px){.mtWrap{padding:0 14px}.mtHead{padding:18px 0 14px}.mtHead h1{font-size:26px}.mtHead p{font-size:12.5px;line-height:1.5}
+ .mtStep{grid-template-columns:36px 1fr;gap:11px;padding:12px 13px;border-radius:13px}.mtSteps{gap:9px}
+ .mtStep .l{width:34px;height:34px;border-radius:10px}.mtStep .l svg{width:17px;height:17px}.mtStep h3{font-size:14px;margin:0 0 3px}.mtStep p{font-size:12px;line-height:1.5}.mtStep h3{font-size:15px}.mtStep p{font-size:12.5px}
  .mtCta h2{font-size:23px}}
+.catToggle{display:none}
 </style></head>
 <body>
 
@@ -308,7 +308,8 @@ body{-webkit-font-smoothing:antialiased}
   </div>
 </div>
 <div id="pCat" class="shell">
-  <aside class="side"><h4>Categorias</h4><div id="cats"></div></aside>
+  <button class="catToggle" id="catToggle" onclick="toggleCats()">☰ Ver categorias</button>
+  <aside class="side" id="sideBox"><h4>Categorias</h4><div id="cats"></div></aside>
   <main>
     <div class="crumbs" id="crumbs"><b>Todas as categorias</b></div>
     <div class="toolbar">
@@ -471,12 +472,29 @@ function renderCats(){
   });
   $("cats").innerHTML=h;
 }
+
+function toggleCats(){
+  const s=document.getElementById("sideBox"),b=document.getElementById("catToggle");if(!s||!b)return;
+  const abre=!s.classList.contains("aberto");
+  s.classList.toggle("aberto",abre);
+  b.textContent=abre?"✕ Fechar categorias":"☰ Ver categorias";
+}
+function fechaCats(){
+  if(window.innerWidth>840)return;
+  const s=document.getElementById("sideBox"),b=document.getElementById("catToggle");if(!s||!b)return;
+  s.classList.remove("aberto");
+  b.textContent="☰ "+(curSub||(curCat==="todas"?"Ver categorias":curCat));
+}
+function rolaProdutos(){
+  if(window.innerWidth>840)return;
+  setTimeout(()=>{const g=document.getElementById("grid");if(g)window.scrollTo({top:g.getBoundingClientRect().top+window.scrollY-70,behavior:"smooth"});},130);
+}
 function toggleCat(k){
   if(window._catAberta===k&&curCat===k&&!curSub){window._catAberta=null;renderCats();return;}
   window._catAberta=k;setCat(k);
 }
-function setCat(k){fechaCats();curCat=k;curSub=null;$("q").value="";renderCats();render();irCatalogo();rolaProdutos();}
-function setSub(k,s){window._catAberta=k;fechaCats();curCat=k;curSub=s;$("q").value="";renderCats();render();irCatalogo();rolaProdutos();}
+function setCat(k){fechaCats();rolaProdutos();fechaCats();curCat=k;curSub=null;$("q").value="";renderCats();render();irCatalogo();rolaProdutos();}
+function setSub(k,s){fechaCats();rolaProdutos();window._catAberta=k;fechaCats();curCat=k;curSub=s;$("q").value="";renderCats();render();irCatalogo();rolaProdutos();}
 function toggleCats(){
   const s=$("cats");s.classList.toggle("aberto");
   $("catToggle").textContent=(s.classList.contains("aberto")?"✕ Fechar categorias":"☰ Categorias");
