@@ -224,20 +224,21 @@ body{-webkit-font-smoothing:antialiased}
 #pMetodo{padding:0 0 30px}
 .mtWrap{max-width:1000px;margin:0 auto;padding:0 20px}
 .mtHead{padding:34px 0 26px;text-align:center}
-.mtTag{display:inline-block;font-family:"Bebas Neue",sans-serif;font-size:12px;letter-spacing:.18em;color:#8A6100;background:#FDF3E0;border-radius:999px;padding:5px 14px;margin-bottom:12px}
+.mtTag{display:inline-block;font-family:"Bebas Neue",sans-serif;font-size:12px;letter-spacing:.18em;color:var(--ink);background:#fff;border:1.5px solid var(--line);border-radius:999px;padding:6px 16px;margin-bottom:12px}
 .mtHead h1{font-family:"Bebas Neue",sans-serif;font-size:44px;line-height:1;margin:0 0 10px;letter-spacing:.01em}
 .mtHead p{font-size:14.5px;line-height:1.6;color:var(--soft);max-width:620px;margin:0 auto}
 .mtSteps{display:grid;gap:12px}
 @media(min-width:900px){.mtSteps{grid-template-columns:1fr 1fr}.mtSteps .mtStep:last-child{grid-column:1/-1}}
 .mtStep{display:grid;grid-template-columns:64px 1fr;gap:16px;align-items:start;background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:18px 20px}
-.mtStep .l{color:#fff;background:linear-gradient(140deg,#1A1A1A,#3B1E1E);border-radius:13px;width:52px;height:52px;display:flex;align-items:center;justify-content:center}
+.mtStep .l{color:var(--ink);background:#fff;border:1.5px solid var(--line);border-radius:13px;width:52px;height:52px;display:flex;align-items:center;justify-content:center}
 .mtStep .l svg{width:25px;height:25px;stroke-linecap:round;stroke-linejoin:round}
 .mtStep h3{font-size:16px;margin:2px 0 5px}
 .mtStep p{font-size:13.5px;line-height:1.6;color:var(--soft);margin:0}
-.mtCta{margin-top:22px;background:linear-gradient(120deg,#1A1A1A,#3B1E1E);border-radius:18px;padding:28px;text-align:center;color:#fff}
-.mtCta h2{font-family:"Bebas Neue",sans-serif;font-size:30px;margin:0 0 6px;letter-spacing:.01em}
-.mtCta p{font-size:13.5px;color:#CFC9C1;margin:0 0 16px}
-.mtCta .btn.p{background:#D91F26;border:none;padding:12px 26px}
+.mtCta{margin-top:22px;background:var(--panel);border:1.5px solid var(--line);border-radius:18px;padding:30px 28px;text-align:center}
+.mtCta h2{font-family:"Bebas Neue",sans-serif;font-size:31px;margin:0 0 6px;letter-spacing:.01em;color:var(--ink)}
+.mtCta p{font-size:14px;color:var(--soft);margin:0 0 18px}
+.mtCta .btn.p{background:var(--ink);border:none;padding:15px 40px;font-size:15px;border-radius:12px}
+.mtCta .btn.p:hover{background:#000}
 @media(max-width:840px){.mtHead{padding:24px 0 18px}.mtHead h1{font-size:31px}.mtHead p{font-size:13px}
  .mtStep{grid-template-columns:46px 1fr;gap:12px;padding:14px 15px}
  .mtStep .l{width:42px;height:42px}.mtStep .l svg{width:21px;height:21px}.mtStep h3{font-size:15px}.mtStep p{font-size:12.5px}
