@@ -129,6 +129,9 @@ tr.click{cursor:pointer}tr.click:hover{background:#FAFAFB}
   .pprow input:first-child{grid-column:1/-1}
   .leadinfo{display:block;font-size:11px !important;line-height:1.8;margin-top:4px}
 }
+.al{display:flex;align-items:center;gap:9px}
+.al svg{width:17px;height:17px;stroke-linecap:round;stroke-linejoin:round;flex:0 0 auto;opacity:.85}
+.al .bd{margin-left:auto}
 </style></head>
 <body>
 
@@ -153,16 +156,16 @@ tr.click{cursor:pointer}tr.click:hover{background:#FAFAFB}
 <div class="layout">
   <aside class="aside">
     <div class="al on" data-v="geral" onclick="nav(this)">▦ Visão geral</div>
-    <div class="al" data-v="cot" onclick="nav(this)">🛒 Cotações<span class="bd hidden" id="bdCot">0</span></div>
-    <div class="al" data-v="ped" onclick="nav(this)">📦 Pedidos</div>
-    <div class="al" data-v="cat" onclick="nav(this)">▤ Catálogo</div>
-    <div class="al" data-v="cfg" onclick="nav(this)">⚙ Configurações</div>
-    <div class="al" data-v="cur" onclick="nav(this)">🎓 Curadoria<span class="bd hidden" id="bdCur">0</span></div>
-    <div class="al" data-v="sol" onclick="nav(this)">📨 Solicitações<span class="bd hidden" id="bdSol">0</span></div>
-    <div class="al" data-v="amo" onclick="nav(this)">📦 Amostras<span class="bd hidden" id="bdAmo">0</span></div>
-    <div class="al" data-v="ouro" onclick="nav(this)">🏆 Fornecedores Ouro<span class="bd hidden" id="bdOuro">0</span></div>
-    <div class="al" data-v="ver" onclick="nav(this)">🕵️ Verificar fornecedor</div>
-    <div class="al" onclick="abreFoto()">📷 Busca por foto</div>
+    <div class="al" data-v="cot" onclick="nav(this)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M3 5h2l2.2 10.5a2 2 0 002 1.5h7.8a2 2 0 002-1.6L20 8H6.5"/><circle cx="10" cy="20" r="1.3"/><circle cx="17" cy="20" r="1.3"/></svg><span>Cotações</span><span class="bd hidden" id="bdCot">0</span></div>
+    <div class="al" data-v="ped" onclick="nav(this)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M3 8.5L12 4l9 4.5v7L12 20l-9-4.5z"/><path d="M3 8.5L12 13l9-4.5M12 13v7"/></svg><span>Pedidos</span></div>
+    <div class="al" data-v="cat" onclick="nav(this)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><rect x="3" y="4" width="18" height="16" rx="2.5"/><path d="M3 9h18M8 4v16"/></svg><span>Catálogo</span></div>
+    <div class="al" data-v="cfg" onclick="nav(this)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><circle cx="12" cy="12" r="3.2"/><path d="M19.4 15a1.7 1.7 0 00.3 1.9l.1.1a2 2 0 11-2.8 2.8l-.1-.1a1.7 1.7 0 00-1.9-.3 1.7 1.7 0 00-1 1.5V21a2 2 0 11-4 0v-.1A1.7 1.7 0 008.9 19a1.7 1.7 0 00-1.9.3l-.1.1a2 2 0 11-2.8-2.8l.1-.1a1.7 1.7 0 00.3-1.9 1.7 1.7 0 00-1.5-1H3a2 2 0 110-4h.1A1.7 1.7 0 004.6 8.9a1.7 1.7 0 00-.3-1.9l-.1-.1a2 2 0 112.8-2.8l.1.1a1.7 1.7 0 001.9.3H9a1.7 1.7 0 001-1.5V3a2 2 0 114 0v.1a1.7 1.7 0 001 1.5 1.7 1.7 0 001.9-.3l.1-.1a2 2 0 112.8 2.8l-.1.1a1.7 1.7 0 00-.3 1.9V9a1.7 1.7 0 001.5 1H21a2 2 0 110 4h-.1a1.7 1.7 0 00-1.5 1z"/></svg><span>Configurações</span></div>
+    <div class="al" data-v="cur" onclick="nav(this)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M22 9L12 4 2 9l10 5 10-5z"/><path d="M6 11.5V16c0 1.5 2.7 3 6 3s6-1.5 6-3v-4.5"/></svg><span>Curadoria</span><span class="bd hidden" id="bdCur">0</span></div>
+    <div class="al" data-v="sol" onclick="nav(this)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><rect x="2.5" y="5" width="19" height="14" rx="2.5"/><path d="M3 7l9 6 9-6"/></svg><span>Solicitações</span><span class="bd hidden" id="bdSol">0</span></div>
+    <div class="al" data-v="amo" onclick="nav(this)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M4 7.5L12 3l8 4.5v9L12 21l-8-4.5z"/><path d="M8 5.2l8 4.6v9"/></svg><span>Amostras</span><span class="bd hidden" id="bdAmo">0</span></div>
+    <div class="al" data-v="ouro" onclick="nav(this)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M8 21h8M12 17v4M6 4h12v4a6 6 0 01-12 0z"/><path d="M6 6H4a3 3 0 003 3M18 6h2a3 3 0 01-3 3"/></svg><span>Fornecedores Ouro</span><span class="bd hidden" id="bdOuro">0</span></div>
+    <div class="al" data-v="ver" onclick="nav(this)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><circle cx="11" cy="11" r="6.5"/><path d="M20 20l-4.4-4.4"/></svg><span>Verificar fornecedor</span></div>
+    
   </aside>
   <main class="amain">
 
@@ -242,9 +245,9 @@ tr.click{cursor:pointer}tr.click:hover{background:#FAFAFB}
     <div id="vCur" class="hidden">
       <div class="ahead"><h2>Curadoria · Modo treino</h2><span class="sub">seus vereditos ensinam a IA a julgar como você</span></div>
       <div class="tabs">
-        <span class="tab on" data-f="ia_duvida" onclick="curTab(this)">🤔 Dúvidas da IA</span>
-        <span class="tab" data-f="acima_do_teto" onclick="curTab(this)">💰 Acima do teto</span>
-        <span class="tab" data-f="sem_curadoria" onclick="curTab(this)">🆕 Sem curadoria</span>
+        <span class="tab on" data-f="ia_duvida" onclick="curTab(this)">Dúvidas da IA</span>
+        <span class="tab" data-f="acima_do_teto" onclick="curTab(this)">Acima do teto</span>
+        <span class="tab" data-f="sem_curadoria" onclick="curTab(this)">Sem curadoria</span>
         <span class="tab" data-f="ia_vetou" onclick="curTab(this)">Vetados</span>
         <span class="tab" data-f="karina_aprovou" onclick="curTab(this)">Resgatados</span>
         <span class="tab" data-f="karina_vetou" onclick="curTab(this)">Vetos confirmados</span>
@@ -444,10 +447,11 @@ async function abreCot(id){
         <div class="acts">
           <button class="btn p" onclick="responder()">Responder com preço firme</button>
           <button class="btn ghost" onclick="salvarStatus()">Salvar status/responsável</button>
-          <button class="btn s" onclick="abreCopiloto()">🤝 Copiloto China (perguntar à fábrica)</button>
-          <button class="btn ghost" onclick="usarRespostas()">⚡ Usar respostas da fábrica no preço</button>
-          <button class="btn g" onclick="abreProposta()">📄 Montar proposta (PDF)</button>
-          <button class="btn ghost" onclick="msgCliente()">📱 Mensagem curta (WhatsApp)</button>
+          <button class="btn p" onclick="cotacaoInstantanea()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" style="width:15px;height:15px;vertical-align:-2px;margin-right:5px"><path d="M13 2L4.5 13.5H11L10 22l8.5-11.5H12z"/></svg>Cotação instantânea</button>
+          <button class="btn s" onclick="abreCopiloto()">Copiloto China · perguntar à fábrica</button>
+          <button class="btn ghost" onclick="usarRespostas()">Usar respostas da fábrica no preço</button>
+          <button class="btn g" onclick="abreProposta()">Montar proposta (PDF)</button>
+          <button class="btn ghost" onclick="msgCliente()">Mensagem curta (WhatsApp)</button>
         </div>
       </div>
     </div>
@@ -807,7 +811,7 @@ function abreCopiloto(){
         <div style="margin-top:8px;font-size:11.5px;font-weight:700">📥 Resposta deste fornecedor:</div>
         <textarea id="cpResp${ix}" style="width:100%;min-height:56px;border:1.5px solid var(--line);border-radius:8px;padding:8px;font-size:11.5px;font-family:inherit" placeholder="cola a resposta do chat ${ref} aqui…">${(CP[i.id]&&CP[i.id].raw)?CP[i.id].raw:""}</textarea>
         <button class="btn sm p" style="margin-top:5px" onclick="cpParseItem(${ix})">Extrair deste item</button>
-        <button class="btn sm ghost" onclick="$('cpFile${ix}').click()">📷 Ler print da conversa</button>
+        <button class="btn sm ghost" onclick="$('cpFile${ix}').click()">Ler print da conversa</button>
         <input type="file" id="cpFile${ix}" accept="image/*" style="display:none" onchange="cpPrint(${ix},this)"/>
         <span id="cpOk${ix}" style="font-size:11.5px;margin-left:6px;color:var(--green)"></span>
       </div>`;
@@ -947,8 +951,8 @@ function loadOuroRender(){
       <div style="display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;align-items:center">
         <div><b style="font-size:14px">${x.empresa_pt||f.company_name||"?"}</b>
         <span style="font-size:11px;color:var(--faint)"> · ${f.city||""} · <b style="color:var(--orange)">${x.score}/12</b></span></div>
-        <div>${x.status==='candidato'?`<button class="btn sm g" onclick="ouroJulga(${x.id},'aprovado')">👍 Aprovar fábrica</button>
-        <button class="btn sm ghost" onclick="ouroJulga(${x.id},'reprovado')">👎 Não</button>`:`<span class="st ${x.status==='aprovado'?'respondida':''}">${x.status}</span> <button class="btn sm ghost" onclick="ouroJulga(${x.id},'candidato')">↩</button>`}</div>
+        <div>${x.status==='candidato'?`<button class="btn sm g" onclick="ouroJulga(${x.id},'aprovado')">Aprovar fábrica</button>
+        <button class="btn sm ghost" onclick="ouroJulga(${x.id},'reprovado')">Reprovar</button>`:`<span class="st ${x.status==='aprovado'?'respondida':''}">${x.status}</span> <button class="btn sm ghost" onclick="ouroJulga(${x.id},'candidato')">↩</button>`}</div>
       </div>
       <div style="display:flex;gap:6px;margin:9px 0;overflow-x:auto">${thumbs.map((t,i)=>`<a href="${(f.product_urls||[])[i]||'#'}" target="_blank"><img src="${t}" style="width:74px;height:74px;border-radius:9px;object-fit:cover;border:1px solid var(--line)"/></a>`).join("")||'<span style="font-size:11px;color:var(--faint)">sem fotos na ficha</span>'}</div>
       <div style="display:flex;gap:5px;flex-wrap:wrap;font-size:10.5px">
@@ -1136,7 +1140,7 @@ function gerarPDF(){
 async function ppPuxa(itemId,i){
   const url=($(`pp_l${itemId}_${i}`).value||"").trim();
   if(!url)return;
-  const campo=$(`pp_n${itemId}_${i}`);campo.value="🕵️ investigando…";
+  const campo=$(`pp_n${itemId}_${i}`);campo.value="investigando…";
   const {data:{session}}=await sb.auth.getSession();
   const hd={"Content-Type":"application/json","Authorization":"Bearer "+session.access_token,"apikey":CFG.SUPABASE_ANON};
   try{
@@ -1186,7 +1190,7 @@ async function gateEntrar(){
 
 async function cpPrint(ix,inp){
   const f=inp.files&&inp.files[0];if(!f)return;
-  $("cpOk"+ix).textContent="📷 lendo o print…";
+  $("cpOk"+ix).textContent="lendo o print…";
   const b64=await new Promise(res=>{
     const img=new Image(),rd=new FileReader();
     rd.onload=()=>{img.onload=()=>{
@@ -1287,6 +1291,67 @@ function comparaModal(){
   }
   el.style.cssText="display:block;font-size:11.5px;border-radius:9px;padding:8px 10px;margin:6px 0;line-height:1.5;background:"+cor;
   el.innerHTML=txt+(est.temPeso&&!kgDigi?` <span style="opacity:.7">(peso estimado das respostas: ${est.kg.toFixed(1)} kg)</span>`:"");
+}
+
+
+// litros por unidade estimados por categoria (padrão da nossa operação)
+const VOL_CAT={"Óculos":0.35,"Relógios":0.4,"Joias prata/aço":0.08,"Beleza & pincéis":0.5,"Papelaria fofa":0.4,
+"Moda íntima & meias":0.6,"Moda praia":0.7,"Cinta modeladora":1.0,"Infantil & bebê":1.0,"Bolsas & mochilas":6.0,
+"Pet":4.0,"Casa & organização":3.0,"Cozinha funcional":1.5,"Bento & marmita":2.0,"Confeitaria":1.0,
+"Casa zen & aromas":1.2,"Decoração & sazonais":2.0,"Natal":2.0,"Festa":1.0,"Artesanato & DIY":0.8,
+"Pesca & outdoor":0.8,"Achados virais & gadgets":0.8,"Auto organização":2.0};
+const VOL_PADRAO=1.5;
+function fabAdm2(p){const m=String(p.descricao||'').match(/\|FAB:([\d.]+)/);return m?parseFloat(m[1]):null;}
+async function cotacaoInstantanea(){
+  const c=selCot;if(!c)return;
+  const its=c.cotacao_itens||[];
+  if(!its.length){alert("Cotação sem itens.");return;}
+  const ids=its.map(i=>i.offer_id);
+  const {data:prods}=await sb.from("catalogo").select("offer_id,categoria,descricao,brl,volume_l,nome").in("offer_id",ids);
+  const P={};(prods||[]).forEach(p=>P[p.offer_id]=p);
+  const dd=window._cpDados||{};
+  let custo=0,litros=0,semCub=[],linhas=[];
+  its.forEach((i,ix)=>{
+    const p=P[i.offer_id]||{};
+    const real=(dd[ix]&&_melhor(dd[ix].parsed).preco_unit_rmb)?_melhor(dd[ix].parsed).preco_unit_rmb*((window._USD||5.4)/7.2):null;
+    const unit=real||fabAdm2(p)||Number(i.brl_estimado_un)/1.944;
+    custo+=unit*i.qtd;
+    const vu=Number(p.volume_l)||VOL_CAT[p.categoria]||VOL_PADRAO;
+    if(!p.volume_l&&!VOL_CAT[p.categoria])semCub.push(i.nome);
+    litros+=vu*i.qtd;
+    linhas.push({nome:i.nome,qtd:i.qtd,unit,vu,fonte:real?"fábrica":"catálogo"});
+  });
+  const usdm3=Number((CFGS.custo_m3||{}).usd||900), USD=window._USD||5.4;
+  const frete=Math.max(litros,50)/1000*usdm3*USD;   // mínimo 50 L de rateio
+  const marg=1+((parseFloat(($("cMarg")&&$("cMarg").value||"35").replace(",","."))||35)/100);
+  const total=(custo+frete)*marg;
+  const un=its.reduce((s,i)=>s+i.qtd,0);
+  $("cVol").value=litros.toFixed(1);
+  $("cFrete").value=frete.toFixed(2);
+  if($("cMarg")&&!$("cMarg").value)$("cMarg").value=35;
+  try{calcVol();}catch(e){}
+  try{calcFirme();}catch(e){}
+  const box=`<div style="background:#F1F7F3;border:1.5px solid #CDE6D9;border-radius:12px;padding:13px;margin-top:10px;font-size:12.5px;line-height:1.7">
+    <b style="font-size:13.5px">Pré-cotação calculada</b><br>
+    Produtos (${un} un): <b>R$ ${brl(custo)}</b> · Cubagem estimada: <b>${(litros/1000).toFixed(3)} m³</b><br>
+    Frete + impostos (rateio): <b>R$ ${brl(frete)}</b> · Margem: <b>${(((marg-1)*100)).toFixed(0)}%</b><br>
+    <span style="font-size:15px">Total ao cliente: <b>R$ ${brl(total)}</b> · <b>R$ ${brl(total/un)}</b>/un</span>
+    ${semCub.length?`<div style="color:#8A6100;margin-top:7px">Conferir cubagem real: ${semCub.slice(0,3).join(", ")}${semCub.length>3?" +"+(semCub.length-3):""}</div>`:""}
+    <div style="margin-top:9px;display:flex;gap:7px;flex-wrap:wrap">
+      <button class="btn sm p" onclick="aplicaInstantanea(${total})">Usar este valor</button>
+      <button class="btn sm ghost" onclick="abreProposta()">Montar proposta</button>
+      <button class="btn sm ghost" onclick="this.closest('div.panel')?0:0;document.getElementById('ciBox').remove()">fechar</button>
+    </div></div>`;
+  const alvo=document.getElementById("cAlerta")||document.querySelector(".calc");
+  document.getElementById("ciBox")?.remove();
+  const d=document.createElement("div");d.id="ciBox";d.innerHTML=box;
+  alvo.parentNode.insertBefore(d,alvo);
+  toast&&toast("Pré-cotação pronta");
+}
+function aplicaInstantanea(total){
+  window._firme=total;
+  const e=$("cFinal");if(e)e.textContent="R$ "+brl(total);
+  toast&&toast("Valor aplicado — confira e responda ao cliente");
 }
 
 boot();
