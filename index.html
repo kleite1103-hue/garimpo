@@ -212,11 +212,14 @@ body{-webkit-font-smoothing:antialiased}
 }
 .cat .arr{font-style:normal;font-size:9px;color:var(--faint);display:inline-block;width:9px}
 
-#aviso{background:#1A1A1A;color:#fff;min-height:44px;display:flex;align-items:center;justify-content:center;padding:8px 16px;text-align:center}
-#avisoTxt{font-size:14px;line-height:1.35;opacity:0;transition:opacity .6s ease}
-#avisoTxt.on{opacity:1}
+#aviso{background:#1A1A1A;color:#fff;height:48px;display:flex;align-items:center;overflow:hidden}
+#avisoIn{display:inline-flex;white-space:nowrap;will-change:transform;animation:roda 58s linear infinite}
+#aviso:hover #avisoIn{animation-play-state:paused}
+#avisoTxt{font-size:15.5px;line-height:1}
+@keyframes roda{from{transform:translateX(0)}to{transform:translateX(-50%)}}
 #avisoTxt b{color:#F5C518;font-weight:700}
-@media(max-width:840px){#aviso{min-height:52px;padding:8px 14px}#avisoTxt{font-size:13px}}
+#avisoTxt i{font-style:normal;opacity:.35;margin:0 26px}
+@media(max-width:840px){#aviso{height:44px}#avisoTxt{font-size:14px}}
 </style></head>
 <body>
 
@@ -239,7 +242,7 @@ body{-webkit-font-smoothing:antialiased}
 
 <!-- APP -->
 <div id="vApp" class="hidden">
-<div id="aviso"><span id="avisoTxt"></span></div>
+<div id="aviso"><div id="avisoIn"><span id="avisoTxt"></span></div></div>
 <div class="top"><div class="topin">
   <div class="logo" onclick="irCatalogo()"><span class="ev">Efeito Vendas</span><span class="g" style="font-size:34px">na <i>China</i></span></div>
   <div class="searchbar"><input id="q" placeholder="Buscar produto…" oninput="render()"/><button onclick="render()">Buscar</button></div>
@@ -353,10 +356,8 @@ const AVISOS=[
 ];
 function rodaAviso(){
   const el=document.getElementById("avisoTxt");if(!el)return;
-  let i=0;
-  const mostra=()=>{el.classList.remove("on");
-    setTimeout(()=>{el.innerHTML=AVISOS[i%AVISOS.length];el.classList.add("on");i++;},600);};
-  mostra();setInterval(mostra,8000);
+  const fita=AVISOS.join('<i>•</i>')+'<i>•</i>';
+  el.innerHTML=fita+fita;
 }
 async function boot(){
   try{rodaAviso();}catch(e){}
