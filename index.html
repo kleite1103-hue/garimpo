@@ -205,7 +205,6 @@ body{-webkit-font-smoothing:antialiased}
 
 @media(max-width:840px){
   .catToggle{display:block;width:100%;margin:0 0 10px;background:#fff;border:1.5px solid var(--line);border-radius:12px;padding:11px 14px;font-size:13px;font-weight:700;text-align:left;color:var(--ink)}
-  .side{display:none !important}
   .side.aberto{display:flex !important;flex-wrap:wrap;max-height:44vh;overflow-y:auto}
   .side.aberto .cat{flex:0 0 auto}
 }
@@ -251,13 +250,8 @@ body{-webkit-font-smoothing:antialiased}
   .uchip{flex:0 0 auto}
 }
 
-#qact{display:none}
 #tabbar{display:none}
 @media(max-width:840px){
-  #qact{display:flex;gap:14px;overflow-x:auto;padding:12px 4px 6px;-webkit-overflow-scrolling:touch}
-  .qa{flex:0 0 auto;text-align:center;font-size:10.5px;color:var(--soft);line-height:1.3;width:62px;cursor:pointer}
-  .qa .qi{display:flex;align-items:center;justify-content:center;width:44px;height:44px;margin:0 auto 5px;border-radius:14px;background:#fff;border:1.5px solid var(--line);color:var(--ink)}
-  .qa .qi svg{width:20px;height:20px;stroke-linecap:round;stroke-linejoin:round}
   .navbtns .nb:not(.dark){display:none}
   #tabbar{display:flex;position:fixed;left:0;right:0;bottom:0;background:#fff;border-top:1px solid var(--line);padding:7px 10px calc(7px + env(safe-area-inset-bottom));z-index:60;box-shadow:0 -2px 14px rgba(0,0,0,.06)}
   #tabbar .tb{flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;font-size:10.5px;color:var(--soft);position:relative;padding:4px 0}
@@ -267,6 +261,20 @@ body{-webkit-font-smoothing:antialiased}
   #vApp{padding-bottom:64px}
   .card .meta,.card .metarow{font-size:10.5px}
 }
+
+@media(max-width:840px){
+  .side{position:fixed;left:0;right:0;bottom:0;top:auto;max-height:78vh;z-index:70;background:#fff;border-radius:18px 18px 0 0;border:none;box-shadow:0 -8px 30px rgba(0,0,0,.18);transform:translateY(102%);transition:transform .28s ease;display:block;overflow-y:auto;padding:0 12px 80px}
+  .side.aberto{transform:translateY(0)}
+  .side h4{display:none}
+  .drawerHead{position:sticky;top:0;background:#fff;display:flex;align-items:center;justify-content:space-between;padding:15px 4px 11px;font-size:15px;border-bottom:1px solid var(--line);margin-bottom:6px}
+  .drawerHead span{font-size:19px;color:var(--faint);padding:0 6px}
+  .side .cat{padding:13px 8px;font-size:14px}
+  .side .cat.sub{font-size:13px;padding-left:22px}
+  #catMask{position:fixed;inset:0;background:rgba(0,0,0,.35);z-index:69;opacity:0;pointer-events:none;transition:opacity .28s}
+  #catMask.on{opacity:1;pointer-events:auto}
+}
+#catMask{display:none}
+@media(max-width:840px){#catMask{display:block}}
 </style></head>
 <body>
 
@@ -330,14 +338,7 @@ body{-webkit-font-smoothing:antialiased}
   </div>
 </div>
 <div id="pCat" class="shell">
-<div id="qact">
-    <div class="qa" onclick="irMetodo()"><span class="qi"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><circle cx="12" cy="12" r="9"/><path d="M12 16v-4M12 8h.01"/></svg></span>Como funciona</div>
-    <div class="qa" onclick="abreMeus()"><span class="qi"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M3 8.5L12 4l9 4.5v7L12 20l-9-4.5z"/><path d="M3 8.5L12 13l9-4.5M12 13v7"/></svg></span>Amostras</div>
-    <div class="qa" onclick="toggleCats()"><span class="qi"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><rect x="3" y="3" width="7" height="7" rx="1.6"/><rect x="14" y="3" width="7" height="7" rx="1.6"/><rect x="3" y="14" width="7" height="7" rx="1.6"/><rect x="14" y="14" width="7" height="7" rx="1.6"/></svg></span>Categorias</div>
-    <div class="qa" onclick="irMinhas()"><span class="qi"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><rect x="3.5" y="3.5" width="17" height="17" rx="3"/><path d="M8 9h8M8 13h8M8 17h5"/></svg></span>Cotações</div>
-  </div>
-  <button class="catToggle" id="catToggle" onclick="toggleCats()">☰ Ver categorias</button>
-  <aside class="side" id="sideBox"><h4>Categorias</h4><div id="cats"></div></aside>
+<aside class="side" id="sideBox"><div class="drawerHead"><b>Categorias</b><span onclick="toggleCats()">✕</span></div><h4>Categorias</h4><div id="cats"></div></aside>
   <main>
     <div class="crumbs" id="crumbs"><b>Todas as categorias</b></div>
     <div class="toolbar">
@@ -528,16 +529,19 @@ function renderCats(){
 }
 
 function toggleCats(){
-  const s=document.getElementById("sideBox"),b=document.getElementById("catToggle");if(!s||!b)return;
+  const s=document.getElementById("sideBox"),m=document.getElementById("catMask");
+  if(!s)return;
   const abre=!s.classList.contains("aberto");
   s.classList.toggle("aberto",abre);
-  b.textContent=abre?"✕ Fechar categorias":"☰ Ver categorias";
+  if(m)m.classList.toggle("on",abre);
+  document.body.style.overflow=abre?"hidden":"";
 }
 function fechaCats(){
   if(window.innerWidth>840)return;
-  const s=document.getElementById("sideBox"),b=document.getElementById("catToggle");if(!s||!b)return;
-  s.classList.remove("aberto");
-  b.textContent="☰ "+(curSub||(curCat==="todas"?"Ver categorias":curCat));
+  const s=document.getElementById("sideBox"),m=document.getElementById("catMask");
+  if(s)s.classList.remove("aberto");
+  if(m)m.classList.remove("on");
+  document.body.style.overflow="";
 }
 function rolaProdutos(){
   if(window.innerWidth>840)return;
@@ -550,13 +554,19 @@ function toggleCat(k){
 function setCat(k){fechaCats();rolaProdutos();fechaCats();curCat=k;curSub=null;$("q").value="";renderCats();render();irCatalogo();rolaProdutos();}
 function setSub(k,s){fechaCats();rolaProdutos();window._catAberta=k;fechaCats();curCat=k;curSub=s;$("q").value="";renderCats();render();irCatalogo();rolaProdutos();}
 function toggleCats(){
-  const s=$("cats");s.classList.toggle("aberto");
-  $("catToggle").textContent=(s.classList.contains("aberto")?"✕ Fechar categorias":"☰ Categorias");
+  const s=document.getElementById("sideBox"),m=document.getElementById("catMask");
+  if(!s)return;
+  const abre=!s.classList.contains("aberto");
+  s.classList.toggle("aberto",abre);
+  if(m)m.classList.toggle("on",abre);
+  document.body.style.overflow=abre?"hidden":"";
 }
 function fechaCats(){
-  const s=$("cats");if(!s)return;
-  s.classList.remove("aberto");
-  const b=$("catToggle");if(b)b.textContent="☰ Categorias";
+  if(window.innerWidth>840)return;
+  const s=document.getElementById("sideBox"),m=document.getElementById("catMask");
+  if(s)s.classList.remove("aberto");
+  if(m)m.classList.remove("on");
+  document.body.style.overflow="";
 }
 function rolaProdutos(){
   try{const b=$("catToggle");if(b&&curCat!=="todas")b.textContent="☰ "+(curSub||curCat);}catch(e){}
@@ -1075,4 +1085,5 @@ function abreAmostra(...a){
     <button class="btn p full" onclick="enviaEspecial()">Enviar pedido</button>
   </div>
 </div>
+<div id="catMask" onclick="toggleCats()"></div>
 </body></html>
