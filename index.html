@@ -243,6 +243,14 @@ body{-webkit-font-smoothing:antialiased}
  .mtStep .l{width:34px;height:34px;border-radius:10px}.mtStep .l svg{width:17px;height:17px}.mtStep h3{font-size:14px;margin:0 0 3px}.mtStep p{font-size:12px;line-height:1.5}.mtStep h3{font-size:15px}.mtStep p{font-size:12.5px}
  .mtCta h2{font-size:23px}}
 .catToggle{display:none}
+.nb{display:inline-flex;align-items:center;gap:7px}
+.nb svg{width:17px;height:17px;stroke-linecap:round;stroke-linejoin:round;flex:0 0 auto}
+@media(max-width:840px){
+  .navbtns{display:flex;gap:7px;overflow-x:auto;padding-bottom:2px;-webkit-overflow-scrolling:touch}
+  .nb{flex:0 0 auto;white-space:nowrap;padding:9px 13px;font-size:12.5px;border-radius:11px}
+  .nb svg{width:15px;height:15px}
+  .uchip{flex:0 0 auto}
+}
 </style></head>
 <body>
 
@@ -270,12 +278,10 @@ body{-webkit-font-smoothing:antialiased}
   <div class="logo" onclick="irCatalogo()"><span class="ev">Efeito Vendas</span><span class="g" style="font-size:34px">na <i>China</i></span></div>
   <div class="searchbar"><input id="q" placeholder="Buscar produto…" oninput="render()"/><button onclick="render()">Buscar</button></div>
   <div class="navbtns">
-    <div class="nb" onclick="irMetodo()">🌉 Como funciona</div>
-    <div class="nb" onclick="abreFoto()">📷 Achar por foto</div>
-    <div class="nb" onclick="abreMeus()">📦 Amostras</div>
-    
-    <div class="nb soLogado" onclick="irMinhas()">Minhas cotações</div>
-    <div class="nb dark" onclick="irCarrinho()">Cotação<span class="n" id="cartN">0</span></div>
+    <div class="nb" onclick="irMetodo()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="9"/><path d="M12 16v-4M12 8h.01"/></svg><span>Como funciona</span></div>
+    <div class="nb" onclick="abreMeus()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 8.5L12 4l9 4.5v7L12 20l-9-4.5z"/><path d="M3 8.5L12 13l9-4.5M12 13v7"/></svg><span>Amostras</span></div>
+    <div class="nb soLogado" onclick="irMinhas()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3.5" y="3.5" width="17" height="17" rx="3"/><path d="M8 9h8M8 13h8M8 17h5"/></svg><span>Minhas cotações</span></div>
+    <div class="nb dark" onclick="irCarrinho()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 5h2l2.2 10.5a2 2 0 002 1.5h7.8a2 2 0 002-1.6L20 8H6.5"/><circle cx="10" cy="20" r="1.3"/><circle cx="17" cy="20" r="1.3"/></svg><span>Cotação</span><span class="n" id="cartN">0</span></div>
     <span id="chipUser"><div class="uchip"><span class="uav" id="uAv">?</span><span id="uNome"></span><span class="sair" onclick="sair()">sair</span></div></span><button class="btn sm ghost hidden" id="btnEntrarTop" onclick="abreLogin()">Entrar</button>
   </div>
 </div></div>
@@ -419,10 +425,6 @@ function irMetodo(){
 }
 async function boot(){
   try{rodaAviso();}catch(e){}
-  try{
-    const {data:{session:_s}}=await sb.auth.getSession();
-    if(!_s&&!localStorage.getItem("ev_viu_metodo")){irMetodo();}
-  }catch(e){}
   try{localStorage.removeItem('ev_lead_ok');}catch(e){}
   $("vLogin").classList.add("hidden");$("vApp").classList.remove("hidden");
   const {data:{session}}=await sb.auth.getSession();
