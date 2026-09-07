@@ -275,6 +275,35 @@ body{-webkit-font-smoothing:antialiased}
 }
 #catMask{display:none}
 @media(max-width:840px){#catMask{display:block}}
+
+@media(max-width:840px){
+  /* topo enxuto: só logo + busca (cotação e entrar vivem na barra de baixo) */
+  .navbtns{display:none}
+  .topin{gap:10px;padding:10px 14px}
+  .searchbar input{font-size:14px;padding:11px 12px}
+  .searchbar button{padding:0 16px;font-size:13px}
+  .logo .ev{font-size:11px}.logo .g{font-size:24px !important}
+
+  /* card compacto estilo marketplace */
+  .grid{grid-template-columns:1fr 1fr;gap:9px}
+  .card{border-radius:13px}
+  .card .cbody{padding:9px 10px 10px}
+  .card .pname{font-size:12px;line-height:1.32;height:31px;overflow:hidden;margin-bottom:5px}
+  .card .chegada{background:none;border:none;padding:0;margin:0}
+  .card .chegada .big{font-size:17px;font-weight:800}
+  .card .chegada .lab{font-size:10px;color:var(--faint)}
+  .card .chegada .pnote{font-size:9.5px;color:var(--green,#1F6B4A);margin-top:0}
+  .card .tiers{display:none}
+  .card .forn{display:none}
+  .card .metarow{margin-top:4px;display:flex;justify-content:space-between;font-size:10px}
+  .card .metarow .moq{color:var(--faint)}
+  .card .metarow .sales{color:#8A6100;font-weight:700}
+  .card .addbtn{margin-top:8px;padding:9px;font-size:12px;border-radius:9px}
+  .card .bdg{font-size:9.5px;padding:3px 7px}
+  .toolbar{padding:9px 10px;gap:7px}
+  .tab{font-size:11.5px;padding:7px 11px}
+  .count{font-size:11.5px}
+}
 </style></head>
 <body>
 
@@ -491,7 +520,8 @@ async function boot(){
   PERFIL=p||{};
   _el("btnEntrarTop").classList.add("hidden");_el("chipUser").classList.remove("hidden");
   const nome=PERFIL.nome||USER.email.split("@")[0];
-  $("uNome").textContent=nome;$("uAv").textContent=nome.slice(0,2).toUpperCase();
+  $("uNome").textContent=nome;try{document.getElementById("tbUserL").textContent="Conta";}catch(e){}
+  $("uAv").textContent=nome.slice(0,2).toUpperCase();
   if(PERFIL&&(PERFIL.papel==="admin"||PERFIL.papel==="equipe"))
   await carregaCatalogo();
 }
@@ -1066,6 +1096,7 @@ function abreAmostra(...a){
 <div id="tabbar">
   <div class="tb" onclick="irCatalogo()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M3 10.5L12 3l9 7.5"/><path d="M5 9.8V20a1 1 0 001 1h12a1 1 0 001-1V9.8"/></svg><span>Início</span></div>
   <div class="tb" onclick="toggleCats()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><rect x="3" y="3" width="7" height="7" rx="1.6"/><rect x="14" y="3" width="7" height="7" rx="1.6"/><rect x="3" y="14" width="7" height="7" rx="1.6"/><rect x="14" y="14" width="7" height="7" rx="1.6"/></svg><span>Categorias</span></div>
+  <div class="tb" id="tbUser" onclick="(window.USER?irMinhas():abreLogin())"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><circle cx="12" cy="8" r="3.6"/><path d="M4.5 20c1.4-3.6 4.2-5.4 7.5-5.4S18.1 16.4 19.5 20"/></svg><span id="tbUserL">Entrar</span></div>
   <div class="tb dark" onclick="irCarrinho()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M3 5h2l2.2 10.5a2 2 0 002 1.5h7.8a2 2 0 002-1.6L20 8H6.5"/><circle cx="10" cy="20" r="1.3"/><circle cx="17" cy="20" r="1.3"/></svg><span>Cotação</span><b id="tbN">0</b></div>
 </div>
 
