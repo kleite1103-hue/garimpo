@@ -243,9 +243,15 @@ tr.click{cursor:pointer}tr.click:hover{background:#FAFAFB}
       <div class="ahead"><h2>Curadoria · Modo treino</h2><span class="sub">seus vereditos ensinam a IA a julgar como você</span></div>
       <div class="tabs">
         <span class="tab on" data-f="ia_duvida" onclick="curTab(this)">🤔 Dúvidas da IA</span>
+        <span class="tab" data-f="acima_do_teto" onclick="curTab(this)">💰 Acima do teto</span>
+        <span class="tab" data-f="sem_curadoria" onclick="curTab(this)">🆕 Sem curadoria</span>
         <span class="tab" data-f="ia_vetou" onclick="curTab(this)">Vetados</span>
         <span class="tab" data-f="karina_aprovou" onclick="curTab(this)">Resgatados</span>
         <span class="tab" data-f="karina_vetou" onclick="curTab(this)">Vetos confirmados</span>
+      </div>
+      <div style="display:flex;gap:8px;align-items:center;margin:8px 0">
+        <select id="curCatSel" onchange="window._curCat=this.value||null;loadCur()" style="border:1.5px solid var(--line);border-radius:9px;padding:7px 10px;font-size:12.5px"><option value="">Todas as categorias</option></select>
+        <span id="curInfo" style="font-size:12px;color:var(--soft)"></span>
       </div>
       <div id="curList"><div class="loading">Carregando…</div></div>
     </div>
@@ -513,7 +519,7 @@ function renderCat(){
   $("catList").innerHTML=`<table><tr><th></th><th>Produto</th><th>Categoria</th><th>Chegada</th><th>Vendas</th><th>Cert.</th><th>Destaque</th><th>Visível</th></tr>`+
     L.slice(0,300).map(p=>`<tr style="${p.visivel?'':'opacity:.5'}">
       <td><img class="thumb-sm" loading="lazy" src="${p.img||''}"/></td>
-      <td><b>${p.nome}</b></td><td>${p.categoria||''}</td><td><b>R$ ${brl(p.brl)}</b></td><td>${fmtV(p.vendas)||''}</td>
+      <td><b>${p.nome}</b></td><td>${p.categoria||''}</td><td><b>R$ ${brl(fabAdm(p)||p.brl)} <span style="font-size:10px;color:var(--faint)">China</span></b></td><td>${fmtV(p.vendas)||''}</td>
       <td>${p.certificacao?'⚠ '+p.certificacao:'—'}</td>
       <td><span class="star ${p.destaque?'on':''}" onclick="togDestaque('${p.offer_id}',${!p.destaque})">★</span></td>
       <td><span class="tog ${p.visivel?'on':''}" onclick="togVisivel('${p.offer_id}',${!p.visivel})"></span></td>
@@ -647,12 +653,26 @@ async function renderFotoRes(jc){
 
 let CURP=[],curF="ia_duvida";
 async function loadCur(){
-  const {data}=await sb.from("catalogo").select("offer_id,nome,subcategoria,categoria,brl,vendas,img,nota_ia,curadoria").eq("curadoria",curF).order("nota_ia",{ascending:false}).limit(400);
+  let q=sb.from("catalogo").select("offer_id,nome,subcategoria,categoria,brl,vendas,img,nota_ia,curadoria,descricao");
+  q = curF==="sem_curadoria" ? q.is("curadoria",null) : q.eq("curadoria",curF);
+  if(window._curCat) q=q.eq("categoria",window._curCat);
+  const {data}=await q.order("nota_ia",{ascending:false}).limit(400);
   CURP=data||[];renderCur();
+  try{
+    const sel=$("curCatSel");
+    if(sel&&sel.options.length<2){
+      const {data:cs}=await sb.from("catalogo").select("categoria").eq("visivel",true).limit(1000);
+      const u=[...new Set((cs||[]).map(x=>x.categoria))].sort();
+      sel.innerHTML='<option value="">Todas as categorias</option>'+u.map(c=>`<option>${c}</option>`).join("");
+    }
+    const {count:tot}=await sb.from("catalogo").select("offer_id",{count:"exact",head:true})[curF==="sem_curadoria"?"is":"eq"]("curadoria",curF==="sem_curadoria"?null:curF);
+    $("curInfo").textContent=`${CURP.length} exibidos de ${tot||0} nesta fila`;
+  }catch(e){}
   const {count}=await sb.from("catalogo").select("offer_id",{count:"exact",head:true}).eq("curadoria","ia_duvida");
   $("bdCur").textContent=count||0;$("bdCur").classList.toggle("hidden",!count);
 }
 function curTab(el){document.querySelectorAll("#vCur .tab").forEach(t=>t.classList.remove("on"));el.classList.add("on");curF=el.dataset.f;loadCur();}
+function fabAdm(p){const m=String(p.descricao||'').match(/\|FAB:([\d.]+)/);return m?parseFloat(m[1]):null;}
 function renderCur(){
   $("curList").innerHTML=CURP.length?CURP.map(p=>`<div class="fitem">
     <img src="${p.img||''}"/>
