@@ -220,6 +220,26 @@ body{-webkit-font-smoothing:antialiased}
 #avisoTxt b{color:#F5C518;font-weight:700}
 #avisoTxt i{font-style:normal;opacity:.35;margin:0 26px}
 @media(max-width:840px){#aviso{height:44px}#avisoTxt{font-size:14px}}
+
+#pMetodo{padding:0 0 30px}
+.mtWrap{max-width:1000px;margin:0 auto;padding:0 20px}
+.mtHead{padding:34px 0 26px;text-align:center}
+.mtTag{display:inline-block;font-family:"Bebas Neue",sans-serif;font-size:12px;letter-spacing:.18em;color:#8A6100;background:#FDF3E0;border-radius:999px;padding:5px 14px;margin-bottom:12px}
+.mtHead h1{font-family:"Bebas Neue",sans-serif;font-size:44px;line-height:1;margin:0 0 10px;letter-spacing:.01em}
+.mtHead p{font-size:14.5px;line-height:1.6;color:var(--soft);max-width:620px;margin:0 auto}
+.mtSteps{display:grid;gap:12px}
+.mtStep{display:grid;grid-template-columns:64px 1fr;gap:16px;align-items:start;background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:18px 20px}
+.mtStep .l{font-family:"Bebas Neue",sans-serif;font-size:38px;line-height:1;color:#fff;background:linear-gradient(140deg,#1A1A1A,#3B1E1E);border-radius:12px;width:52px;height:52px;display:flex;align-items:center;justify-content:center}
+.mtStep h3{font-size:16px;margin:2px 0 5px}
+.mtStep p{font-size:13.5px;line-height:1.6;color:var(--soft);margin:0}
+.mtCta{margin-top:22px;background:linear-gradient(120deg,#1A1A1A,#3B1E1E);border-radius:18px;padding:28px;text-align:center;color:#fff}
+.mtCta h2{font-family:"Bebas Neue",sans-serif;font-size:30px;margin:0 0 6px;letter-spacing:.01em}
+.mtCta p{font-size:13.5px;color:#CFC9C1;margin:0 0 16px}
+.mtCta .btn.p{background:#D91F26;border:none;padding:12px 26px}
+@media(max-width:840px){.mtHead{padding:24px 0 18px}.mtHead h1{font-size:31px}.mtHead p{font-size:13px}
+ .mtStep{grid-template-columns:46px 1fr;gap:12px;padding:14px 15px}
+ .mtStep .l{width:40px;height:40px;font-size:28px}.mtStep h3{font-size:15px}.mtStep p{font-size:12.5px}
+ .mtCta h2{font-size:23px}}
 </style></head>
 <body>
 
@@ -247,6 +267,7 @@ body{-webkit-font-smoothing:antialiased}
   <div class="logo" onclick="irCatalogo()"><span class="ev">Efeito Vendas</span><span class="g" style="font-size:34px">na <i>China</i></span></div>
   <div class="searchbar"><input id="q" placeholder="Buscar produto…" oninput="render()"/><button onclick="render()">Buscar</button></div>
   <div class="navbtns">
+    <div class="nb" onclick="irMetodo()">🌉 Como funciona</div>
     <div class="nb" onclick="abreFoto()">📷 Achar por foto</div>
     <div class="nb" onclick="abreMeus()">📦 Amostras</div>
     
@@ -257,6 +278,27 @@ body{-webkit-font-smoothing:antialiased}
 </div></div>
 
 <!-- CATALOGO -->
+<div id="pMetodo" class="hidden">
+  <div class="mtWrap">
+    <div class="mtHead">
+      <span class="mtTag">🌉 MÉTODO PONTE</span>
+      <h1>Você não importa sozinha.</h1>
+      <p>Cinco etapas que levam o produto da fábrica chinesa até a porta da sua loja — com o nosso time do lado em cada uma delas.</p>
+    </div>
+    <div class="mtSteps">
+      <div class="mtStep"><span class="l">P</span><div><h3>Produto certo</h3><p>Catálogo de fábricas verificadas, com produtos escolhidos pensando em margem e giro pro mercado brasileiro. Você escolhe sem medo de comprar encalhe.</p></div></div>
+      <div class="mtStep"><span class="l">O</span><div><h3>Orçamento fechado</h3><p>Nosso time negocia com a fábrica o preço real na sua quantidade, calcula a cubagem e te devolve o custo final da importação — sem surpresa no meio do caminho.</p></div></div>
+      <div class="mtStep"><span class="l">N</span><div><h3>Negociação na China</h3><p>Falamos chinês por você: cobramos amostra, pedimos fotos e vídeos reais do produto e comparamos fornecedores até achar o melhor conjunto de preço e qualidade.</p></div></div>
+      <div class="mtStep"><span class="l">T</span><div><h3>Transporte e trâmites</h3><p>Consolidamos sua mercadoria no nosso contêiner — ou no aéreo, quando faz mais sentido — e cuidamos de todo o processo até ela chegar ao Brasil.</p></div></div>
+      <div class="mtStep"><span class="l">E</span><div><h3>Entrega e recompra</h3><p>A mercadoria chega no seu endereço e o processo fica pronto pra repetir: a segunda importação é sempre maior, mais rápida e mais lucrativa que a primeira.</p></div></div>
+    </div>
+    <div class="mtCta">
+      <h2>Escolha seus produtos e peça sua cotação</h2>
+      <p>Nosso time monta sua importação e responde no seu WhatsApp.</p>
+      <button class="btn p" onclick="irCatalogo()">Ver o catálogo</button>
+    </div>
+  </div>
+</div>
 <div id="pCat" class="shell">
   <aside class="side"><h4>Categorias</h4><div id="cats"></div></aside>
   <main>
@@ -358,6 +400,12 @@ function rodaAviso(){
   const el=document.getElementById("avisoTxt");if(!el)return;
   const fita=AVISOS.join('<i>•</i>')+'<i>•</i>';
   el.innerHTML=fita+fita;
+}
+
+function irMetodo(){
+  ["pCart","pMinhas","pCat"].forEach(id=>{const e=document.getElementById(id);if(e)e.classList.add("hidden");});
+  document.getElementById("pMetodo").classList.remove("hidden");
+  scrollTo(0,0);
 }
 async function boot(){
   try{rodaAviso();}catch(e){}
@@ -502,10 +550,13 @@ function add(id){
   updCart();irCarrinho();showToast("Adicionado à sua cotação");
 }
 function updCart(){$("cartN").textContent=CART.length;}
-function irCarrinho(){try{document.getElementById('leadInline').classList.toggle('hidden',!!USER);}catch(e){}
+function irCarrinho(){try{document.getElementById("pMetodo").classList.add("hidden");}catch(e){}
+  try{document.getElementById('leadInline').classList.toggle('hidden',!!USER);}catch(e){}
   $("pCat").classList.add("hidden");$("pMinhas").classList.add("hidden");$("pCart").classList.remove("hidden");renderCart();scrollTo(0,0);}
-function irCatalogo(){$("pCart").classList.add("hidden");$("pMinhas").classList.add("hidden");$("pCat").classList.remove("hidden");scrollTo(0,0);}
-function irMinhas(){$("pCat").classList.add("hidden");$("pCart").classList.add("hidden");$("pMinhas").classList.remove("hidden");carregaMinhas();scrollTo(0,0);}
+function irCatalogo(){try{document.getElementById("pMetodo").classList.add("hidden");}catch(e){}
+  $("pCart").classList.add("hidden");$("pMinhas").classList.add("hidden");$("pCat").classList.remove("hidden");scrollTo(0,0);}
+function irMinhas(){try{document.getElementById("pMetodo").classList.add("hidden");}catch(e){}
+  $("pCat").classList.add("hidden");$("pCart").classList.add("hidden");$("pMinhas").classList.remove("hidden");carregaMinhas();scrollTo(0,0);}
 function renderCart(){setTimeout(desenhaCubo,0);
   $("nItens").textContent=CART.length;
   $("cartItems").innerHTML=CART.length?CART.map((c,i)=>`
