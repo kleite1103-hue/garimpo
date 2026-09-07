@@ -429,13 +429,14 @@ async function abreCot(id){
           <div class="crow"><span>Modalidade</span><select id="cModal" onchange="trocaModal()" style="border:1.5px solid var(--line);border-radius:8px;padding:6px;font-size:12px">
             <option value="mar">🚢 Marítimo (mais barato · 60–75d)</option>
             <option value="aer">✈️ Aéreo (rápido · 20–30d · mín. 20kg)</option></select></div>
-          <div class="crow" id="rowVol"><span>Volume do pedido (litros)</span><input id="cVol" placeholder="ex.: 12" oninput="calcVol()"/></div>
+          <div class="crow" id="rowVol"><span>Cubagem do pedido (m³)<div style="font-size:10px;color:var(--faint);font-weight:400">quanto o pedido ocupa no contêiner · cobramos no mínimo 0,5 m³</div></span><input id="cVolM3" placeholder="ex.: 0,5" oninput="cubaM3()"/></div>
+          <input type="hidden" id="cVol"/>
           <div class="crow hidden" id="rowKg"><span>Peso do pedido (kg)</span><input id="cKg" placeholder="ex.: 25" oninput="calcKg()"/></div>
           <div class="crow"><span>Frete China→BR (rateio m³)</span><input id="cFrete" value="${frete.toFixed(2)}" oninput="calcFirme()"/></div>
           <div style="font-size:10px;color:var(--faint);padding:2px 0 4px" id="cCanal">Custo do canal: US$ ${((CFGS.custo_m3||{}).usd||900)} /m³ all-in · digite os litros que o frete calcula sozinho</div>
           <div class="crow"><span>Margem do time %</span><input id="cMarg" value="${marg}" oninput="calcFirme()"/></div>
           <div id="cAlerta" style="display:none;font-size:11.5px;border-radius:9px;padding:8px 10px;margin:6px 0;line-height:1.5"></div>
-          <div class="cfinal"><span>Preço firme ao aluno</span><span class="v" id="cFinal">R$ —</span></div>
+          <div class="cfinal"><span>Preço final da importação</span><span class="v" id="cFinal">R$ —</span></div>
         </div>
         <div class="selrow">
           <input id="cPrazo" placeholder="Prazo (ex.: 35–45 dias)" value="${c.prazo_estimado||''}"/>
@@ -445,7 +446,7 @@ async function abreCot(id){
           <input id="cResp" placeholder="Responsável" value="${c.responsavel||''}"/>
         </div>
         <div class="acts">
-          <button class="btn p" onclick="responder()">Responder com preço firme</button>
+          <button class="btn p" onclick="responder()">Responder com o preço final</button>
           <button class="btn ghost" onclick="salvarStatus()">Salvar status/responsável</button>
           <button class="btn p" onclick="cotacaoInstantanea()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" style="width:15px;height:15px;vertical-align:-2px;margin-right:5px"><path d="M13 2L4.5 13.5H11L10 22l8.5-11.5H12z"/></svg>Cotação instantânea</button>
           <button class="btn s" onclick="abreCopiloto()">Copiloto China · perguntar à fábrica</button>
@@ -487,7 +488,7 @@ async function responder(){
     validade,responsavel:$("cResp").value.trim()||null,respondido_em:new Date().toISOString()
   }).eq("id",selCot.id);
   if(error){alert("Erro: "+error.message);return;}
-  alert("Respondida! O aluno já vê o preço firme (válido "+dias+" dias) em Minhas Cotações.");
+  alert("Respondida! O cliente já vê o preço final (válido "+dias+" dias) em Minhas Cotações.");
   await loadCots();renderGeral();
 }
 async function salvarStatus(){
@@ -551,11 +552,11 @@ function renderCfg(){
     cfgField("frete_padrao","brl_un","Frete fallback R$/un","usado se o volume não for informado")+
     cfgField("margem_time","pct","Margem do time %","sugerida ao responder");
   $("cfgCot").innerHTML=
-    `<div class="crow2"><div><div>Cobrança por cotação</div><div class="hint">quando ligar, aluno paga pelo preço firme</div></div>
+    `<div class="crow2"><div><div>Cobrança por cotação</div><div class="hint">quando ligar, o cliente paga pela cotação</div></div>
       <span class="tog ${(CFGS.cobranca_cotacao||{}).ativa?'on':''}" onclick="togCobranca(this)"></span></div>`+
     cfgField("cobranca_cotacao","valor_brl","Valor por cotação R$","defina quando ligar a cobrança")+
     cfgField("cobranca_cotacao","gratis_por_aluno","Cotações grátis por aluno","as primeiras, pra experimentar")+
-    cfgField("validade_preco","dias","Validade do preço firme (dias)","depois disso, expira")+
+    cfgField("validade_preco","dias","Validade do preço (dias)","depois disso, expira")+
     cfgField("meta_resposta","texto","Meta de resposta","aparece pro aluno");
 }
 async function salvaCfg(chave,campo,valor){
@@ -1002,7 +1003,7 @@ function usarRespostas(){
   window._custoBrl=Math.round(rmb*fx*100)/100;
   const el=document.querySelector(".calc .crow b");
   if(el)el.innerHTML=`¥ ${rmb.toFixed(2)} · R$ ${brl(window._custoBrl)} <span class="badge" style="background:#F1F7F3;color:var(--green)">da fábrica ✓</span>`;
-  if(litros>0){$("cVol").value=litros.toFixed(1);calcVol();}else{calcFirme();}
+  if(litros>0){$("cVolM3").value=(litros/1000).toFixed(3);$("cVol").value=(Math.max(litros/1000,CUB_MIN)*1000).toFixed(1);calcVol();}else{calcFirme();}
   if(prazo)$("cPrazo").value=`${prazo}d produção + 30–40d logística`;
   toast&&toast(`Preço real de ${itensOk} item(ns) aplicado — confere a margem e responde.`);
 }
@@ -1038,14 +1039,19 @@ async function abreProposta(){
   const marg=1+((parseFloat(($("cMarg")&&$("cMarg").value||"0").replace(",","."))||0)/100);
   const box=its.map((it,ix)=>{
     const pit=P[it.id]||{forn:[{},{},{}],midias:""};
-    const sug=dd[ix]&&_melhor(dd[ix].parsed).preco_unit_rmb?Math.round(_melhor(dd[ix].parsed).preco_unit_rmb*fx*marg*100)/100:"";
+    let sug="";
+    try{
+      const tot=window._firme||0, unTot=its.reduce((s,x)=>s+x.qtd,0);
+      if(tot&&unTot) sug=(tot/unTot).toFixed(2);
+      else if(dd[ix]&&_melhor(dd[ix].parsed).preco_unit_rmb) sug=(_melhor(dd[ix].parsed).preco_unit_rmb*fx*marg).toFixed(2);
+    }catch(e){}
     const org=(window._cotOrigem||{})[it.offer_id]||{};
     const fb=FB[it.offer_id]||{};
     const autoA=org.empresa||(fb.forn_nome?`${fb.forn_nome}${fb.forn_anos?" · "+fb.forn_anos+" anos":""}`:"");
     const fr=(i)=>{const f=(pit.forn||[])[i]||{};const valNome=f.nome||(i===0?autoA:"");return `
       <div class="pprow" style="display:grid;grid-template-columns:1.2fr .7fr .5fr .8fr;gap:5px;margin-top:4px">
         <input id="pp_n${it.id}_${i}" placeholder="Fornecedor ${"ABC"[i]} (ex.: Yiwu Taotao Pet · fábrica · 17 anos)" value="${valNome}" style="border:1px solid var(--line);border-radius:8px;padding:7px;font-size:11.5px"/>${i>0?`<input id="pp_l${it.id}_${i}" placeholder="link do produto do fornecedor ${"ABC"[i]}" style="grid-column:1/-1;border:1px dashed var(--line);border-radius:8px;padding:6px;font-size:11px" onchange="ppPuxa(${it.id},${i})"/>`:""}
-        <input id="pp_p${it.id}_${i}" placeholder="R$/un ${i===0&&sug?("sug. "+sug):""}" value="${f.preco||""}" style="border:1px solid var(--line);border-radius:8px;padding:7px;font-size:11.5px"/>
+        <input id="pp_p${it.id}_${i}" placeholder="R$/un ${i===0&&sug?("sug. "+sug):""}" value="${f.preco||(i===0?sug:'')}" style="border:1px solid var(--line);border-radius:8px;padding:7px;font-size:11.5px"/>
         <input id="pp_m${it.id}_${i}" placeholder="MOQ" value="${f.moq||""}" style="border:1px solid var(--line);border-radius:8px;padding:7px;font-size:11.5px"/>
         <input id="pp_z${it.id}_${i}" placeholder="prazo (ex.: 7d)" value="${f.prazo||""}" style="border:1px solid var(--line);border-radius:8px;padding:7px;font-size:11.5px"/>
       </div>`;};
@@ -1322,18 +1328,19 @@ async function cotacaoInstantanea(){
     linhas.push({nome:i.nome,qtd:i.qtd,unit,vu,fonte:real?"fábrica":"catálogo"});
   });
   const usdm3=Number((CFGS.custo_m3||{}).usd||900), USD=window._USD||5.4;
-  const frete=Math.max(litros,50)/1000*usdm3*USD;   // mínimo 50 L de rateio
+  const m3=Math.max(litros/1000,CUB_MIN);   // sempre no mínimo meio metro cúbico
+  const frete=m3*usdm3*USD;
   const marg=1+((parseFloat(($("cMarg")&&$("cMarg").value||"35").replace(",","."))||35)/100);
   const total=(custo+frete)*marg;
   const un=its.reduce((s,i)=>s+i.qtd,0);
-  $("cVol").value=litros.toFixed(1);
+  $("cVolM3").value=(litros/1000).toFixed(3);$("cVol").value=(Math.max(litros/1000,CUB_MIN)*1000).toFixed(1);
   $("cFrete").value=frete.toFixed(2);
   if($("cMarg")&&!$("cMarg").value)$("cMarg").value=35;
-  try{calcVol();}catch(e){}
+  try{cubaM3();}catch(e){}
   try{calcFirme();}catch(e){}
   const box=`<div style="background:#F1F7F3;border:1.5px solid #CDE6D9;border-radius:12px;padding:13px;margin-top:10px;font-size:12.5px;line-height:1.7">
     <b style="font-size:13.5px">Pré-cotação calculada</b><br>
-    Produtos (${un} un): <b>R$ ${brl(custo)}</b> · Cubagem estimada: <b>${(litros/1000).toFixed(3)} m³</b><br>
+    Produtos (${un} un): <b>R$ ${brl(custo)}</b> · Cubagem estimada: <b>${(litros/1000).toFixed(3)} m³</b>${litros/1000<CUB_MIN?` <span style="color:#8A6100">(cobrando o mínimo de ${CUB_MIN} m³)</span>`:""}<br>
     Frete + impostos (rateio): <b>R$ ${brl(frete)}</b> · Margem: <b>${(((marg-1)*100)).toFixed(0)}%</b><br>
     <span style="font-size:15px">Total ao cliente: <b>R$ ${brl(total)}</b> · <b>R$ ${brl(total/un)}</b>/un</span>
     ${semCub.length?`<div style="color:#8A6100;margin-top:7px">Conferir cubagem real: ${semCub.slice(0,3).join(", ")}${semCub.length>3?" +"+(semCub.length-3):""}</div>`:""}
@@ -1352,6 +1359,18 @@ function aplicaInstantanea(total){
   window._firme=total;
   const e=$("cFinal");if(e)e.textContent="R$ "+brl(total);
   toast&&toast("Valor aplicado — confira e responda ao cliente");
+}
+
+
+const CUB_MIN=0.5; // meio metro cúbico é o mínimo cobrado
+function cubaM3(){
+  const m3=parseFloat(($("cVolM3").value||"0").replace(",","."))||0;
+  const cob=Math.max(m3,CUB_MIN);
+  $("cVol").value=(cob*1000).toFixed(1);
+  const usdm3=Number((CFGS.custo_m3||{}).usd||900), USD=window._USD||5.4;
+  $("cFrete").value=(cob*usdm3*USD).toFixed(2);
+  if(m3>0&&m3<CUB_MIN){toast&&toast(`Pedido de ${m3.toFixed(3)} m³ — cobrando o mínimo de ${CUB_MIN} m³`);}
+  try{calcFirme();}catch(e){}
 }
 
 boot();
