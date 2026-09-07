@@ -6,6 +6,7 @@
 <script src="assets/js/supabase.min.js"></script>
 <script src="config.js"></script>
 <style>
+.catToggle{display:none}
 :root{--bg:#F4F5F7;--panel:#FFF;--ink:#161514;--soft:#6C6A66;--faint:#9C9995;--line:#E7E7E9;--line2:#EFEFF1;--orange:#FF4D1C;--orangebg:#FFF1EC;--gold:#C4933B;--goldbg:#FBF3E3;--green:#1F8A4C;--greenbg:#E7F6ED;--warn:#B26B00;--warnbg:#FFF6E5;--blue:#2563C9;--bluebg:#EAF1FD;--red:#C0392B;--redbg:#FDECEA}
 *{box-sizing:border-box;margin:0;padding:0}
 body{background:var(--bg);color:var(--ink);font-family:"Outfit",system-ui,sans-serif;font-size:14px}
@@ -202,7 +203,6 @@ body{-webkit-font-smoothing:antialiased}
 .metarow .sales{font-size:10.5px;color:#8A6100;font-weight:700}
 .metarow .moq{font-size:10.5px;color:var(--faint)}
 
-.catToggle{display:none}
 @media(max-width:840px){
   .catToggle{display:block;width:100%;margin:0 0 10px;background:#fff;border:1.5px solid var(--line);border-radius:12px;padding:11px 14px;font-size:13px;font-weight:700;text-align:left;color:var(--ink)}
   .side{display:none !important}
@@ -242,7 +242,6 @@ body{-webkit-font-smoothing:antialiased}
  .mtStep{grid-template-columns:36px 1fr;gap:11px;padding:12px 13px;border-radius:13px}.mtSteps{gap:9px}
  .mtStep .l{width:34px;height:34px;border-radius:10px}.mtStep .l svg{width:17px;height:17px}.mtStep h3{font-size:14px;margin:0 0 3px}.mtStep p{font-size:12px;line-height:1.5}.mtStep h3{font-size:15px}.mtStep p{font-size:12.5px}
  .mtCta h2{font-size:23px}}
-.catToggle{display:none}
 .nb{display:inline-flex;align-items:center;gap:7px}
 .nb svg{width:17px;height:17px;stroke-linecap:round;stroke-linejoin:round;flex:0 0 auto}
 @media(max-width:840px){
@@ -250,6 +249,23 @@ body{-webkit-font-smoothing:antialiased}
   .nb{flex:0 0 auto;white-space:nowrap;padding:9px 13px;font-size:12.5px;border-radius:11px}
   .nb svg{width:15px;height:15px}
   .uchip{flex:0 0 auto}
+}
+
+#qact{display:none}
+#tabbar{display:none}
+@media(max-width:840px){
+  #qact{display:flex;gap:14px;overflow-x:auto;padding:12px 4px 6px;-webkit-overflow-scrolling:touch}
+  .qa{flex:0 0 auto;text-align:center;font-size:10.5px;color:var(--soft);line-height:1.3;width:62px;cursor:pointer}
+  .qa .qi{display:flex;align-items:center;justify-content:center;width:44px;height:44px;margin:0 auto 5px;border-radius:14px;background:#fff;border:1.5px solid var(--line);color:var(--ink)}
+  .qa .qi svg{width:20px;height:20px;stroke-linecap:round;stroke-linejoin:round}
+  .navbtns .nb:not(.dark){display:none}
+  #tabbar{display:flex;position:fixed;left:0;right:0;bottom:0;background:#fff;border-top:1px solid var(--line);padding:7px 10px calc(7px + env(safe-area-inset-bottom));z-index:60;box-shadow:0 -2px 14px rgba(0,0,0,.06)}
+  #tabbar .tb{flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;font-size:10.5px;color:var(--soft);position:relative;padding:4px 0}
+  #tabbar .tb svg{width:21px;height:21px;stroke-linecap:round;stroke-linejoin:round}
+  #tabbar .tb.dark{color:var(--ink);font-weight:700}
+  #tabbar .tb b{position:absolute;top:-1px;right:22%;background:var(--orange,#D91F26);color:#fff;font-size:9.5px;min-width:16px;height:16px;border-radius:9px;display:flex;align-items:center;justify-content:center;padding:0 4px}
+  #vApp{padding-bottom:64px}
+  .card .meta,.card .metarow{font-size:10.5px}
 }
 </style></head>
 <body>
@@ -314,6 +330,12 @@ body{-webkit-font-smoothing:antialiased}
   </div>
 </div>
 <div id="pCat" class="shell">
+<div id="qact">
+    <div class="qa" onclick="irMetodo()"><span class="qi"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><circle cx="12" cy="12" r="9"/><path d="M12 16v-4M12 8h.01"/></svg></span>Como funciona</div>
+    <div class="qa" onclick="abreMeus()"><span class="qi"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M3 8.5L12 4l9 4.5v7L12 20l-9-4.5z"/><path d="M3 8.5L12 13l9-4.5M12 13v7"/></svg></span>Amostras</div>
+    <div class="qa" onclick="toggleCats()"><span class="qi"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><rect x="3" y="3" width="7" height="7" rx="1.6"/><rect x="14" y="3" width="7" height="7" rx="1.6"/><rect x="3" y="14" width="7" height="7" rx="1.6"/><rect x="14" y="14" width="7" height="7" rx="1.6"/></svg></span>Categorias</div>
+    <div class="qa" onclick="irMinhas()"><span class="qi"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><rect x="3.5" y="3.5" width="17" height="17" rx="3"/><path d="M8 9h8M8 13h8M8 17h5"/></svg></span>Cotações</div>
+  </div>
   <button class="catToggle" id="catToggle" onclick="toggleCats()">☰ Ver categorias</button>
   <aside class="side" id="sideBox"><h4>Categorias</h4><div id="cats"></div></aside>
   <main>
@@ -422,6 +444,36 @@ function irMetodo(){
   ["pCart","pMinhas","pCat"].forEach(id=>{const e=document.getElementById(id);if(e)e.classList.add("hidden");});
   document.getElementById("pMetodo").classList.remove("hidden");
   scrollTo(0,0);
+}
+
+let ESPB64=null;
+function abreEspecial(){$("espDesc").value=($("q").value||"").trim();$("espmodal").classList.add("show");}
+function espPreview(inp){
+  const f=inp.files&&inp.files[0];if(!f)return;
+  const rd=new FileReader();
+  rd.onload=()=>{const img=new Image();img.onload=()=>{
+    const cv=document.createElement("canvas");const e=Math.min(1,900/Math.max(img.width,img.height));
+    cv.width=img.width*e;cv.height=img.height*e;cv.getContext("2d").drawImage(img,0,0,cv.width,cv.height);
+    ESPB64=cv.toDataURL("image/jpeg",.8);
+    const p=$("espPrev");p.src=ESPB64;p.style.display="block";
+    $("espFotoBtn").innerHTML="✓ Foto anexada — toque pra trocar"+$("espFotoBtn").innerHTML.slice($("espFotoBtn").innerHTML.indexOf("<input"));
+  };img.src=rd.result;};
+  rd.readAsDataURL(f);
+}
+async function enviaEspecial(){
+  const desc=$("espDesc").value.trim(),nome=$("espNome").value.trim(),whats=$("espWhats").value.replace(/\D/g,"");
+  if(desc.length<5){alert("Descreve o produto que você procura.");return;}
+  if(nome.length<5||whats.length<10){alert("Preencha nome completo e WhatsApp com DDD.");return;}
+  if(!$("espFat").value||!$("espCli").value){alert("Responde as duas perguntinhas 🙏");return;}
+  const quiz={cliente:$("espCli").value,faturamento:$("espFat").value,canal:"—",importa:"—",regime:"—",tipo:"pedido_especial"};
+  try{
+    const {data:num,error}=await sb.rpc("cotacao_lead",{p_nome:nome,p_whats:whats,p_quiz:quiz,
+      p_obs:"🔎 PEDIDO ESPECIAL (produto fora do catálogo): "+desc+(ESPB64?" [cliente anexou foto]":""),
+      p_total:0,p_itens:[{offer_id:"especial-"+Date.now(),nome:desc.slice(0,80),img:ESPB64||"",qtd:1,moq:1,brl:0}]});
+    if(error){alert("Não consegui enviar: "+error.message);return;}
+    $("espmodal").classList.remove("show");ESPB64=null;
+    alert("Pedido enviado! 🎉\n\nNosso time vai procurar esse produto nas fábricas e te chamar no WhatsApp com a cotação.");
+  }catch(e){alert("Não consegui enviar. Tenta de novo.");}
 }
 async function boot(){
   try{rodaAviso();}catch(e){}
@@ -562,7 +614,11 @@ function render(){
   if(window._pagKey!==key){window._pag=60;window._pagKey=key;}
   const vis=L.slice(0,window._pag||60);
   $("count").innerHTML=`<b>${L.length}</b> produtos`;
-  $("grid").innerHTML=L.length?vis.map(card).join(""):`<div class="empty"><b>Catálogo em carga.</b><br>Os produtos entram aqui automaticamente conforme o robô alimenta a base.</div>`;
+  $("grid").innerHTML=L.length?vis.map(card).join(""):`<div class="empty" style="text-align:center;padding:34px 20px">
+    <div style="font-size:15px;font-weight:800;margin-bottom:6px">Não encontramos esse produto na nossa base 🔍</div>
+    <div style="font-size:13px;color:var(--soft);line-height:1.6;max-width:440px;margin:0 auto 16px">Mas a gente acha pra você na China! Nosso time procura o produto direto nas fábricas e te manda a cotação pelo WhatsApp.</div>
+    <button class="btn p" onclick="abreEspecial()" style="padding:13px 26px">Quero uma cotação personalizada</button>
+  </div>`;
   const mais=document.getElementById("verMais");
   if(mais){
     if(L.length>vis.length){mais.style.display="block";mais.textContent=`Ver mais produtos (${L.length-vis.length} restantes)`;}
@@ -582,7 +638,7 @@ function add(id){
   if(ex)ex.qtd+=p.moq||1;else CART.push({offer_id:id,nome:p.nome,img:p.img,moq:p.moq||1,qtd:p.moq||1,brl:p.brl});
   updCart();irCarrinho();showToast("Adicionado à sua cotação");
 }
-function updCart(){$("cartN").textContent=CART.length;}
+function updCart(){$("cartN").textContent=CART.length;try{document.getElementById("tbN").textContent=CART.length;}catch(e){}}
 function irCarrinho(){try{document.getElementById("pMetodo").classList.add("hidden");}catch(e){}
   try{document.getElementById('leadInline').classList.toggle('hidden',!!USER);}catch(e){}
   $("pCat").classList.add("hidden");$("pMinhas").classList.add("hidden");$("pCart").classList.remove("hidden");renderCart();scrollTo(0,0);}
@@ -995,6 +1051,28 @@ function abreAmostra(...a){
     <div id="pgBox"></div>
     <div style="font-size:11px;color:var(--faint);margin-top:12px;line-height:1.5">Depois de pagar, nosso time confirma e compra sua amostra no fornecedor. Você acompanha tudo em "Minhas amostras" — e recebe fotos e vídeo reais quando ela chegar. 🇨🇳</div>
     <button class="btn p full" style="margin-top:10px" onclick="$('pgmodal').classList.remove('show');showToast('Assim que o pagamento cair, o time confirma ✓')">Já paguei</button>
+  </div>
+</div>
+<div id="tabbar">
+  <div class="tb" onclick="irCatalogo()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M3 10.5L12 3l9 7.5"/><path d="M5 9.8V20a1 1 0 001 1h12a1 1 0 001-1V9.8"/></svg><span>Início</span></div>
+  <div class="tb" onclick="toggleCats()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><rect x="3" y="3" width="7" height="7" rx="1.6"/><rect x="14" y="3" width="7" height="7" rx="1.6"/><rect x="3" y="14" width="7" height="7" rx="1.6"/><rect x="14" y="14" width="7" height="7" rx="1.6"/></svg><span>Categorias</span></div>
+  <div class="tb dark" onclick="irCarrinho()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M3 5h2l2.2 10.5a2 2 0 002 1.5h7.8a2 2 0 002-1.6L20 8H6.5"/><circle cx="10" cy="20" r="1.3"/><circle cx="17" cy="20" r="1.3"/></svg><span>Cotação</span><b id="tbN">0</b></div>
+</div>
+
+<div class="fmodal" id="espmodal" onclick="if(event.target===this)$('espmodal').classList.remove('show')">
+  <div class="fbox" style="max-width:430px">
+    <button class="fclose" onclick="$('espmodal').classList.remove('show')">✕</button>
+    <h3 style="font-size:17px;font-weight:800">Cotação personalizada</h3>
+    <div style="font-size:12.5px;color:var(--soft);margin:5px 0 12px">Descreve o produto (ou manda uma foto) que nosso time procura na fábrica certa e te responde no WhatsApp.</div>
+    <textarea id="espDesc" placeholder="O que você procura? Ex.: caneca térmica 500ml com tampa de bambu *" style="width:100%;border:1.5px solid var(--line);border-radius:10px;padding:11px;font-size:13px;min-height:70px;margin-bottom:8px"></textarea>
+    <label id="espFotoBtn" style="display:block;border:1.5px dashed var(--line);border-radius:10px;padding:12px;text-align:center;font-size:12.5px;color:var(--soft);cursor:pointer;margin-bottom:8px">📷 Anexar foto do produto (opcional)
+      <input type="file" id="espFoto" accept="image/*" style="display:none" onchange="espPreview(this)"/></label>
+    <img id="espPrev" style="display:none;width:100%;max-height:150px;object-fit:contain;border-radius:10px;margin-bottom:8px"/>
+    <input id="espNome" placeholder="Seu nome completo *" style="width:100%;border:1.5px solid var(--line);border-radius:10px;padding:11px;font-size:13px;margin-bottom:8px"/>
+    <input id="espWhats" placeholder="WhatsApp com DDD *" style="width:100%;border:1.5px solid var(--line);border-radius:10px;padding:11px;font-size:13px;margin-bottom:8px"/>
+    <select id="espFat" style="width:100%;border:1.5px solid var(--line);border-radius:10px;padding:11px;font-size:13px;margin-bottom:8px;background:#fff"><option value="">Quanto você fatura por mês? *</option><option>Ainda não vendo</option><option>Até R$ 10 mil</option><option>R$ 10 a 50 mil</option><option>R$ 50 a 200 mil</option><option>Acima de R$ 200 mil</option></select>
+    <select id="espCli" style="width:100%;border:1.5px solid var(--line);border-radius:10px;padding:11px;font-size:13px;margin-bottom:12px;background:#fff"><option value="">Já é aluno(a) ou cliente Efeito Vendas? *</option><option>Sou aluno(a) Efeito Vendas</option><option>Sou cliente de importação</option><option>Aluno(a) + cliente</option><option>Ainda não</option></select>
+    <button class="btn p full" onclick="enviaEspecial()">Enviar pedido</button>
   </div>
 </div>
 </body></html>
