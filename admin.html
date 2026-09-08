@@ -259,6 +259,10 @@ tr.click{cursor:pointer}tr.click:hover{background:#FAFAFB}
         <select id="curCatSel" onchange="window._curCat=this.value||null;loadCur()" style="border:1.5px solid var(--line);border-radius:9px;padding:7px 10px;font-size:12.5px"><option value="">Todas as categorias</option></select>
         <span id="curInfo" style="font-size:12px;color:var(--soft)"></span>
       </div>
+      <div style="display:flex;gap:7px;margin-bottom:8px" id="curBulk">
+        <button class="btn sm p" onclick="curLote(true)">Aprovar todos os exibidos</button>
+        <button class="btn sm ghost" onclick="curLote(false)">Manter todos fora</button>
+      </div>
       <div id="curList"><div class="loading">Carregando…</div></div>
     </div>
     <!-- CONFIG -->
@@ -699,11 +703,11 @@ function renderCur(){
   $("curList").innerHTML=CURP.length?CURP.map(p=>`<div class="fitem">
     <img src="${p.img||''}"/>
     <div class="fi"><div class="fn">${p.nome}</div>
-    <div class="fm">${p.categoria} / ${p.subcategoria} · R$ ${brl(p.brl)} · ${fmtV(p.vendas)||''} vendas · nota IA ${p.nota_ia??'—'}</div></div>
-    ${(curF==='ia_vetou'||curF==='ia_duvida')?`
-      <button class="btn sm g" onclick="curJulga('${p.offer_id}',true)">👍 Resgatar</button>
-      <button class="btn sm ghost" onclick="curJulga('${p.offer_id}',false)">👎 Confirmar veto</button>`:
-      `<button class="btn sm ghost" onclick="curVolta('${p.offer_id}')">↩ devolver pra fila</button>`}
+    <div class="fm">${p.categoria} / ${p.subcategoria} · <b>R$ ${brl(fabAdm(p)||p.brl)}</b> na China · ${fmtV(p.vendas)||''} vendas · nota IA ${p.nota_ia??'—'}</div></div>
+    ${['ia_vetou','ia_duvida','acima_do_teto','sem_curadoria'].includes(curF)?`
+      <button class="btn sm g" onclick="curJulga('${p.offer_id}',true)">Aprovar</button>
+      <button class="btn sm ghost" onclick="curJulga('${p.offer_id}',false)">Manter fora</button>`:
+      `<button class="btn sm ghost" onclick="curVolta('${p.offer_id}')">devolver pra fila</button>`}
   </div>`).join("")+(CURP.length===400?'<div class="loading">Mostrando 400, julgue e recarregue pra ver mais.</div>':'')
   :`<div class="panel"><div class="loading">${curF==='ia_vetou'?'Fila zerada, nada aguardando seu julgamento. 👏':'Nada aqui ainda.'}</div></div>`;
 }
@@ -1627,6 +1631,18 @@ async function subirMidia(itemId,tipo,inp){
   ta.value=(ta.value?ta.value+"\n":"")+urls.join("\n");
   if(prev)prev.innerHTML=ta.value.split("\n").filter(Boolean).slice(0,6).map(u=>`<img src="${u}" style="width:48px;height:48px;object-fit:cover;border-radius:6px;border:1px solid var(--line)"/>`).join("");
   toast&&toast(`${urls.length} arquivo(s) enviado(s)`);
+}
+
+
+async function curLote(ok){
+  if(!CURP.length)return;
+  if(!confirm(`${ok?"Aprovar":"Manter fora"} ${CURP.length} produtos exibidos?`))return;
+  const ids=CURP.map(p=>p.offer_id);
+  for(let i=0;i<ids.length;i+=80){
+    await sb.from("catalogo").update({visivel:ok,curadoria:ok?"karina_aprovou":"karina_vetou"}).in("offer_id",ids.slice(i,i+80));
+  }
+  toast&&toast(`${ids.length} produtos atualizados`);
+  loadCur();
 }
 
 boot();
