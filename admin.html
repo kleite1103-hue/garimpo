@@ -1166,6 +1166,12 @@ function gerarPDF(){
   const modal=($("cModal")&&$("cModal").value==="aer")?"Aéreo":"Marítimo";
   const prazo=($("cPrazo")&&$("cPrazo").value)||(modal==="Aéreo"?"20–30 dias":"60–75 dias");
   const cub=($("cVolM3")&&$("cVolM3").value)||"";
+  const MIN=(CFGS.minimos||{m3:0.5,valor_brl:2000});
+  const CT=(CFGS.contato||{});
+  const zap=String(CT.whatsapp||"").replace(/\D/g,"");
+  const linkResp=zap?`https://wa.me/55${zap}?text=${encodeURIComponent("Olá! Quero seguir com a proposta "+c.numero+" da Efeito Vendas na China.")}`:"https://efeitovendasnachina.com.br";
+  const abaixoMin=(total<Number(MIN.valor_brl||0))||(parseFloat(cub||"0")<Number(MIN.m3||0));
+  const custoProd=its.reduce((s,it)=>{const f=(P[it.id]?.forn||[])[0]||{};return s+0;},0);
   const bloco=its.map((it,ix)=>{
     const pit=P[it.id]||{forn:[]};
     const forn=(pit.forn||[]).filter(f=>f.nome||f.preco);
@@ -1225,6 +1231,7 @@ function gerarPDF(){
     .cols{display:grid;grid-template-columns:1fr 1fr;gap:12px;font-size:11px}
     .cols ul{margin:5px 0;padding-left:16px}.cols li{margin-bottom:3px}
     .foot{font-size:10px;color:#777;margin-top:14px;line-height:1.6;border-top:1px solid #E7E0D6;padding-top:9px}
+    .btnResp{display:inline-block;background:#D91F26;color:#fff !important;text-decoration:none;font-weight:800;font-size:12.5px;padding:11px 22px;border-radius:9px;letter-spacing:.02em}
     .cta{background:#F1F7F3;border:1px solid #CDE6D9;border-radius:10px;padding:11px;margin-top:12px;font-size:11.5px}
   </style></head><body>
     <div class="top"><div class="logo">EFEITO VENDAS <i>na China</i></div>
@@ -1253,6 +1260,27 @@ function gerarPDF(){
       <div class="pas"><b><i>5.</i> Entrega</b>Mercadoria no seu endereço, pronta para vender.</div>
     </div>
 
+    <h2>Prazos e etapas</h2>
+    <table style="font-size:11px">
+      <tr><th>Etapa</th><th>Prazo estimado</th><th>O que acontece</th></tr>
+      <tr><td><b>Confirmação</b></td><td>1–2 dias</td><td>Você confirma itens e quantidades; fechamos o pedido com a fábrica.</td></tr>
+      <tr><td><b>Produção</b></td><td>7–20 dias</td><td>A fábrica produz e nosso time acompanha; enviamos fotos reais.</td></tr>
+      <tr><td><b>Conferência e embarque</b></td><td>3–7 dias</td><td>Conferimos qualidade e quantidade, consolidamos e embarcamos.</td></tr>
+      <tr><td><b>Transporte ${modal.toLowerCase()}</b></td><td>${modal==="Aéreo"?"7–12 dias":"35–45 dias"}</td><td>Viagem da China até o porto/aeroporto no Brasil.</td></tr>
+      <tr><td><b>Chegada e entrega</b></td><td>7–15 dias</td><td>Todo o processo de chegada ao Brasil e transporte até o seu endereço.</td></tr>
+      <tr class="best"><td><b>Total</b></td><td colspan="2"><b>${prazo}</b> a partir da confirmação</td></tr>
+    </table>
+
+    <h2>Condições e mínimos</h2>
+    <table style="font-size:11px">
+      <tr><td style="width:45%"><b>Pedido mínimo</b></td><td>${MIN.m3} m³ de cubagem <b>ou</b> R$ ${brl(MIN.valor_brl)} em produtos</td></tr>
+      <tr><td><b>Cubagem deste pedido</b></td><td>${cub?cub+" m³":"a confirmar"} ${parseFloat(cub||"0")<Number(MIN.m3||0)?`— abaixo do mínimo, cobrado como ${MIN.m3} m³`:""}</td></tr>
+      <tr><td><b>Modalidade</b></td><td>${modal} · valores já incluem frete internacional e impostos</td></tr>
+      <tr><td><b>Pagamento</b></td><td>Sinal na confirmação do pedido e saldo antes do embarque</td></tr>
+      <tr><td><b>Validade desta proposta</b></td><td>7 dias (câmbio e disponibilidade da fábrica podem variar)</td></tr>
+    </table>
+    ${abaixoMin?`<div class="sugbox" style="margin-top:8px"><b>Dá para aproveitar melhor este pedido:</b> ele ainda não preenche o mínimo de ${MIN.m3} m³ / R$ ${brl(MIN.valor_brl)}. Somando mais itens você dilui o frete e o custo por unidade cai — nosso time te ajuda a completar o cubo.</div>`:""}
+
     <h2>O que está incluso</h2>
     <div class="cols">
       <div><b>Você recebe</b>
@@ -1261,7 +1289,9 @@ function gerarPDF(){
         <ul><li>Valores válidos por 7 dias (câmbio e fábrica podem variar)</li><li>Quantidades podem ser ajustadas antes do fechamento</li><li>Amostras podem ser solicitadas à parte</li><li>${cub?`Cubagem estimada deste pedido: ${cub} m³`:"Cubagem confirmada no fechamento"}</li></ul></div>
     </div>
 
-    <div class="cta"><b>Próximo passo:</b> responda esta proposta no WhatsApp confirmando os itens e as quantidades. Nosso time inicia a negociação final com a fábrica e envia os dados para pagamento — a partir daí, cuidamos de tudo até a entrega.</div>
+    <div class="cta"><b>Próximo passo:</b> confirme os itens e as quantidades para iniciarmos a negociação final com a fábrica.
+      <div style="margin-top:9px"><a class="btnResp" href="${linkResp}">QUERO SEGUIR COM ESTA PROPOSTA</a></div>
+      <div style="font-size:9.5px;color:#8A8378;margin-top:5px">${zap?`Ou chame direto: (${zap.slice(2,4)}) ${zap.slice(4,9)}-${zap.slice(9)}`:"efeitovendasnachina.com.br"}</div></div>
 
     <div class="foot">Fazemos tudo com você — do pedido na fábrica à chegada no Brasil, com o apoio e a segurança da Efeito Vendas na China.<br>
     efeitovendasnachina.com.br${q.faturamento?` · Proposta personalizada para o perfil informado (${q.faturamento})`:""}</div>
