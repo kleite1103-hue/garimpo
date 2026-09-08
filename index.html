@@ -633,13 +633,12 @@ function fmtVendas(v){
 }
 function card(p){
   const _pf=fab(p)||p.brl/1.944;
-  const _r=(v)=>v/(p.brl&&_pf?(p.brl/_pf):1.944);
-  const fx=(p.faixas_brl||[]).slice(0,2).map(f=>`<div class="trow"><span>${f.min_qtd?("a partir de "+f.min_qtd+" un"):"qualquer"}</span><b>R$ ${brl(_r(f.brl))}</b></div>`).join("")||`<div class="trow"><span>unidade</span><b>R$ ${brl(_pf)}</b></div>`;
+  const fx="";
   const w=p.certificacao?`<span class="warnb">⚠ ${p.certificacao}</span>`:"";
   return `<article class="card" onclick="abreProd(\'${p.offer_id}\')" style="cursor:pointer"><div class="thumb"><img loading="lazy" src="${mini(p.img)}" alt=""/><span class="bdg">▲ ${fmtVendas(p.vendas)}</span>${w}</div>
    <div class="cbody"><div class="pname">${p.nome}</div>
     <div class="chegada"><span class="big">R$ ${brl(fab(p)||p.brl)}</span><span class="lab">/un na China</span><div class="pnote">+ frete e impostos · peça sua cotação</div></div>
-    <div class="tiers"><div class="th">Preço por quantidade</div>${fx}</div>
+    <div class="tiers"><div class="th">Preço por quantidade</div></div>
     <div class="metarow"><span class="moq">a partir de <b>${p.moq} un</b></span><span class="sales">${fmtVendas(p.vendas)?`🔥 ${fmtVendas(p.vendas)} vendidos`:''}</span></div>
     <div class="forn">✓ Fornecedor verificado${p.forn_anos?' · '+p.forn_anos+(p.forn_anos>1?' anos':' ano'):''}</div>
     <button class="addbtn" onclick="event.stopPropagation();add('${p.offer_id}')">+ Adicionar à cotação</button>
@@ -887,7 +886,7 @@ function abreProd(id){
   $("pmBrl").textContent="R$ "+brl(fab(p)||p.brl);
   $("pmBadges").innerHTML=`${fmtV(p.vendas)?`<span class="pb hot">🔥 ${fmtV(p.vendas)} unidades já vendidas na fábrica</span>`:""}<span class="pb ver">✓ Fornecedor verificado</span>${p.certificacao?`<span class="pb warn">⚠ Exige ${p.certificacao} pra importar</span>`:""}`;
   const _pf2=fab(p)||p.brl/1.944, _rz=(p.brl&&_pf2)?(p.brl/_pf2):1.944;
-  $("pmTiers").innerHTML=(p.faixas_brl&&p.faixas_brl.length?p.faixas_brl:[{min_qtd:null,brl:p.brl}]).map(f=>`<div class="ptr"><span>${f.min_qtd?("a partir de "+f.min_qtd+" un"):"qualquer quantidade"}</span><b>R$ ${brl(f.brl/_rz)}/un</b></div>`).join("");
+  
   document.querySelectorAll(".grupo-opcoes").forEach(e=>e.remove());
   const og=opcoesGrupo(p);if(og){const d=document.createElement("div");d.className="grupo-opcoes";d.innerHTML=og;document.querySelector("#pmodal .ptiers").after(d);}
   $("pmForn").textContent=(p.forn_nome?p.forn_nome+" · ":"")+(p.forn_anos?p.forn_anos+(p.forn_anos>1?" anos":" ano")+" de operação · ":"")+(fmtV(p.vendas)||"")+" vendas · avaliado pela nossa curadoria";
@@ -898,7 +897,7 @@ function abreProd(id){
   const rg=document.getElementById("pmUnM3");if(rg)rg.remove();
   if(p.volume_l>0){const d=document.createElement("div");d.id="pmUnM3";d.style.cssText="font-size:11.5px;color:var(--soft);margin-top:3px";d.textContent=`📐 Cabem ~${Math.floor(1000/p.volume_l)} unidades por m³ (mínimo de importação: 1 m³ por pedido, pode misturar produtos)`;document.getElementById("pmDesc").after(d);}
   const fx=document.getElementById("pmFaixaVar");if(fx)fx.remove();
-  if(p.brl_max&&Number(p.brl_max)>Number(p.brl)){const d=document.createElement("div");d.id="pmFaixaVar";d.style.cssText="font-size:11.5px;color:var(--soft);margin-top:2px";d.innerHTML=`variações deste anúncio: <b>R$ ${brl(p.brl)} a R$ ${brl(p.brl_max)}</b> · o preço final da variação escolhida vem na cotação`;document.getElementById("pmDesc").after(d);}
+  if(p.brl_max&&Number(p.brl_max)>Number(p.brl)){const d=document.createElement("div");d.id="pmFaixaVar";d.style.cssText="font-size:11.5px;color:var(--soft);margin-top:2px";d.innerHTML=`variações deste anúncio: <b>R$ ${brl(fab(p)||p.brl)} a R$ ${brl((fab(p)||p.brl)*(p.brl_max/p.brl||1))}</b> · o preço final da variação escolhida vem na cotação`;document.getElementById("pmDesc").after(d);}
   if(p.eh_kit){$("pmBadges").innerHTML+=`<span class="pb warn">📦 ${p.kit_texto||"Preço refere-se ao KIT"}</span>`;}
   $("pmodal").classList.add("show");
 }
@@ -1055,7 +1054,7 @@ function abreAmostra(...a){
       <div class="pbadges" id="pmBadges"></div>
       <div class="pprice"><div class="row1"><span style="font-size:11px;color:var(--faint)">a partir de</span><div id="pmBanner"><div class="t">Preço na fábrica na China</div><span class="big" id="pmBrl"></span><div class="s">Este é o valor na origem. <b>Nosso time calcula quanto chega no Brasil</b> — com frete, impostos e a sua quantidade — e responde no seu WhatsApp.</div></div><span class="lab">/un na China</span></div>
         <div class="aviso"><b>*Estimativa</b> com câmbio do dia. O preço final vem na resposta da sua cotação.</div></div>
-      <div class="ptiers"><div class="th">Preço por quantidade (estimado)</div><div id="pmTiers"></div></div>
+      <div class="ptiers"><div class="th">Preço por quantidade (estimado)</div></div>
       <div class="pforn">🛡️ <div><b>Fornecedor verificado</b><div style="font-size:11px;color:var(--soft)" id="pmForn"></div></div></div>
       <div id="pmDesc" style="font-size:12px;color:var(--soft);line-height:1.55;margin:10px 0 2px"></div>
       <div class="pqty">
