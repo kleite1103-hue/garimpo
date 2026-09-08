@@ -1060,16 +1060,41 @@ async function abreProposta(){
   const totalGeral=(window._firme&&window._firme>=custo+frete)?window._firme:calc;
   const fator=custo>0?totalGeral/custo:1;
   const prazoPad=($("cPrazo")&&$("cPrazo").value)||"60–75 dias (marítimo)";
+  // procura fornecedores alternativos para cada item (mesmo grupo ou produto equivalente na categoria)
+  const ALT={};
+  await Promise.all(its.map(async (it)=>{
+    const p=FB[it.offer_id]||{};
+    let alts=[];
+    try{
+      const {data:g}=await sb.from("catalogo").select("offer_id,nome,forn_nome,forn_anos,descricao,categoria,grupo_id,moq").eq("categoria",p.categoria||"").limit(600);
+      const pal=(p.nome||it.nome||"").toLowerCase().replace(/[^a-zà-ú0-9 ]/g," ").split(/\s+/).filter(w=>w.length>3);
+      const cand=(g||[]).filter(x=>x.offer_id!==it.offer_id).map(x=>{
+        const t=(x.nome||"").toLowerCase();
+        const score=pal.filter(w=>t.includes(w)).length/Math.max(3,pal.length);
+        return {x,score};
+      }).filter(o=>o.score>=0.45).sort((a,b)=>b.score-a.score);
+      const vistos=new Set();
+      for(const o of cand){
+        const fn=o.x.forn_nome||"";
+        if(!fn||vistos.has(fn)||fn===p.forn_nome)continue;
+        vistos.add(fn);alts.push(o.x);
+        if(alts.length>=2)break;
+      }
+    }catch(e){}
+    ALT[it.id]=alts;
+  }));
   const box=its.map((it,ix)=>{
     const pit=P[it.id]||{forn:[{},{},{}]};
     const p=FB[it.offer_id]||{},o=OG[it.offer_id]||{};
     const autoA=o.empresa||(p.forn_nome?`${p.forn_nome}${p.forn_anos?" · "+p.forn_anos+" anos":""}`:"Fábrica verificada");
     const sug=(base[it.id].unit*fator).toFixed(2);
     const fr=(i)=>{const f=(pit.forn||[])[i]||{};
-      const vNome=f.nome||(i===0?autoA:"");
-      const vPreco=f.preco||(i===0?sug:"");
-      const vMoq=f.moq||(i===0?(it.moq||p.moq||1):"");
-      const vPz=f.prazo||(i===0?prazoPad:"");
+      const alt=(ALT[it.id]||[])[i-1];
+      const altFab=alt?fabAdm2(alt):null;
+      const vNome=f.nome||(i===0?autoA:(alt?`${alt.forn_nome}${alt.forn_anos?" · "+alt.forn_anos+" anos":""}`:""));
+      const vPreco=f.preco||(i===0?sug:(altFab?(altFab*fator).toFixed(2):""));
+      const vMoq=f.moq||(i===0?(it.moq||p.moq||1):(alt?(alt.moq||1):""));
+      const vPz=f.prazo||((i===0||alt)?prazoPad:"");
       return `<div class="pprow" style="display:grid;grid-template-columns:1.3fr .7fr .5fr .9fr;gap:5px;margin-top:4px">
         <input id="pp_n${it.id}_${i}" placeholder="Fornecedor ${"ABC"[i]}" value="${vNome}" style="border:1px solid var(--line);border-radius:8px;padding:7px;font-size:11.5px"/>
         ${i>0?`<input id="pp_l${it.id}_${i}" placeholder="cole o link do produto deste fornecedor — o sistema puxa os dados" style="grid-column:1/-1;border:1px dashed var(--line);border-radius:8px;padding:6px;font-size:11px" onchange="ppPuxa(${it.id},${i})"/>`:""}
@@ -1083,7 +1108,7 @@ async function abreProposta(){
         <span style="margin-left:auto;font-size:11px;color:var(--faint)">${it.qtd} un · R$ ${brl(base[it.id].unit)}/un na China</span></div>
       ${fr(0)}
       <div id="alt${it.id}" class="hidden">${fr(1)}${fr(2)}</div>
-      <button class="btn sm ghost" style="margin-top:6px" onclick="document.getElementById('alt${it.id}').classList.toggle('hidden');this.textContent=document.getElementById('alt${it.id}').classList.contains('hidden')?'+ Comparar com outros fornecedores':'− Esconder comparativo'">+ Comparar com outros fornecedores</button>
+      <button class="btn sm ghost" style="margin-top:6px" onclick="document.getElementById('alt${it.id}').classList.toggle('hidden');this.textContent=document.getElementById('alt${it.id}').classList.contains('hidden')?((ALT[it.id]||[]).length?'+ Ver os '+(ALT[it.id]||[]).length+' fornecedores alternativos':'+ Comparar com outros fornecedores'):'− Esconder comparativo'">+ Comparar com outros fornecedores</button>
       <div id="mid${it.id}" class="hidden" style="display:none;grid-template-columns:1fr 1fr;gap:5px;margin-top:6px">
         <textarea id="pp_ft${it.id}" placeholder="FOTOS reais (links, um por linha)" style="border:1px solid var(--line);border-radius:8px;padding:7px;font-size:11px;min-height:52px">${pit.fotos||pit.midias||""}</textarea>
         <textarea id="pp_vd${it.id}" placeholder="VÍDEO real (link do Drive/YouTube)" style="border:1.5px solid #D91F26;border-radius:8px;padding:7px;font-size:11px;min-height:52px">${pit.video||""}</textarea>
