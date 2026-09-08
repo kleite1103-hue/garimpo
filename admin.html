@@ -1246,14 +1246,20 @@ function gerarPDF(){
     const vids=(pit.video||"").split("\n").map(s=>s.trim()).filter(Boolean);
     const sub=puA*it.qtd;
     // sugestões de venda no Brasil
+    const TAXA=0.20; // comissão média de marketplace
     const s2=puA*2.5, s3=puA*3;
+    const luc2=(s2*(1-TAXA)-puA), luc3=(s3*(1-TAXA)-puA);
     return `<section>
       <div class="ptop"><img src="${it.img}"/>
         <div><h3>${it.nome}</h3>
           <div class="pmeta">${it.qtd} unidades · Subtotal <b>R$ ${brl(sub)}</b></div>
         </div></div>
       <table><tr><th></th><th>Fornecedor</th><th>Valor final no Brasil (un)</th><th>Mínimo</th><th>Produção</th></tr>${rows}</table>
-      <div class="sugbox"><b>Potencial de venda no Brasil</b> — a R$ ${brl(s2)}/un você fecha ${brl(s2*it.qtd)} no lote (margem ~60%); a R$ ${brl(s3)}/un, ${brl(s3*it.qtd)} (margem ~67%). <i>Valores de referência: quem define o preço de venda é você.</i></div>
+      <div class="sugbox"><b>Simulação de venda no Brasil</b> (seu custo: R$ ${brl(puA)}/un)
+        <table style="margin-top:5px;font-size:10.5px"><tr><th>Preço de venda</th><th>Receita no lote</th><th>Menos taxas (~20%)</th><th>Seu lucro estimado</th></tr>
+        <tr><td>R$ ${brl(s2)}/un</td><td>R$ ${brl(s2*it.qtd)}</td><td>− R$ ${brl(s2*it.qtd*TAXA)}</td><td><b>R$ ${brl(luc2*it.qtd)}</b> (${Math.round(luc2/s2*100)}% do preço)</td></tr>
+        <tr><td>R$ ${brl(s3)}/un</td><td>R$ ${brl(s3*it.qtd)}</td><td>− R$ ${brl(s3*it.qtd*TAXA)}</td><td><b>R$ ${brl(luc3*it.qtd)}</b> (${Math.round(luc3/s3*100)}% do preço)</td></tr></table>
+        <i>Estimativa considerando ~20% de comissão de marketplace. Não inclui imposto, embalagem e frete que você absorver — o preço de venda quem define é você.</i></div>
       ${fotos.length?`<div class="midias">${fotos.slice(0,4).map(u=>`<img src="${u}"/>`).join("")}</div>`:""}
       ${vids.length?`<div class="vids">${vids.map(u=>`<a class="vbtn" href="${u}">▶ &nbsp;ASSISTIR AO VÍDEO REAL DO PRODUTO</a><div class="vurl">${u}</div>`).join("")}</div>`:""}
     </section>`;
