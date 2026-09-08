@@ -394,7 +394,7 @@ body{-webkit-font-smoothing:antialiased}
       </div>
       <div class="panel"><div class="ph2">Resumo</div>
         <div class="sumrow"><span>Itens</span><b id="sumItens">—</b></div>
-        <div class="sumtotal"><span>Total estimado*</span><span id="sumTotal">R$ 0,00</span></div>
+        <div class="sumtotal"><span>Total na fábrica*</span><span id="sumTotal">R$ 0,00</span></div>
         <div id="leadInline" class="panel hidden" style="margin-top:12px;padding:14px;border-color:#F0D9B8;background:#FDF9F2">
           <div style="font-size:13px;font-weight:800">📋 Seus dados pra receber o preço final</div>
           <div style="font-size:11.5px;color:var(--soft);margin:4px 0 10px">Nosso time monta sua importação e responde no seu WhatsApp — produto, frete e impostos fechados.</div>
@@ -406,7 +406,7 @@ body{-webkit-font-smoothing:antialiased}
           <select id="liImp" style="width:100%;border:1.5px solid var(--line);border-radius:10px;padding:11px;font-size:13px;margin-bottom:8px;background:#fff;color:var(--ink)"><option value="">Você já importa? *</option><option>Nunca importei</option><option>Já tentei, não deu certo</option><option>Importo às vezes</option><option>Importo sempre</option></select>
           <select id="liReg" style="width:100%;border:1.5px solid var(--line);border-radius:10px;padding:11px;font-size:13px;margin-bottom:2px;background:#fff;color:var(--ink)"><option value="">Seu regime tributário? *</option><option>Não tenho CNPJ</option><option>MEI</option><option>Simples Nacional</option><option>Lucro Presumido</option><option>Lucro Real</option></select>
         </div>
-        <div class="estnote">*Preço na fábrica, convertido pelo câmbio do dia. O valor final da importação (produto + frete + impostos) vem na resposta da sua cotação.</div>
+        <div class="estnote">*Soma dos preços de fábrica na China. O valor final da importação — com frete, impostos e nosso serviço — vem na resposta da sua cotação.</div>
         <button class="btn p send" onclick="enviarCotacao()">Enviar pedido de cotação</button>
         <div style="text-align:center;font-size:11px;color:var(--faint);padding-bottom:14px" id="slaTxt">Resposta em até 1 dia útil.</div>
       </div>
@@ -632,7 +632,9 @@ function fmtVendas(v){
   return n>=1000?Math.round(n).toLocaleString("pt-BR"):String(Math.round(n));
 }
 function card(p){
-  const fx=(p.faixas_brl||[]).slice(0,2).map(f=>`<div class="trow"><span>${f.faixa||'qualquer'}</span><b>R$ ${brl(f.brl)}</b></div>`).join("")||`<div class="trow"><span>unidade</span><b>R$ ${brl(p.brl)}</b></div>`;
+  const _pf=fab(p)||p.brl/1.944;
+  const _r=(v)=>v/(p.brl&&_pf?(p.brl/_pf):1.944);
+  const fx=(p.faixas_brl||[]).slice(0,2).map(f=>`<div class="trow"><span>${f.min_qtd?("a partir de "+f.min_qtd+" un"):"qualquer"}</span><b>R$ ${brl(_r(f.brl))}</b></div>`).join("")||`<div class="trow"><span>unidade</span><b>R$ ${brl(_pf)}</b></div>`;
   const w=p.certificacao?`<span class="warnb">⚠ ${p.certificacao}</span>`:"";
   return `<article class="card" onclick="abreProd(\'${p.offer_id}\')" style="cursor:pointer"><div class="thumb"><img loading="lazy" src="${mini(p.img)}" alt=""/><span class="bdg">▲ ${fmtVendas(p.vendas)}</span>${w}</div>
    <div class="cbody"><div class="pname">${p.nome}</div>
@@ -680,7 +682,7 @@ function autoPag(){
 function add(id){
   const p=PROD.find(x=>x.offer_id===id);if(!p)return;
   const ex=CART.find(x=>x.offer_id===id);
-  if(ex)ex.qtd+=p.moq||1;else CART.push({offer_id:id,nome:p.nome,img:p.img,moq:p.moq||1,qtd:Math.max(p.moq||1,MINQ.un_item),brl:p.brl});
+  if(ex)ex.qtd+=p.moq||1;else CART.push({offer_id:id,nome:p.nome,img:p.img,fabu:(fab(p)||p.brl/1.944),moq:p.moq||1,qtd:Math.max(p.moq||1,MINQ.un_item),brl:p.brl});
   updCart();irCarrinho();showToast("Adicionado à sua cotação");
 }
 function updCart(){$("cartN").textContent=CART.length;try{document.getElementById("tbN").textContent=CART.length;}catch(e){}}
@@ -703,7 +705,7 @@ function renderCart(){
   $("cartItems").innerHTML=CART.length?CART.map((c,i)=>`
    <div class="item"><img src="${mini(c.img)}"/><div class="in">
      <div class="nm">${c.nome}</div>
-     <div class="est">estimado <b>R$ ${brl(c.brl)}/un</b> · subtotal R$ ${brl(c.brl*c.qtd)}</div>
+     <div class="est">na fábrica <b>R$ ${brl(c.fabu||c.brl)}/un</b> · subtotal R$ ${brl((c.fabu||c.brl)*c.qtd)}</div>
      <div style="font-size:11px;color:var(--faint)">mínimo ${c.moq} un</div>
      <span class="rm" onclick="rm(${i})">remover</span></div>
    <div class="stepper"><button onclick="qtd(${i},-1)">−</button><input value="${c.qtd}" onchange="qtdSet(${i},this.value)"/><button onclick="qtd(${i},1)">+</button></div></div>`).join("")
@@ -793,13 +795,15 @@ async function enviarCotacao(pos){
     return;
   }
   if(!pos&&USER){
-    const g=await leadGate();
+    let g="ok";try{g=await leadGate();}catch(e){g="ok";}
     if(g==="limite"){alert("Sua cotação já está com nosso time! 🎉\n\nVocê vai receber no WhatsApp o preço final da sua importação e todos os detalhes pra fazer tudo com nosso apoio e segurança — do pedido à chegada no Brasil.");return;}
     if(g==="dados"){$("leadmodal").classList.add("show");return;}
   }
-  const _m3=volCart()/1000;
-  if(_m3>0&&_m3<1&&!confirm(`Seu pedido ocupa ${_m3.toFixed(2)} m³ e o mínimo de importação é 1 m³ (o frete do metro cúbico é cobrado cheio).\n\nQuer enviar mesmo assim? Nosso time vai avaliar, mas o frete por unidade pode ficar alto.`))return;
-  const tot=CART.reduce((s,c)=>s+c.brl*c.qtd,0);
+  try{
+    const _m3=(typeof volCart==="function"?volCart():0)/1000;
+    if(_m3>0&&_m3<(MINQ.m3||0.5)&&!confirm(`Seu pedido ocupa ${_m3.toFixed(2)} m³ e o mínimo é ${MINQ.m3||0.5} m³ (o frete do metro cúbico é cobrado cheio).\n\nQuer enviar mesmo assim? Nosso time avalia e te orienta a completar o metro cúbico.`))return;
+  }catch(e){}
+  const tot=CART.reduce((s,c)=>s+(c.fabu||c.brl)*c.qtd,0);
   if(!USER){
     
     const nome=$("liNome").value.trim(),whats=$("liWhats").value.replace(/\D/g,"");
@@ -820,8 +824,12 @@ async function enviarCotacao(pos){
     }
     return;
   }
-  const {data:cot,error}=await sb.from("cotacoes").insert({user_id:USER.id,total_estimado:tot,obs_aluno:$("obsAluno").value.trim()||null}).select().single();
-  if(error){alert("Não foi possível enviar: "+error.message);return;}
+  let cot=null;
+  try{
+    const r=await sb.from("cotacoes").insert({user_id:USER.id,total_estimado:tot,obs_aluno:($("obsAluno")?$("obsAluno").value.trim():"")||null}).select().single();
+    if(r.error){alert("Não foi possível enviar: "+r.error.message);return;}
+    cot=r.data;
+  }catch(e){alert("Não foi possível enviar: "+(e.message||e));return;}
   const itens=CART.map(c=>({cotacao_id:cot.id,offer_id:c.offer_id,nome:c.nome,img:c.img,qtd:c.qtd,moq:c.moq,brl_estimado_un:c.brl}));
   const {error:e2}=await sb.from("cotacao_itens").insert(itens);
   if(e2){alert("Itens não gravados: "+e2.message);return;}
@@ -878,14 +886,15 @@ function abreProd(id){
   $("pmImg").src=p.img||"";$("pmNome").textContent=p.nome;
   $("pmBrl").textContent="R$ "+brl(fab(p)||p.brl);
   $("pmBadges").innerHTML=`${fmtV(p.vendas)?`<span class="pb hot">🔥 ${fmtV(p.vendas)} unidades já vendidas na fábrica</span>`:""}<span class="pb ver">✓ Fornecedor verificado</span>${p.certificacao?`<span class="pb warn">⚠ Exige ${p.certificacao} pra importar</span>`:""}`;
-  $("pmTiers").innerHTML=(p.faixas_brl&&p.faixas_brl.length?p.faixas_brl:[{faixa:"qualquer quantidade",brl:p.brl}]).map(f=>`<div class="ptr"><span>${f.faixa||"qualquer"}</span><b>R$ ${brl(f.brl)}/un</b></div>`).join("");
+  const _pf2=fab(p)||p.brl/1.944, _rz=(p.brl&&_pf2)?(p.brl/_pf2):1.944;
+  $("pmTiers").innerHTML=(p.faixas_brl&&p.faixas_brl.length?p.faixas_brl:[{min_qtd:null,brl:p.brl}]).map(f=>`<div class="ptr"><span>${f.min_qtd?("a partir de "+f.min_qtd+" un"):"qualquer quantidade"}</span><b>R$ ${brl(f.brl/_rz)}/un</b></div>`).join("");
   document.querySelectorAll(".grupo-opcoes").forEach(e=>e.remove());
   const og=opcoesGrupo(p);if(og){const d=document.createElement("div");d.className="grupo-opcoes";d.innerHTML=og;document.querySelector("#pmodal .ptiers").after(d);}
   $("pmForn").textContent=(p.forn_nome?p.forn_nome+" · ":"")+(p.forn_anos?p.forn_anos+(p.forn_anos>1?" anos":" ano")+" de operação · ":"")+(fmtV(p.vendas)||"")+" vendas · avaliado pela nossa curadoria";
   $("pmMoq").textContent=p.moq||1;$("pmQty").value=p.moq||1;
   const gal=((p.imgs&&p.imgs.length)?p.imgs:[p.img]).filter(Boolean);
   $("pmThumbs").innerHTML=gal.length>1?gal.map((u,i)=>`<img src="${mini(u)}" style="width:52px;height:52px;border-radius:8px;object-fit:cover;cursor:pointer;border:2px solid ${i===0?'var(--orange)':'transparent'}" onclick="$('pmImg').src='${u}';[...this.parentNode.children].forEach(x=>x.style.borderColor='transparent');this.style.borderColor='var(--orange)'"/>`).join(""):"";
-  $("pmDesc").textContent=(p.descricao||"").slice(0,300);
+  $("pmDesc").textContent=String(p.descricao||"").split("|FAB:")[0].slice(0,300);
   const rg=document.getElementById("pmUnM3");if(rg)rg.remove();
   if(p.volume_l>0){const d=document.createElement("div");d.id="pmUnM3";d.style.cssText="font-size:11.5px;color:var(--soft);margin-top:3px";d.textContent=`📐 Cabem ~${Math.floor(1000/p.volume_l)} unidades por m³ (mínimo de importação: 1 m³ por pedido, pode misturar produtos)`;document.getElementById("pmDesc").after(d);}
   const fx=document.getElementById("pmFaixaVar");if(fx)fx.remove();
@@ -1044,7 +1053,7 @@ function abreAmostra(...a){
     <div class="pinfo">
       <h2 id="pmNome"></h2>
       <div class="pbadges" id="pmBadges"></div>
-      <div class="pprice"><div class="row1"><span style="font-size:11px;color:var(--faint)">a partir de</span><div id="pmBanner"><div class="t">✈️ Valor final no Brasil</div><span class="big" id="pmBrl"></span><div class="s">já considerando <b>frete internacional + impostos</b> — fechado na resposta da sua cotação</div></div><span class="lab">/un · chegada no Brasil</span></div>
+      <div class="pprice"><div class="row1"><span style="font-size:11px;color:var(--faint)">a partir de</span><div id="pmBanner"><div class="t">Preço na fábrica na China</div><span class="big" id="pmBrl"></span><div class="s">Este é o valor na origem. <b>Nosso time calcula quanto chega no Brasil</b> — com frete, impostos e a sua quantidade — e responde no seu WhatsApp.</div></div><span class="lab">/un na China</span></div>
         <div class="aviso"><b>*Estimativa</b> com câmbio do dia. O preço final vem na resposta da sua cotação.</div></div>
       <div class="ptiers"><div class="th">Preço por quantidade (estimado)</div><div id="pmTiers"></div></div>
       <div class="pforn">🛡️ <div><b>Fornecedor verificado</b><div style="font-size:11px;color:var(--soft)" id="pmForn"></div></div></div>
