@@ -1155,59 +1155,121 @@ function gerarPDF(){
   const its=c.cotacao_itens||[];
   const nome=c.lead_nome||"Cliente";
   const hoje=new Date().toLocaleDateString("pt-BR");
-  const firme=window._firme||c.total_firme;
-  const bloco=its.map(it=>{
-    const pit=P[it.id]||{forn:[],midias:""};
+  const q=c.lead_quiz||{};
+  // total real: soma do preço A de cada item x quantidade
+  let total=0, unTot=0;
+  its.forEach(it=>{
+    const f=(P[it.id]?.forn||[])[0]||{};
+    const pu=parseFloat(String(f.preco||"").replace(",","."))||Number(it.brl_estimado_un)||0;
+    total+=pu*it.qtd; unTot+=it.qtd;
+  });
+  const modal=($("cModal")&&$("cModal").value==="aer")?"Aéreo":"Marítimo";
+  const prazo=($("cPrazo")&&$("cPrazo").value)||(modal==="Aéreo"?"20–30 dias":"60–75 dias");
+  const cub=($("cVolM3")&&$("cVolM3").value)||"";
+  const bloco=its.map((it,ix)=>{
+    const pit=P[it.id]||{forn:[]};
     const forn=(pit.forn||[]).filter(f=>f.nome||f.preco);
-    const rows=forn.map((f,i)=>`<tr ${i===0?'class="best"':''}><td>${"ABC"[i]}</td><td>${f.nome||"—"}</td><td><b>R$ ${f.preco||"—"}/un</b></td><td>${f.moq||"—"}</td><td>${f.prazo||"—"}</td></tr>`).join("")
-      ||`<tr class="best"><td>A</td><td>Fornecedor verificado</td><td><b>R$ ${Number(it.brl_estimado_un).toFixed(2)}/un</b></td><td>${it.moq}</td><td>—</td></tr>`;
-    const fotos=((pit.fotos||pit.midias||"")).split("\n").map(s=>s.trim()).filter(Boolean);
-    const imgs=fotos.slice(0,4).map(u=>`<img src="${u}"/>`).join("");
-    const vids=((pit.video||"")).split("\n").map(s=>s.trim()).filter(Boolean)
-      .map(u=>`<a class="vbtn" href="${u}">▶ &nbsp;ASSISTIR AO VÍDEO REAL DO PRODUTO</a><div class="vurl">${u}</div>`).join("");
+    const A=forn[0]||{};
+    const puA=parseFloat(String(A.preco||"").replace(",","."))||0;
+    const rows=forn.map((f,i)=>`<tr ${i===0?'class="best"':''}><td class="lt">${"ABC"[i]}</td><td>${f.nome||"—"}</td><td><b>R$ ${f.preco||"—"}</b></td><td>${f.moq||"—"}</td><td>${f.prazo||"—"}</td></tr>`).join("");
+    const fotos=(pit.fotos||"").split("\n").map(s=>s.trim()).filter(Boolean);
+    const vids=(pit.video||"").split("\n").map(s=>s.trim()).filter(Boolean);
+    const sub=puA*it.qtd;
+    // sugestões de venda no Brasil
+    const s2=puA*2.5, s3=puA*3;
     return `<section>
-      <div class="prod"><img src="${it.img}"/><div><h3>${it.nome}</h3><span>${it.qtd} unidades</span></div></div>
-      <table><tr><th></th><th>Fornecedor</th><th>Valor final no Brasil*</th><th>Mínimo</th><th>Produção</th></tr>${rows}</table>
-      ${imgs?`<div class="midias">${imgs}</div>`:""}${vids?`<div class="vids">${vids}</div>`:""}
+      <div class="ptop"><img src="${it.img}"/>
+        <div><h3>${it.nome}</h3>
+          <div class="pmeta">${it.qtd} unidades · Subtotal <b>R$ ${brl(sub)}</b></div>
+        </div></div>
+      <table><tr><th></th><th>Fornecedor</th><th>Valor final no Brasil (un)</th><th>Mínimo</th><th>Produção</th></tr>${rows}</table>
+      <div class="sugbox"><b>Potencial de venda no Brasil</b> — a R$ ${brl(s2)}/un você fecha ${brl(s2*it.qtd)} no lote (margem ~60%); a R$ ${brl(s3)}/un, ${brl(s3*it.qtd)} (margem ~67%). <i>Valores de referência: quem define o preço de venda é você.</i></div>
+      ${fotos.length?`<div class="midias">${fotos.slice(0,4).map(u=>`<img src="${u}"/>`).join("")}</div>`:""}
+      ${vids.length?`<div class="vids">${vids.map(u=>`<a class="vbtn" href="${u}">▶ &nbsp;ASSISTIR AO VÍDEO REAL DO PRODUTO</a><div class="vurl">${u}</div>`).join("")}</div>`:""}
     </section>`;
   }).join("");
   const w=window.open("","_blank");
   if(!w){alert("O navegador bloqueou a janela do PDF. Libere os pop-ups deste site e clique de novo.");return;}
   w.document.write(`<!doctype html><html><head><meta charset="utf-8"><title>Proposta ${c.numero} — Efeito Vendas na China</title><style>
-    @page{size:A4;margin:14mm}
-    body{font-family:'Segoe UI',Arial,sans-serif;color:#1A1A1A;margin:0}
-    .top{display:flex;justify-content:space-between;align-items:center;border-bottom:3px solid #D91F26;padding-bottom:10px}
-    .logo{font-family:Arial Black,Arial;font-size:20px;letter-spacing:.5px}.logo i{color:#D91F26;font-style:normal}
-    .meta{text-align:right;font-size:11px;color:#666}
-    h2{font-size:15px;margin:16px 0 4px}
-    .cliente{font-size:12px;color:#444}
-    section{margin:14px 0;page-break-inside:avoid;border:1px solid #E7E0D6;border-radius:10px;padding:12px}
-    .prod{display:flex;gap:10px;align-items:center}.prod img{width:64px;height:64px;border-radius:8px;object-fit:cover}
-    .prod h3{margin:0;font-size:13px}.prod span{font-size:11px;color:#777}
-    table{width:100%;border-collapse:collapse;margin-top:8px;font-size:11.5px}
-    th{text-align:left;color:#888;font-weight:600;padding:4px 6px;border-bottom:1px solid #eee}
-    td{padding:6px}tr.best td{background:#F1F7F3;font-weight:600}
-    .midias{display:flex;gap:6px;margin-top:8px}.midias img{width:86px;height:86px;object-fit:cover;border-radius:8px;border:1px solid #eee}
+    @page{size:A4;margin:13mm}
+    *{box-sizing:border-box}
+    body{font-family:'Segoe UI',Arial,sans-serif;color:#1A1A1A;margin:0;font-size:12px;line-height:1.5}
+    .top{display:flex;justify-content:space-between;align-items:flex-end;border-bottom:3px solid #D91F26;padding-bottom:9px;margin-bottom:14px}
+    .logo{font-family:Arial Black,Arial;font-size:19px;letter-spacing:.4px}.logo i{color:#D91F26;font-style:normal}
+    .meta{text-align:right;font-size:10.5px;color:#666}
+    h2{font-size:14px;margin:16px 0 7px;padding-bottom:4px;border-bottom:1px solid #E7E0D6}
+    .hello{font-size:12.5px;color:#333;margin-bottom:12px}
+    .resumo{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin:10px 0 4px}
+    .rc{border:1px solid #E7E0D6;border-radius:9px;padding:9px}
+    .rc span{display:block;font-size:9.5px;color:#888;text-transform:uppercase;letter-spacing:.04em}
+    .rc b{font-size:14px}
+    section{margin:11px 0;page-break-inside:avoid;border:1px solid #E7E0D6;border-radius:10px;padding:11px}
+    .ptop{display:flex;gap:10px;align-items:center}.ptop img{width:62px;height:62px;border-radius:8px;object-fit:cover}
+    .ptop h3{margin:0;font-size:12.5px}.pmeta{font-size:11px;color:#666;margin-top:2px}
+    table{width:100%;border-collapse:collapse;margin-top:8px;font-size:11px}
+    th{text-align:left;color:#888;font-weight:600;padding:4px 6px;border-bottom:1px solid #eee;font-size:10px;text-transform:uppercase}
+    td{padding:5px 6px}tr.best td{background:#F1F7F3;font-weight:600}
+    td.lt{width:18px;color:#D91F26;font-weight:700}
+    .sugbox{margin-top:8px;background:#FDF9F2;border:1px solid #F0D9B8;border-radius:8px;padding:8px;font-size:10.5px}
+    .sugbox i{color:#8A8378}
+    .midias{display:flex;gap:6px;margin-top:8px}.midias img{width:80px;height:80px;object-fit:cover;border-radius:7px;border:1px solid #eee}
     .vids{margin-top:8px}
-    .vbtn{display:inline-block;background:#D91F26;color:#fff !important;text-decoration:none;font-weight:700;font-size:11.5px;padding:8px 14px;border-radius:8px}
-    .vurl{font-size:9px;color:#999;margin-top:3px}
-    .total{background:#1A1A1A;color:#fff;border-radius:10px;padding:14px;display:flex;justify-content:space-between;align-items:center;margin-top:16px}
-    .total b{font-size:19px}.total small{color:#bbb}
-    .foot{font-size:10.5px;color:#777;margin-top:12px;line-height:1.5}
+    .vbtn{display:inline-block;background:#D91F26;color:#fff !important;text-decoration:none;font-weight:700;font-size:11px;padding:7px 13px;border-radius:7px}
+    .vurl{font-size:8.5px;color:#999;margin-top:3px}
+    .total{background:#1A1A1A;color:#fff;border-radius:11px;padding:14px 16px;display:flex;justify-content:space-between;align-items:center;margin-top:14px}
+    .total b{font-size:20px}.total small{color:#bbb;font-size:10.5px}
+    .passos{display:grid;grid-template-columns:repeat(5,1fr);gap:7px;margin-top:8px}
+    .pas{border:1px solid #E7E0D6;border-radius:9px;padding:9px;font-size:10px}
+    .pas b{display:block;font-size:11px;margin-bottom:3px}
+    .pas i{font-style:normal;color:#D91F26;font-weight:700}
+    .cols{display:grid;grid-template-columns:1fr 1fr;gap:12px;font-size:11px}
+    .cols ul{margin:5px 0;padding-left:16px}.cols li{margin-bottom:3px}
+    .foot{font-size:10px;color:#777;margin-top:14px;line-height:1.6;border-top:1px solid #E7E0D6;padding-top:9px}
+    .cta{background:#F1F7F3;border:1px solid #CDE6D9;border-radius:10px;padding:11px;margin-top:12px;font-size:11.5px}
   </style></head><body>
     <div class="top"><div class="logo">EFEITO VENDAS <i>na China</i></div>
-    <div class="meta">Proposta de importação <b>${c.numero}</b><br>${hoje} · validade 7 dias</div></div>
-    <h2>Proposta preparada para ${nome}</h2>
-    <div class="cliente">Cotação analisada pessoalmente pelo nosso time — preços de fábrica verificada, com frete internacional e impostos considerados.</div>
+    <div class="meta">Proposta de importação <b>${c.numero}</b><br>${hoje} · válida por 7 dias</div></div>
+
+    <div class="hello"><b>Olá, ${nome}!</b> Analisamos sua cotação item por item, verificamos as fábricas e calculamos o custo completo até o Brasil. Abaixo está tudo o que você precisa para decidir — e o que faremos por você em cada etapa.</div>
+
+    <div class="resumo">
+      <div class="rc"><span>Investimento total</span><b>R$ ${brl(total)}</b></div>
+      <div class="rc"><span>Unidades</span><b>${unTot}</b></div>
+      <div class="rc"><span>Modalidade</span><b>${modal}</b></div>
+      <div class="rc"><span>Prazo estimado</span><b>${prazo}</b></div>
+    </div>
+
+    <h2>Seus produtos e fornecedores</h2>
     ${bloco}
-    <div class="total"><span>💰 Valor final da importação<br><small>produto + frete internacional + impostos — sem surpresa</small></span><b>${firme?"R$ "+brl(firme):"sob confirmação"}</b></div>
-    <div class="foot">⏱ Prazo estimado: ${($("cPrazo")&&$("cPrazo").value)||c.prazo_estimado||"35–45 dias"} · *Valores por unidade na quantidade cotada.<br>
-    Fazemos tudo com você — do pedido na fábrica à chegada no Brasil, com o apoio e a segurança da Efeito Vendas na China. 🇨🇳<br>
-    efeitovendasnachina.com.br</div>
+
+    <div class="total"><span>Valor final da importação<br><small>produto + frete internacional + impostos + nosso serviço — sem surpresa</small></span><b>R$ ${brl(total)}</b></div>
+
+    <h2>Como conduzimos sua importação</h2>
+    <div class="passos">
+      <div class="pas"><b><i>1.</i> Produto certo</b>Fábricas verificadas por anos de mercado, reputação e recompra.</div>
+      <div class="pas"><b><i>2.</i> Negociação</b>Falamos chinês por você: preço, prazo, amostra, fotos e vídeos reais.</div>
+      <div class="pas"><b><i>3.</i> Conferência</b>Checamos o produto e a embalagem antes de embarcar.</div>
+      <div class="pas"><b><i>4.</i> Transporte</b>Consolidamos no nosso contêiner e cuidamos de toda a chegada ao Brasil.</div>
+      <div class="pas"><b><i>5.</i> Entrega</b>Mercadoria no seu endereço, pronta para vender.</div>
+    </div>
+
+    <h2>O que está incluso</h2>
+    <div class="cols">
+      <div><b>Você recebe</b>
+        <ul><li>Produto negociado direto com a fábrica</li><li>Frete internacional e impostos</li><li>Conferência de qualidade antes do embarque</li><li>Acompanhamento em cada etapa, em português</li><li>Entrega no seu endereço</li></ul></div>
+      <div><b>Bom saber</b>
+        <ul><li>Valores válidos por 7 dias (câmbio e fábrica podem variar)</li><li>Quantidades podem ser ajustadas antes do fechamento</li><li>Amostras podem ser solicitadas à parte</li><li>${cub?`Cubagem estimada deste pedido: ${cub} m³`:"Cubagem confirmada no fechamento"}</li></ul></div>
+    </div>
+
+    <div class="cta"><b>Próximo passo:</b> responda esta proposta no WhatsApp confirmando os itens e as quantidades. Nosso time inicia a negociação final com a fábrica e envia os dados para pagamento — a partir daí, cuidamos de tudo até a entrega.</div>
+
+    <div class="foot">Fazemos tudo com você — do pedido na fábrica à chegada no Brasil, com o apoio e a segurança da Efeito Vendas na China.<br>
+    efeitovendasnachina.com.br${q.faturamento?` · Proposta personalizada para o perfil informado (${q.faturamento})`:""}</div>
   </body></html>`);
   w.document.close();
   setTimeout(()=>{try{w.focus();w.print();}catch(e){}},900);
 }
+
 
 
 async function ppPuxa(itemId,i){
