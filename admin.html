@@ -871,7 +871,7 @@ function abreCopiloto(){
         <button class="btn sm p" style="margin-top:5px" onclick="cpParseItem(${ix})">Extrair deste item</button>
         <button class="btn sm ghost" onclick="$('cpFile${ix}').click()">Ler print da conversa</button>
         <input type="file" id="cpFile${ix}" accept="image/*" style="display:none" onchange="cpPrint(${ix},this)"/>
-        <span id="cpOk${ix}" style="font-size:11.5px;margin-left:6px;color:var(--green)"></span>
+        <div id="cpChk${ix}"></div><span id="cpOk${ix}" style="font-size:11.5px;margin-left:6px;color:var(--green)"></span>
       </div>`;
     }).join("")+`<div id="cpResumo" style="background:var(--goldbg);border:1px solid #F0E2C4;border-radius:10px;padding:10px 12px;font-size:12.5px;display:none"></div>
       <button class="btn p full" id="cpAplica" style="display:none;margin-top:8px" onclick="cpAplicar()">Aplicar tudo na calculadora</button>`;
@@ -879,7 +879,8 @@ function abreCopiloto(){
     its.forEach((i,ix)=>{const d=CP[i.id];if(d&&d.parsed){window._cpDados[ix]={parsed:d.parsed,qtd:i.qtd};
       const vs=d.parsed.variacoes||[];
       const el=$("cpOk"+ix);if(el)el.innerHTML=vs.length>1?`✓ salvo · ${vs.length} variações`:`✓ salvo · ¥${d.parsed.preco_unit_rmb||"?"}/un · ${d.parsed.prazo_dias||"?"}d`;}});
-    cpResumo&&cpResumo();
+    try{pintaChecklist(ix);}catch(e){}
+  cpResumo&&cpResumo();
   });
 }
 async function cpParseItem(ix){
@@ -1455,7 +1456,8 @@ async function cpPrint(ix,inp){
     }catch(e){}
     const vs=p.variacoes||[];
     $("cpOk"+ix).innerHTML=(vs.length>1?`✓ print lido · ${vs.length} variações`:`✓ print lido · ¥${p.preco_unit_rmb||"?"}/un · ${p.prazo_dias||"?"}d`)+(p.resumo?` — ${p.resumo.slice(0,80)}`:"");
-    cpResumo&&cpResumo();
+    try{pintaChecklist(ix);}catch(e){}
+  cpResumo&&cpResumo();
     toast&&toast("Print lido e salvo ✓");
   }catch(e){$("cpOk"+ix).textContent="erro no print";}
 }
@@ -1729,6 +1731,40 @@ function escalaHTML(it,puFinal){
       <div style="font-size:10px;color:#666;margin:2px 0 4px">O frete do metro cúbico é fixo — ele se divide entre as peças.</div>
       <table style="font-size:10.5px"><tr><th>Quantidade</th><th>Cubagem</th><th>Frete+impostos</th><th>Custo por unidade</th><th>Total</th></tr>${linhas}</table></div>`;
   }catch(e){return "";}
+}
+
+
+const CHECKS=[
+ {k:"preco", lab:"Preço na quantidade", zh:"1) 这个数量的单价是多少？", ok:p=>!!(p.preco_unit_rmb||(p.variacoes||[]).some(v=>v.preco_unit_rmb))},
+ {k:"caixa", lab:"Unidades por caixa", zh:"2) 一箱装多少个？", ok:p=>!!(p.un_por_caixa||(p.variacoes||[]).some(v=>v.un_por_caixa))},
+ {k:"dim", lab:"Medidas da caixa", zh:"3) 外箱尺寸是多少？（长x宽x高 cm）", ok:p=>!!p.caixa_dim},
+ {k:"peso", lab:"Peso da caixa", zh:"4) 一箱毛重多少公斤？", ok:p=>!!(p.peso_caixa_kg||p.peso_un_kg||(p.variacoes||[]).some(v=>v.peso_un_kg))},
+ {k:"prazo", lab:"Prazo de produção", zh:"5) 生产周期几天？", ok:p=>!!p.prazo_dias},
+ {k:"midia", lab:"Fotos e vídeo reais", zh:"6) 请发产品的实拍照片和视频（给客户看的）", ok:p=>!!p.tem_midia}
+];
+function checklistHTML(ix){
+  const d=(window._cpDados||{})[ix];
+  if(!d||!d.parsed)return "";
+  const p=d.parsed;
+  const falt=CHECKS.filter(c=>!c.ok(p));
+  const linhas=CHECKS.map(c=>{
+    const ok=c.ok(p);
+    return `<span style="display:inline-flex;align-items:center;gap:4px;font-size:11px;padding:3px 8px;border-radius:999px;margin:2px 3px 0 0;background:${ok?"#F1F7F3":"#FDECEC"};color:${ok?"#1F6B4A":"#B21C22"}">${ok?"✓":"✗"} ${c.lab}</span>`;
+  }).join("");
+  const msg=falt.length?`您好！谢谢您的回复。还有几个信息麻烦您补充一下：\n${falt.map((c,i)=>c.zh.replace(/^\d\)/,(i+1)+")")).join("\n")}\n谢谢！`:"";
+  return `<div style="margin-top:8px;border-top:1px dashed var(--line);padding-top:7px">
+    <div style="font-size:11px;font-weight:700;color:var(--soft);margin-bottom:3px">O que a fábrica já respondeu</div>
+    ${linhas}
+    ${falt.length?`<div style="margin-top:7px">
+      <div style="font-size:11px;color:#B21C22;font-weight:700">Faltam ${falt.length} informação(ões) — cobrança pronta:</div>
+      <textarea readonly id="cpFalta${ix}" style="width:100%;min-height:60px;border:1px solid var(--line);border-radius:8px;padding:7px;font-size:11px;margin-top:4px">${msg}</textarea>
+      <button class="btn sm p" style="margin-top:4px" onclick="navigator.clipboard.writeText($('cpFalta${ix}').value);this.textContent='copiado ✓'">Copiar cobrança em chinês</button>
+    </div>`:`<div style="margin-top:6px;font-size:11.5px;color:#1F6B4A;font-weight:700">Tudo respondido — dá pra fechar o preço deste item.</div>`}
+  </div>`;
+}
+function pintaChecklist(ix){
+  const box=document.getElementById("cpChk"+ix);
+  if(box)box.innerHTML=checklistHTML(ix);
 }
 
 boot();
