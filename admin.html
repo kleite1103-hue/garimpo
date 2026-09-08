@@ -1108,12 +1108,12 @@ async function abreProposta(){
         <span style="margin-left:auto;font-size:11px;color:var(--faint)">${it.qtd} un · R$ ${brl(base[it.id].unit)}/un na China</span></div>
       ${fr(0)}
       <div id="alt${it.id}" style="display:none">${fr(1)}${fr(2)}</div>
-      <button class="btn sm ghost" style="margin-top:6px" onclick="const a=document.getElementById('alt${it.id}');const on=a.style.display==='none';a.style.display=on?'block':'none';this.textContent=on?'− Esconder comparativo':((ALT[it.id]||[]).length?'+ Ver os '+(ALT[it.id]||[]).length+' fornecedores alternativos':'+ Comparar com outros fornecedores'):((ALT[it.id]||[]).length?'+ Ver os '+(ALT[it.id]||[]).length+' fornecedores alternativos':'+ Comparar com outros fornecedores')">+ Comparar com outros fornecedores</button>
+      <button class="btn sm ghost" style="margin-top:6px" id="btnAlt${it.id}" onclick="toggleAlt(${it.id})">${(ALT[it.id]||[]).length?`+ Ver os ${(ALT[it.id]||[]).length} fornecedores alternativos`:"+ Comparar com outros fornecedores"}</button>
       <div id="mid${it.id}" style="display:none;grid-template-columns:1fr 1fr;gap:5px;margin-top:6px">
         <textarea id="pp_ft${it.id}" placeholder="FOTOS reais (links, um por linha)" style="border:1px solid var(--line);border-radius:8px;padding:7px;font-size:11px;min-height:52px">${pit.fotos||pit.midias||""}</textarea>
         <textarea id="pp_vd${it.id}" placeholder="VÍDEO real (link do Drive/YouTube)" style="border:1.5px solid #D91F26;border-radius:8px;padding:7px;font-size:11px;min-height:52px">${pit.video||""}</textarea>
       </div>
-      <button class="btn sm ghost" style="margin-top:6px" onclick="const m=document.getElementById('mid${it.id}');const on=m.style.display==='grid';m.style.display=on?'none':'grid';this.textContent=on?'+ Anexar fotos e vídeo real':'− Esconder mídias'">+ Anexar fotos e vídeo real</button>
+      <button class="btn sm ghost" style="margin-top:6px" id="btnMid${it.id}" onclick="toggleMid(${it.id})">+ Anexar fotos e vídeo real</button>
     </div>`;
   }).join("");
   document.getElementById("ppBox")?.remove();
@@ -1438,6 +1438,22 @@ function cubaM3(){
   $("cFrete").value=(cob*usdm3*USD).toFixed(2);
   if(m3>0&&m3<CUB_MIN){toast&&toast(`Pedido de ${m3.toFixed(3)} m³ — cobrando o mínimo de ${CUB_MIN} m³`);}
   try{calcFirme();}catch(e){}
+}
+
+
+function toggleAlt(id){
+  const a=document.getElementById("alt"+id),b=document.getElementById("btnAlt"+id);
+  if(!a)return;
+  const abrir=(a.style.display==="none"||!a.style.display);
+  a.style.display=abrir?"block":"none";
+  if(b)b.textContent=abrir?"− Esconder comparativo":"+ Ver fornecedores alternativos";
+}
+function toggleMid(id){
+  const m=document.getElementById("mid"+id),b=document.getElementById("btnMid"+id);
+  if(!m)return;
+  const abrir=(m.style.display==="none"||!m.style.display);
+  m.style.display=abrir?"grid":"none";
+  if(b)b.textContent=abrir?"− Esconder mídias":"+ Anexar fotos e vídeo real";
 }
 
 boot();
