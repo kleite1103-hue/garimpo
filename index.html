@@ -852,11 +852,25 @@ async function carregaMinhas(){
   (cots||[]).forEach(c=>{
     const [cls,lab]=stMap[c.status]||["exp",c.status];
     const nIt=(c.cotacao_itens||[]).length,un=(c.cotacao_itens||[]).reduce((s,i)=>s+i.qtd,0);
-    h+=`<div class="cotcard"><div class="cotrow"><span class="id">${c.numero}</span><span class="tt">${nIt} produto${nIt>1?'s':''} · ${un} unidades</span><span class="st ${cls}">${lab}</span><b>${c.total_firme?'R$ '+brl(c.total_firme):'est. R$ '+brl(c.total_estimado)}</b></div>`;
+    const its=c.cotacao_itens||[];
+    h+=`<div class="cotcard"><div class="cotrow"><span class="id">${c.numero}</span><span class="tt">${nIt} produto${nIt>1?'s':''} · ${un} unidades</span><span class="st ${cls}">${lab}</span><b>${c.total_firme?'R$ '+brl(c.total_firme):'na fábrica R$ '+brl(c.total_estimado)}</b></div>
+      <div class="cotbody" style="padding-top:2px">
+        <div style="font-size:11px;color:var(--faint);margin-bottom:6px">Enviada em ${new Date(c.criado_em).toLocaleDateString('pt-BR')}${c.obs_aluno?` · você escreveu: "${String(c.obs_aluno).slice(0,80)}"`:""}</div>
+        ${its.map(i=>`<div style="display:flex;gap:9px;align-items:center;padding:7px 0;border-top:1px solid var(--line)">
+          <img src="${i.img}" style="width:44px;height:44px;border-radius:8px;object-fit:cover;border:1px solid var(--line)"/>
+          <div style="flex:1;min-width:0">
+            <div style="font-size:12.5px;font-weight:600;line-height:1.35">${i.nome}</div>
+            <div style="font-size:11px;color:var(--soft)">${i.qtd} unidades · R$ ${brl(i.brl_estimado_un)}/un na fábrica</div>
+          </div>
+          <div style="font-size:12px;font-weight:700;white-space:nowrap">R$ ${brl(i.brl_estimado_un*i.qtd)}</div>
+        </div>`).join("")}
+        ${c.status==="nova"||c.status==="em_cotacao"?`<div style="margin-top:9px;background:#FDF9F2;border:1px solid #F0D9B8;border-radius:9px;padding:9px;font-size:11.5px;line-height:1.5">
+          <b>O que acontece agora:</b> nosso time está negociando com a fábrica o preço na sua quantidade, calculando frete e impostos. Você recebe o valor final da importação no seu WhatsApp.</div>`:""}
+      </div>`;
     if(c.status==="respondida"){
       h+=`<div class="cotbody"><div class="cmp">
-        <div><div class="k">Estimado no envio</div><div class="v est2">R$ ${brl(c.total_estimado)}</div></div>
-        <div><div class="k">Preço firme do time</div><div class="v firm">R$ ${brl(c.total_firme)}</div></div>
+        <div><div class="k">Produtos na fábrica</div><div class="v est2">R$ ${brl(c.total_estimado)}</div></div>
+        <div><div class="k">Valor final da importação</div><div class="v firm">R$ ${brl(c.total_firme)}</div></div>
         ${c.prazo_estimado?`<div><div class="k">Prazo estimado</div><div class="v" style="font-size:14px">${c.prazo_estimado}</div></div>`:''}
       </div>
       ${c.validade?`<div class="validade">⏳ Preço válido até ${new Date(c.validade+"T12:00").toLocaleDateString('pt-BR')}</div>`:''}
