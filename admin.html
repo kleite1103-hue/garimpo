@@ -1042,7 +1042,7 @@ async function abreProposta(){
   const P=(c.proposta&&typeof c.proposta==="object")?c.proposta:{};
   const dd=window._cpDados||{};
   const fx=(window._USD?window._USD/7.2:0.764);
-  const marg=1+((parseFloat(($("cMarg")&&$("cMarg").value||"35").replace(",","."))||35)/100);
+  let _mg=parseFloat((($("cMarg")&&$("cMarg").value)||"").replace(",","."));if(!_mg||_mg<10)_mg=35;const marg=1+_mg/100;
   // --- cálculo automático: custo, cubagem (mín 0,5 m³), frete e preço por item ---
   let custo=0,litros=0;const base={};
   its.forEach((it,ix)=>{
@@ -1056,7 +1056,8 @@ async function abreProposta(){
   const m3=Math.max(litros/1000,CUB_MIN);
   const usdm3=Number((CFGS.custo_m3||{}).usd||900), USD=window._USD||5.4;
   const frete=m3*usdm3*USD;
-  const totalGeral=window._firme||((custo+frete)*marg);
+  const calc=(custo+frete)*marg;
+  const totalGeral=(window._firme&&window._firme>=custo+frete)?window._firme:calc;
   const fator=custo>0?totalGeral/custo:1;
   const prazoPad=($("cPrazo")&&$("cPrazo").value)||"60–75 dias (marítimo)";
   const box=its.map((it,ix)=>{
@@ -1080,11 +1081,14 @@ async function abreProposta(){
       <div style="display:flex;gap:8px;align-items:center"><img src="${it.img}" style="width:40px;height:40px;border-radius:8px;object-fit:cover"/>
         <b style="font-size:12.5px">${it.nome}</b>
         <span style="margin-left:auto;font-size:11px;color:var(--faint)">${it.qtd} un · R$ ${brl(base[it.id].unit)}/un na China</span></div>
-      ${fr(0)}${fr(1)}${fr(2)}
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:5px;margin-top:6px">
+      ${fr(0)}
+      <div id="alt${it.id}" class="hidden">${fr(1)}${fr(2)}</div>
+      <button class="btn sm ghost" style="margin-top:6px" onclick="document.getElementById('alt${it.id}').classList.toggle('hidden');this.textContent=document.getElementById('alt${it.id}').classList.contains('hidden')?'+ Comparar com outros fornecedores':'− Esconder comparativo'">+ Comparar com outros fornecedores</button>
+      <div id="mid${it.id}" class="hidden" style="display:none;grid-template-columns:1fr 1fr;gap:5px;margin-top:6px">
         <textarea id="pp_ft${it.id}" placeholder="FOTOS reais (links, um por linha)" style="border:1px solid var(--line);border-radius:8px;padding:7px;font-size:11px;min-height:52px">${pit.fotos||pit.midias||""}</textarea>
         <textarea id="pp_vd${it.id}" placeholder="VÍDEO real (link do Drive/YouTube)" style="border:1.5px solid #D91F26;border-radius:8px;padding:7px;font-size:11px;min-height:52px">${pit.video||""}</textarea>
       </div>
+      <button class="btn sm ghost" style="margin-top:6px" onclick="const m=document.getElementById('mid${it.id}');const on=m.style.display==='grid';m.style.display=on?'none':'grid';this.textContent=on?'+ Anexar fotos e vídeo real':'− Esconder mídias'">+ Anexar fotos e vídeo real</button>
     </div>`;
   }).join("");
   document.getElementById("ppBox")?.remove();
@@ -1096,8 +1100,8 @@ async function abreProposta(){
       <b style="font-size:13px">Total R$ ${brl(totalGeral)}</b>
     </div>${box}
     <div style="display:flex;gap:8px;margin-top:10px;flex-wrap:wrap">
-      <button class="btn p" onclick="salvaProposta()">Salvar proposta</button>
-      <button class="btn g" onclick="gerarPDF()">Gerar PDF</button>
+      <button class="btn p" onclick="salvaProposta().then(()=>gerarPDF())">Gerar proposta em PDF</button>
+      <button class="btn ghost" onclick="salvaProposta()">Só salvar</button>
       <button class="btn ghost" onclick="document.getElementById('ppBox').remove()">fechar</button>
     </div></div>`);
   if(!window._firme)window._firme=totalGeral;
@@ -1105,6 +1109,7 @@ async function abreProposta(){
 }
 
 async function salvaProposta(){
+  // devolve promessa pra encadear com o PDF
   const c=selCot;const its=c.cotacao_itens||[];const P={};
   its.forEach(it=>{
     P[it.id]={forn:[0,1,2].map(i=>({nome:$(`pp_n${it.id}_${i}`).value.trim(),preco:$(`pp_p${it.id}_${i}`).value.trim(),moq:$(`pp_m${it.id}_${i}`).value.trim(),prazo:$(`pp_z${it.id}_${i}`).value.trim()})).filter(f=>f.nome||f.preco),
@@ -1361,7 +1366,7 @@ async function cotacaoInstantanea(){
   const usdm3=Number((CFGS.custo_m3||{}).usd||900), USD=window._USD||5.4;
   const m3=Math.max(litros/1000,CUB_MIN);   // sempre no mínimo meio metro cúbico
   const frete=m3*usdm3*USD;
-  const marg=1+((parseFloat(($("cMarg")&&$("cMarg").value||"35").replace(",","."))||35)/100);
+  let _mg=parseFloat((($("cMarg")&&$("cMarg").value)||"").replace(",","."));if(!_mg||_mg<10)_mg=35;const marg=1+_mg/100;
   const total=(custo+frete)*marg;
   const un=its.reduce((s,i)=>s+i.qtd,0);
   $("cVolM3").value=(litros/1000).toFixed(3);$("cVol").value=(Math.max(litros/1000,CUB_MIN)*1000).toFixed(1);
