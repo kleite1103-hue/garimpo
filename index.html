@@ -388,6 +388,7 @@ body{-webkit-font-smoothing:antialiased}
     <div class="cotgrid">
       <div class="panel"><div class="ph2">Itens da cotação (<span id="nItens">0</span>)</div><div id="cartItems"></div>
         <div id="cubômetro" style="margin-bottom:12px"></div>
+        <div id="avisoMin" style="display:none;background:#FDF9F2;border:1px solid #F0D9B8;border-radius:10px;padding:10px;font-size:12px;margin-bottom:10px"></div>
         <div class="obsbox"><label style="font-size:12px;font-weight:600;color:var(--soft);display:block;margin-bottom:6px">Observações (opcional)</label><textarea id="obsAluno" placeholder="Ex.: prefiro na cor dourada; é pra revenda…"></textarea></div>
         
       </div>
@@ -507,6 +508,7 @@ async function enviaEspecial(){
 }
 async function boot(){
   try{rodaAviso();}catch(e){}
+  carregaMinimos();
   try{localStorage.removeItem('ev_lead_ok');}catch(e){}
   $("vLogin").classList.add("hidden");$("vApp").classList.remove("hidden");
   const {data:{session}}=await sb.auth.getSession();
@@ -527,6 +529,8 @@ async function boot(){
 }
 // ---------- CATALOGO ----------
 const CARD_COLS="offer_id,nome,categoria,subcategoria,brl,brl_max,img,moq,vendas,destaque,forn_fabrica,forn_anos,eh_kit,grupo_id,nota_ia,certificacao,descricao";
+let MINQ={un_item:10,un_pedido:50,m3:0.5};
+async function carregaMinimos(){try{const {data}=await sb.from("config").select("valor").eq("chave","minimos").single();if(data&&data.valor)MINQ={...MINQ,...data.valor};}catch(e){}}
 async function carregaCatalogo(){
   let off=0;PROD=[];
   while(true){
@@ -676,7 +680,7 @@ function autoPag(){
 function add(id){
   const p=PROD.find(x=>x.offer_id===id);if(!p)return;
   const ex=CART.find(x=>x.offer_id===id);
-  if(ex)ex.qtd+=p.moq||1;else CART.push({offer_id:id,nome:p.nome,img:p.img,moq:p.moq||1,qtd:p.moq||1,brl:p.brl});
+  if(ex)ex.qtd+=p.moq||1;else CART.push({offer_id:id,nome:p.nome,img:p.img,moq:p.moq||1,qtd:Math.max(p.moq||1,MINQ.un_item),brl:p.brl});
   updCart();irCarrinho();showToast("Adicionado à sua cotação");
 }
 function updCart(){$("cartN").textContent=CART.length;try{document.getElementById("tbN").textContent=CART.length;}catch(e){}}
@@ -687,7 +691,14 @@ function irCatalogo(){try{document.getElementById("pMetodo").classList.add("hidd
   $("pCart").classList.add("hidden");$("pMinhas").classList.add("hidden");$("pCat").classList.remove("hidden");scrollTo(0,0);}
 function irMinhas(){try{document.getElementById("pMetodo").classList.add("hidden");}catch(e){}
   $("pCat").classList.add("hidden");$("pCart").classList.add("hidden");$("pMinhas").classList.remove("hidden");carregaMinhas();scrollTo(0,0);}
-function renderCart(){setTimeout(desenhaCubo,0);
+function renderCart(){
+  try{
+    const un=CART.reduce((s,c)=>s+c.qtd,0),el=document.getElementById("avisoMin");
+    if(el){
+      if(un&&un<MINQ.un_pedido){el.style.display="block";el.innerHTML=`<b>Faltam ${MINQ.un_pedido-un} unidades</b> para o mínimo de importação (${MINQ.un_pedido} un). Aumente as quantidades ou adicione outro produto — o frete é dividido entre as peças, então quanto mais unidades, menor o custo de cada uma.`;}
+      else el.style.display="none";
+    }
+  }catch(e){}setTimeout(desenhaCubo,0);
   $("nItens").textContent=CART.length;
   $("cartItems").innerHTML=CART.length?CART.map((c,i)=>`
    <div class="item"><img src="${mini(c.img)}"/><div class="in">
@@ -721,8 +732,19 @@ function desenhaCubo(){
     :`⚠ <b>Abaixo do mínimo de importação (1 m³).</b> O frete do metro cúbico é fixo (≈ R$ ${brl(freteMin)}), e rateado nesse volume sai <b>R$ ${brl(freteUn)}/un</b> — pode inviabilizar. Aumente as quantidades ou <b>complete o metro cúbico com outros produtos</b> do catálogo até ${MIN} m³.`}
     </div></div>`;
 }
-function qtd(i,d){CART[i].qtd=Math.max(CART[i].moq,CART[i].qtd+d);renderCart();}
-function qtdSet(i,v){CART[i].qtd=Math.max(CART[i].moq,parseInt(v)||CART[i].moq);renderCart();}
+function qtd(i,d){
+  const min=Math.max(CART[i].moq||1,MINQ.un_item);
+  const novo=CART[i].qtd+d;
+  if(novo<min){showToast(`Mínimo de ${min} unidades por produto`);CART[i].qtd=min;}
+  else CART[i].qtd=novo;
+  updCart();renderCart();
+}
+function qtdSet(i,v){
+  const min=Math.max(CART[i].moq||1,MINQ.un_item);
+  let n=parseInt(v)||min;
+  if(n<min){showToast(`Mínimo de ${min} unidades por produto`);n=min;}
+  CART[i].qtd=n;updCart();renderCart();
+}
 function rm(i){CART.splice(i,1);updCart();renderCart();}
 let LEADCFG={ativo:false,max_cotacoes:999};
 async function leadGate(){
@@ -765,6 +787,11 @@ function toastLead(msg){
 }
 async function enviarCotacao(pos){
   if(!CART.length){alert("Adicione produtos antes de enviar.");return;}
+  const unTot=CART.reduce((s,c)=>s+c.qtd,0);
+  if(unTot<MINQ.un_pedido){
+    alert(`Nosso mínimo de importação é ${MINQ.un_pedido} unidades no pedido.\n\nVocê está com ${unTot}. Aumente a quantidade ou adicione mais um produto — quanto mais unidades, menor o custo por peça.`);
+    return;
+  }
   if(!pos&&USER){
     const g=await leadGate();
     if(g==="limite"){alert("Sua cotação já está com nosso time! 🎉\n\nVocê vai receber no WhatsApp o preço final da sua importação e todos os detalhes pra fazer tudo com nosso apoio e segurança — do pedido à chegada no Brasil.");return;}
