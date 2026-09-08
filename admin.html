@@ -1094,7 +1094,7 @@ async function abreProposta(){
     sb.from("catalogo").select("offer_id,forn_nome,forn_anos,categoria,descricao,moq").in("offer_id",ids),
     sb.from("catalogo_origem").select("offer_id,empresa,member_id").in("offer_id",ids)
   ]);
-  const FB={};(cf||[]).forEach(x=>FB[x.offer_id]=x);
+  const FB={};(cf||[]).forEach(x=>FB[x.offer_id]=x);window._FBprop=FB;
   const OG={};(og||[]).forEach(x=>OG[x.offer_id]=x);
   const P=(c.proposta&&typeof c.proposta==="object")?c.proposta:{};
   const dd=window._cpDados||{};
@@ -1255,6 +1255,7 @@ function gerarPDF(){
           <div class="pmeta">${it.qtd} unidades · Subtotal <b>R$ ${brl(sub)}</b></div>
         </div></div>
       <table><tr><th></th><th>Fornecedor</th><th>Valor final no Brasil (un)</th><th>Mínimo</th><th>Produção</th></tr>${rows}</table>
+      ${escalaHTML(it,puA)}
       <div class="sugbox"><b>Simulação de venda no Brasil</b> (seu custo: R$ ${brl(puA)}/un)
         <table style="margin-top:5px;font-size:10.5px"><tr><th>Preço de venda</th><th>Receita no lote</th><th>Menos taxas (~20%)</th><th>Seu lucro estimado</th></tr>
         <tr><td>R$ ${brl(s2)}/un</td><td>R$ ${brl(s2*it.qtd)}</td><td>− R$ ${brl(s2*it.qtd*TAXA)}</td><td><b>R$ ${brl(luc2*it.qtd)}</b> (${Math.round(luc2/s2*100)}% do preço)</td></tr>
@@ -1698,6 +1699,36 @@ async function curLote(ok){
   }
   toast&&toast(`${ids.length} produtos atualizados`);
   loadCur();
+}
+
+
+function escalaHTML(it,puFinal){
+  try{
+    const p=(window._FBprop||{})[it.offer_id]||{};
+    const vu=Number(p.volume_l)||VOL_CAT[p.categoria]||VOL_PADRAO;      // litros por unidade
+    const usdm3=Number((CFGS.custo_m3||{}).usd||900), USD=window._USD||5.4;
+    const fretem3=usdm3*USD;
+    // custo do produto por unidade (sem frete/margem): parte do preço final
+    const m3atual=Math.max(it.qtd*vu/1000,CUB_MIN);
+    const freteAtual=m3atual*fretem3;
+    const totalAtual=puFinal*it.qtd;
+    const prodUnit=Math.max((totalAtual-freteAtual)/it.qtd,0.01);
+    const alvos=[];
+    const porM3=Math.round(1000/vu);
+    [it.qtd,Math.round(porM3*0.5),porM3,porM3*2].forEach(q=>{if(q>0&&!alvos.includes(q))alvos.push(q);});
+    alvos.sort((a,b)=>a-b);
+    const linhas=alvos.slice(0,4).map(q=>{
+      const m3=Math.max(q*vu/1000,CUB_MIN);
+      const frete=m3*fretem3;
+      const tot=prodUnit*q+frete;
+      const un=tot/q;
+      const eco=q===it.qtd?"":` <span style="color:#1F6B4A">−${Math.round((1-un/puFinal)*100)}%</span>`;
+      return `<tr ${q===it.qtd?'class="best"':''}><td>${q} un${q===it.qtd?" (sua cotação)":""}</td><td>${m3.toFixed(2)} m³</td><td>R$ ${brl(frete)}</td><td><b>R$ ${brl(un)}</b>${eco}</td><td>R$ ${brl(tot)}</td></tr>`;
+    }).join("");
+    return `<div class="sugbox" style="background:#F1F7F3;border-color:#CDE6D9"><b>Quanto mais unidades, mais barata fica cada peça</b>
+      <div style="font-size:10px;color:#666;margin:2px 0 4px">O frete do metro cúbico é fixo — ele se divide entre as peças.</div>
+      <table style="font-size:10.5px"><tr><th>Quantidade</th><th>Cubagem</th><th>Frete+impostos</th><th>Custo por unidade</th><th>Total</th></tr>${linhas}</table></div>`;
+  }catch(e){return "";}
 }
 
 boot();
