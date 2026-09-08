@@ -1031,48 +1031,79 @@ function msgCliente(){
 async function abreProposta(){
   const c=selCot;if(!c)return;
   const its=c.cotacao_itens||[];
-  const {data:cf}=await sb.from("catalogo").select("offer_id,forn_nome,forn_anos").in("offer_id",its.map(i=>i.offer_id));
+  if(!its.length){alert("Cotação sem itens.");return;}
+  const ids=its.map(i=>i.offer_id);
+  const [{data:cf},{data:og}]=await Promise.all([
+    sb.from("catalogo").select("offer_id,forn_nome,forn_anos,categoria,descricao,moq").in("offer_id",ids),
+    sb.from("catalogo_origem").select("offer_id,empresa,member_id").in("offer_id",ids)
+  ]);
   const FB={};(cf||[]).forEach(x=>FB[x.offer_id]=x);
+  const OG={};(og||[]).forEach(x=>OG[x.offer_id]=x);
   const P=(c.proposta&&typeof c.proposta==="object")?c.proposta:{};
   const dd=window._cpDados||{};
-  const fx=(window._USD?window._USD/7.2:0.76);
-  const marg=1+((parseFloat(($("cMarg")&&$("cMarg").value||"0").replace(",","."))||0)/100);
+  const fx=(window._USD?window._USD/7.2:0.764);
+  const marg=1+((parseFloat(($("cMarg")&&$("cMarg").value||"35").replace(",","."))||35)/100);
+  // --- cálculo automático: custo, cubagem (mín 0,5 m³), frete e preço por item ---
+  let custo=0,litros=0;const base={};
+  its.forEach((it,ix)=>{
+    const p=FB[it.offer_id]||{};
+    const real=(dd[ix]&&_melhor(dd[ix].parsed).preco_unit_rmb)?_melhor(dd[ix].parsed).preco_unit_rmb*fx:null;
+    const unit=real||fabAdm2(p)||Number(it.brl_estimado_un)/1.944;
+    base[it.id]={unit,qtd:it.qtd};
+    custo+=unit*it.qtd;
+    litros+=(VOL_CAT[p.categoria]||VOL_PADRAO)*it.qtd;
+  });
+  const m3=Math.max(litros/1000,CUB_MIN);
+  const usdm3=Number((CFGS.custo_m3||{}).usd||900), USD=window._USD||5.4;
+  const frete=m3*usdm3*USD;
+  const totalGeral=window._firme||((custo+frete)*marg);
+  const fator=custo>0?totalGeral/custo:1;
+  const prazoPad=($("cPrazo")&&$("cPrazo").value)||"60–75 dias (marítimo)";
   const box=its.map((it,ix)=>{
-    const pit=P[it.id]||{forn:[{},{},{}],midias:""};
-    let sug="";
-    try{
-      const tot=window._firme||0, unTot=its.reduce((s,x)=>s+x.qtd,0);
-      if(tot&&unTot) sug=(tot/unTot).toFixed(2);
-      else if(dd[ix]&&_melhor(dd[ix].parsed).preco_unit_rmb) sug=(_melhor(dd[ix].parsed).preco_unit_rmb*fx*marg).toFixed(2);
-    }catch(e){}
-    const org=(window._cotOrigem||{})[it.offer_id]||{};
-    const fb=FB[it.offer_id]||{};
-    const autoA=org.empresa||(fb.forn_nome?`${fb.forn_nome}${fb.forn_anos?" · "+fb.forn_anos+" anos":""}`:"");
-    const fr=(i)=>{const f=(pit.forn||[])[i]||{};const valNome=f.nome||(i===0?autoA:"");return `
-      <div class="pprow" style="display:grid;grid-template-columns:1.2fr .7fr .5fr .8fr;gap:5px;margin-top:4px">
-        <input id="pp_n${it.id}_${i}" placeholder="Fornecedor ${"ABC"[i]} (ex.: Yiwu Taotao Pet · fábrica · 17 anos)" value="${valNome}" style="border:1px solid var(--line);border-radius:8px;padding:7px;font-size:11.5px"/>${i>0?`<input id="pp_l${it.id}_${i}" placeholder="link do produto do fornecedor ${"ABC"[i]}" style="grid-column:1/-1;border:1px dashed var(--line);border-radius:8px;padding:6px;font-size:11px" onchange="ppPuxa(${it.id},${i})"/>`:""}
-        <input id="pp_p${it.id}_${i}" placeholder="R$/un ${i===0&&sug?("sug. "+sug):""}" value="${f.preco||(i===0?sug:'')}" style="border:1px solid var(--line);border-radius:8px;padding:7px;font-size:11.5px"/>
-        <input id="pp_m${it.id}_${i}" placeholder="MOQ" value="${f.moq||""}" style="border:1px solid var(--line);border-radius:8px;padding:7px;font-size:11.5px"/>
-        <input id="pp_z${it.id}_${i}" placeholder="prazo (ex.: 7d)" value="${f.prazo||""}" style="border:1px solid var(--line);border-radius:8px;padding:7px;font-size:11.5px"/>
+    const pit=P[it.id]||{forn:[{},{},{}]};
+    const p=FB[it.offer_id]||{},o=OG[it.offer_id]||{};
+    const autoA=o.empresa||(p.forn_nome?`${p.forn_nome}${p.forn_anos?" · "+p.forn_anos+" anos":""}`:"Fábrica verificada");
+    const sug=(base[it.id].unit*fator).toFixed(2);
+    const fr=(i)=>{const f=(pit.forn||[])[i]||{};
+      const vNome=f.nome||(i===0?autoA:"");
+      const vPreco=f.preco||(i===0?sug:"");
+      const vMoq=f.moq||(i===0?(it.moq||p.moq||1):"");
+      const vPz=f.prazo||(i===0?prazoPad:"");
+      return `<div class="pprow" style="display:grid;grid-template-columns:1.3fr .7fr .5fr .9fr;gap:5px;margin-top:4px">
+        <input id="pp_n${it.id}_${i}" placeholder="Fornecedor ${"ABC"[i]}" value="${vNome}" style="border:1px solid var(--line);border-radius:8px;padding:7px;font-size:11.5px"/>
+        ${i>0?`<input id="pp_l${it.id}_${i}" placeholder="cole o link do produto deste fornecedor — o sistema puxa os dados" style="grid-column:1/-1;border:1px dashed var(--line);border-radius:8px;padding:6px;font-size:11px" onchange="ppPuxa(${it.id},${i})"/>`:""}
+        <input id="pp_p${it.id}_${i}" placeholder="R$/un" value="${vPreco}" style="border:1px solid var(--line);border-radius:8px;padding:7px;font-size:11.5px"/>
+        <input id="pp_m${it.id}_${i}" placeholder="mínimo" value="${vMoq}" style="border:1px solid var(--line);border-radius:8px;padding:7px;font-size:11.5px"/>
+        <input id="pp_z${it.id}_${i}" placeholder="prazo" value="${vPz}" style="border:1px solid var(--line);border-radius:8px;padding:7px;font-size:11.5px"/>
       </div>`;};
     return `<div class="panel" style="margin-top:10px;padding:12px">
-      <div style="display:flex;gap:8px;align-items:center"><img src="${it.img}" style="width:40px;height:40px;border-radius:8px;object-fit:cover"/><b style="font-size:12.5px">${it.nome}</b><span style="margin-left:auto;font-size:11px;color:var(--faint)">${it.qtd} un</span></div>
+      <div style="display:flex;gap:8px;align-items:center"><img src="${it.img}" style="width:40px;height:40px;border-radius:8px;object-fit:cover"/>
+        <b style="font-size:12.5px">${it.nome}</b>
+        <span style="margin-left:auto;font-size:11px;color:var(--faint)">${it.qtd} un · R$ ${brl(base[it.id].unit)}/un na China</span></div>
       ${fr(0)}${fr(1)}${fr(2)}
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:5px;margin-top:6px">
-        <textarea id="pp_ft${it.id}" placeholder="📸 FOTOS reais (links, um por linha)" style="border:1px solid var(--line);border-radius:8px;padding:7px;font-size:11px;min-height:52px">${pit.fotos||pit.midias||""}</textarea>
-        <textarea id="pp_vd${it.id}" placeholder="🎬 VÍDEO real (link do Drive/YouTube, um por linha)" style="border:1.5px solid #D91F26;border-radius:8px;padding:7px;font-size:11px;min-height:52px">${pit.video||""}</textarea>
+        <textarea id="pp_ft${it.id}" placeholder="FOTOS reais (links, um por linha)" style="border:1px solid var(--line);border-radius:8px;padding:7px;font-size:11px;min-height:52px">${pit.fotos||pit.midias||""}</textarea>
+        <textarea id="pp_vd${it.id}" placeholder="VÍDEO real (link do Drive/YouTube)" style="border:1.5px solid #D91F26;border-radius:8px;padding:7px;font-size:11px;min-height:52px">${pit.video||""}</textarea>
       </div>
     </div>`;
   }).join("");
+  document.getElementById("ppBox")?.remove();
   $("cotDetail").insertAdjacentHTML("beforeend",`<div id="ppBox" class="panel" style="margin-top:14px;padding:14px;border-color:#F0D9B8">
-    <div class="ph2">📄 Proposta de importação — até 3 fornecedores por produto</div>${box}
-    <div style="display:flex;gap:8px;margin-top:10px">
+    <div class="ph2">Proposta de importação — até 3 fornecedores por produto</div>
+    <div style="background:#F1F7F3;border:1px solid #CDE6D9;border-radius:10px;padding:10px;font-size:12px;line-height:1.6">
+      Pré-montada automaticamente · Cubagem <b>${(litros/1000).toFixed(3)} m³</b>${litros/1000<CUB_MIN?` (cobrando mínimo ${CUB_MIN} m³)`:""} ·
+      Produtos <b>R$ ${brl(custo)}</b> · Frete+impostos <b>R$ ${brl(frete)}</b> · Margem <b>${((marg-1)*100).toFixed(0)}%</b> ·
+      <b style="font-size:13px">Total R$ ${brl(totalGeral)}</b>
+    </div>${box}
+    <div style="display:flex;gap:8px;margin-top:10px;flex-wrap:wrap">
       <button class="btn p" onclick="salvaProposta()">Salvar proposta</button>
       <button class="btn g" onclick="gerarPDF()">Gerar PDF</button>
-      <button class="btn ghost" onclick="$('ppBox').remove()">fechar</button>
+      <button class="btn ghost" onclick="document.getElementById('ppBox').remove()">fechar</button>
     </div></div>`);
+  if(!window._firme)window._firme=totalGeral;
   document.getElementById("ppBox").scrollIntoView({behavior:"smooth"});
 }
+
 async function salvaProposta(){
   const c=selCot;const its=c.cotacao_itens||[];const P={};
   its.forEach(it=>{
