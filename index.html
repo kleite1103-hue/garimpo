@@ -306,6 +306,16 @@ body{-webkit-font-smoothing:antialiased}
 }
 .cotrow .chev{margin-left:8px;color:var(--faint);font-size:12px}
 .cotrow:hover{background:#FAF7F2}
+
+#cartMask{position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:80;opacity:0;pointer-events:none;transition:opacity .2s}
+#cartMask.on{opacity:1;pointer-events:auto}
+#cartX{display:none}
+#pCart.modalCart{position:fixed;z-index:81;left:50%;top:50%;transform:translate(-50%,-50%);width:min(1000px,94vw);max-height:88vh;overflow-y:auto;background:var(--bg,#FAF7F2);border-radius:18px;padding:20px;box-shadow:0 24px 60px rgba(0,0,0,.28)}
+#pCart.modalCart #cartX{display:block;position:sticky;top:0;float:right;background:#fff;border:1.5px solid var(--line);border-radius:50%;width:32px;height:32px;font-size:15px;cursor:pointer;color:var(--soft);z-index:2}
+#pCart.modalCart .crumbs{display:none}
+@media(max-width:840px){
+  #pCart.modalCart{width:100%;max-width:100%;height:100%;max-height:100%;top:0;left:0;transform:none;border-radius:0;padding:14px 14px 90px}
+}
 </style></head>
 <body>
 
@@ -687,10 +697,27 @@ function add(id){
   updCart();irCarrinho();showToast("Adicionado à sua cotação");
 }
 function updCart(){$("cartN").textContent=CART.length;try{document.getElementById("tbN").textContent=CART.length;}catch(e){}}
-function irCarrinho(){try{document.getElementById("pMetodo").classList.add("hidden");}catch(e){}
+function irCarrinho(){
+  try{document.getElementById("pMetodo").classList.add("hidden");}catch(e){}
+  try{document.getElementById("leadInline").classList.toggle("hidden",!!USER);}catch(e){}
+  const p=document.getElementById("pCart");
+  p.classList.remove("hidden");p.classList.add("modalCart");
+  document.getElementById("cartMask").classList.add("on");
+  document.body.style.overflow="hidden";
+  renderCart();
+  return;
+}
+function fechaCarrinho(){
+  const p=document.getElementById("pCart");
+  p.classList.add("hidden");p.classList.remove("modalCart");
+  document.getElementById("cartMask").classList.remove("on");
+  document.body.style.overflow="";
+}
+function _irCarrinhoAntigo(){try{document.getElementById("pMetodo").classList.add("hidden");}catch(e){}
   try{document.getElementById('leadInline').classList.toggle('hidden',!!USER);}catch(e){}
   $("pCat").classList.add("hidden");$("pMinhas").classList.add("hidden");$("pCart").classList.remove("hidden");renderCart();scrollTo(0,0);}
-function irCatalogo(){try{document.getElementById("pMetodo").classList.add("hidden");}catch(e){}
+function irCatalogo(){try{fechaCarrinho();}catch(e){}
+  try{document.getElementById("pMetodo").classList.add("hidden");}catch(e){}
   $("pCart").classList.add("hidden");$("pMinhas").classList.add("hidden");$("pCat").classList.remove("hidden");scrollTo(0,0);}
 function irMinhas(){try{document.getElementById("pMetodo").classList.add("hidden");}catch(e){}
   $("pCat").classList.add("hidden");$("pCart").classList.add("hidden");$("pMinhas").classList.remove("hidden");carregaMinhas();scrollTo(0,0);}
@@ -1184,4 +1211,5 @@ function abreAmostra(...a){
   </div>
 </div>
 <div id="catMask" onclick="toggleCats()"></div>
+<div id="cartMask" onclick="fechaCarrinho()"></div>
 </body></html>
