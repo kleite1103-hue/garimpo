@@ -190,6 +190,7 @@ tr.click{cursor:pointer}tr.click:hover{background:#FAFAFB}
     <!-- COTACOES -->
     <div id="vCot" class="hidden">
       <div class="ahead"><h2>Cotações</h2><button class="btn sm p" style="margin-left:10px" onclick="abreNovaCot()">+ Nova cotação (time)</button><span class="tabs" style="margin-left:12px">
+        <input id="cotBusca" placeholder="buscar por nome, WhatsApp, número ou produto…" oninput="renderCots()" style="border:1.5px solid var(--line);border-radius:9px;padding:8px 11px;font-size:12.5px;min-width:260px;margin-right:8px"/>
         <span class="tab on" onclick="evFiltro='todas';marcaFiltro(this);renderCots()">Todas</span>
         <span class="tab" onclick="evFiltro='cliente';marcaFiltro(this);renderCots()">⭐ Clientes EV</span>
         <span class="tab" onclick="evFiltro='lead';marcaFiltro(this);renderCots()">Leads</span></span></div>
@@ -381,13 +382,48 @@ function cotFiltro(el){document.querySelectorAll("#cotTabs .tab").forEach(t=>t.c
 function renderCots(){
   let L=COTS;
   if(curFiltro!=="todas")L=L.filter(c=>c.status===curFiltro);
-  L=L.filter?L.filter(passaFiltro):L;$("cotList").innerHTML=L.length?`<table><tr><th>Pedido</th><th>Itens</th><th>Total est.</th><th>Total firme</th><th>Status</th><th>Data</th></tr>`+
-    L.map(c=>{
-      const nIt=(c.cotacao_itens||[]).length,un=(c.cotacao_itens||[]).reduce((s,i)=>s+i.qtd,0);
-      return `<tr class="click" onclick="abreCot(${c.id})"><td class="mono">${c.numero}${c.lead_quiz&&c.lead_quiz.cliente&&c.lead_quiz.cliente!=="Ainda não"?' <span class="badge" style="background:#1A1A1A;color:#F5C518">⭐ CLIENTE EV</span>':(c.lead_nome?' <span class="badge" style="background:#FDF3E0;color:#8A6100">LEAD</span>':'')}</td><td>${nIt} produto${nIt!==1?'s':''} · ${un} un</td><td>R$ ${brl(c.total_estimado)}</td><td>${c.total_firme?'<b>R$ '+brl(c.total_firme)+'</b>':'—'}</td><td><span class="st ${c.status}">${stLab[c.status]||c.status}</span></td><td>${new Date(c.criado_em).toLocaleDateString('pt-BR')}</td></tr>`;
-    }).join("")+`</table>`:`<div class="panel"><div class="loading">Nenhuma cotação ${curFiltro==='todas'?'ainda':'neste status'}. Quando um aluno enviar, aparece aqui.</div></div>`;
+  L=L.filter?L.filter(passaFiltro):L;
+  const busca=((document.getElementById("cotBusca")||{}).value||"").toLowerCase().trim();
+  if(busca)L=L.filter(c=>((c.lead_nome||"")+" "+(c.lead_whatsapp||"")+" "+c.numero+" "+((c.cotacao_itens||[]).map(i=>i.nome).join(" "))).toLowerCase().includes(busca));
+  $("cotList").innerHTML=L.length?L.map(c=>{
+    const its=c.cotacao_itens||[];
+    const un=its.reduce((s,i)=>s+i.qtd,0);
+    const q=c.lead_quiz||{};
+    const evCli=q.cliente&&q.cliente!=="Ainda não";
+    const zap=String(c.lead_whatsapp||"").replace(/\D/g,"");
+    const dias=Math.floor((Date.now()-new Date(c.criado_em))/86400000);
+    const urgente=c.status==="nova"&&dias>=2;
+    return `<div class="panel click" onclick="abreCot(${c.id})" style="padding:13px 15px;margin-bottom:9px;${urgente?'border-color:#F0C0C2':''}">
+      <div style="display:flex;gap:10px;align-items:flex-start;flex-wrap:wrap">
+        <div style="flex:1;min-width:220px">
+          <div style="display:flex;align-items:center;gap:7px;flex-wrap:wrap">
+            <b class="mono" style="font-size:13.5px">${c.numero}</b>
+            ${evCli?'<span class="badge" style="background:#1A1A1A;color:#F5C518">CLIENTE EV</span>':(c.lead_nome?'<span class="badge" style="background:#FDF3E0;color:#8A6100">LEAD NOVO</span>':'<span class="badge">aluno</span>')}
+            <span class="st ${c.status}">${stLab[c.status]||c.status}</span>
+            ${urgente?`<span class="badge" style="background:#FDECEC;color:#B21C22">${dias} dias sem resposta</span>`:""}
+          </div>
+          <div style="font-size:14px;font-weight:700;margin-top:5px">${c.lead_nome||"(aluno logado)"}</div>
+          <div style="font-size:11.5px;color:var(--soft);margin-top:2px">
+            ${zap?`<a href="https://wa.me/55${zap}" target="_blank" onclick="event.stopPropagation()" style="color:var(--green,#1F6B4A);font-weight:600">WhatsApp ${c.lead_whatsapp}</a> · `:""}
+            ${q.faturamento?`fatura ${q.faturamento} · `:""}${q.canal&&q.canal!=="—"?`${q.canal} · `:""}${q.importa&&q.importa!=="—"?`${q.importa} · `:""}${q.regime&&q.regime!=="—"?q.regime:""}
+          </div>
+          <div style="display:flex;gap:5px;margin-top:8px;align-items:center;flex-wrap:wrap">
+            ${its.slice(0,4).map(i=>`<img src="${i.img}" style="width:34px;height:34px;border-radius:6px;object-fit:cover;border:1px solid var(--line)"/>`).join("")}
+            <span style="font-size:11.5px;color:var(--soft)">${its.length} produto${its.length!==1?"s":""} · ${un} un${its.length?` · ${its[0].nome.slice(0,34)}${its.length>1?"…":""}`:""}</span>
+          </div>
+          ${c.obs_aluno?`<div style="font-size:11px;color:var(--soft);margin-top:6px;font-style:italic">"${String(c.obs_aluno).slice(0,110)}"</div>`:""}
+        </div>
+        <div style="text-align:right;min-width:120px">
+          <div style="font-size:10px;color:var(--faint);text-transform:uppercase">estimado</div>
+          <div style="font-size:16px;font-weight:800">R$ ${brl(c.total_estimado)}</div>
+          ${c.total_firme?`<div style="font-size:11px;color:var(--green,#1F6B4A);font-weight:700">final R$ ${brl(c.total_firme)}</div>`:""}
+          <div style="font-size:10.5px;color:var(--faint);margin-top:4px">${new Date(c.criado_em).toLocaleDateString('pt-BR')} · ${dias===0?"hoje":dias+"d atrás"}</div>
+        </div>
+      </div></div>`;
+  }).join(""):`<div class="panel"><div class="loading">Nenhuma cotação ${curFiltro==='todas'?'ainda':'neste filtro'}.</div></div>`;
   $("cotDetail").innerHTML="";
 }
+
 async function abreCot(id){
   selCot=COTS.find(c=>c.id===id);if(!selCot)return;
   const c=selCot;
