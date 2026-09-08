@@ -132,6 +132,9 @@ tr.click{cursor:pointer}tr.click:hover{background:#FAFAFB}
 .al{display:flex;align-items:center;gap:9px}
 .al svg{width:17px;height:17px;stroke-linecap:round;stroke-linejoin:round;flex:0 0 auto;opacity:.85}
 .al .bd{margin-left:auto}
+.upbtn{display:block;border:1.5px dashed var(--line);border-radius:9px;padding:9px;text-align:center;font-size:11.5px;color:var(--soft);cursor:pointer}
+.upbtn:hover{border-color:var(--ink);color:var(--ink)}
+.upbtn.vd{border-color:#F0C0C2;color:#B21C22}
 </style></head>
 <body>
 
@@ -557,7 +560,7 @@ function renderCfg(){
     cfgField("custo_m3","usd","Frete marítimo US$/m³","all-in do seu canal: frete + impostos + desembaraço")+
     cfgField("custo_kg_aereo","usd","Frete aéreo US$/kg","all-in da modalidade aérea")+
     cfgField("custo_kg_aereo","min_kg","Mínimo aéreo (kg)","abaixo disso, cobramos o mínimo")+
-    cfgField("frete_padrao","brl_un","Frete fallback R$/un","só usado quando não há cubagem");
+    cfgField("validade_preco","dias","Validade da proposta (dias)","depois disso o preço expira");
   $("cfgMargem").innerHTML=
     cfgField("margem_time","pct","Sua margem %","aplicada sobre produto + frete na cotação")+
     cfgField("minimos","m3","Pedido mínimo (m³)","cobrança mínima de cubagem")+
@@ -567,7 +570,7 @@ function renderCfg(){
       <span class="tog ${(CFGS.cobranca_cotacao||{}).ativa?'on':''}" onclick="togCobranca(this)"></span></div>`+
     cfgField("cobranca_cotacao","valor_brl","Valor por cotação R$","defina quando ligar a cobrança")+
     cfgField("cobranca_cotacao","gratis_por_aluno","Cotações grátis por aluno","as primeiras, pra experimentar")+
-    cfgField("validade_preco","dias","Validade do preço (dias)","depois disso, expira")+
+    
     cfgField("meta_resposta","texto","Meta de resposta","aparece pro cliente")+
     cfgField("amostra","taxa_brl","Amostra · serviço R$","compra, conferência, fotos e vídeo")+
     cfgField("amostra","frete_brl","Amostra · frete China R$","fábrica até nosso depósito");
@@ -1124,8 +1127,15 @@ async function abreProposta(){
       <div id="alt${it.id}" style="display:none">${fr(1)}${fr(2)}</div>
       <button class="btn sm ghost" style="margin-top:6px" id="btnAlt${it.id}" onclick="toggleAlt(${it.id})">${(ALT[it.id]||[]).length?`+ Ver os ${(ALT[it.id]||[]).length} fornecedores alternativos`:"+ Comparar com outros fornecedores"}</button>
       <div id="mid${it.id}" style="display:none;grid-template-columns:1fr 1fr;gap:5px;margin-top:6px">
-        <textarea id="pp_ft${it.id}" placeholder="FOTOS reais (links, um por linha)" style="border:1px solid var(--line);border-radius:8px;padding:7px;font-size:11px;min-height:52px">${pit.fotos||pit.midias||""}</textarea>
-        <textarea id="pp_vd${it.id}" placeholder="VÍDEO real (link do Drive/YouTube)" style="border:1.5px solid #D91F26;border-radius:8px;padding:7px;font-size:11px;min-height:52px">${pit.video||""}</textarea>
+        <div>
+          <label class="upbtn">Enviar fotos do produto<input type="file" accept="image/*" multiple style="display:none" onchange="subirMidia(${it.id},'ft',this)"/></label>
+          <textarea id="pp_ft${it.id}" placeholder="as fotos enviadas aparecem aqui (ou cole links)" style="width:100%;border:1px solid var(--line);border-radius:8px;padding:7px;font-size:11px;min-height:44px;margin-top:5px">${pit.fotos||pit.midias||""}</textarea>
+          <div id="prev_ft${it.id}" style="display:flex;gap:5px;flex-wrap:wrap;margin-top:5px"></div>
+        </div>
+        <div>
+          <label class="upbtn vd">Enviar vídeo do produto<input type="file" accept="video/*" style="display:none" onchange="subirMidia(${it.id},'vd',this)"/></label>
+          <textarea id="pp_vd${it.id}" placeholder="o vídeo enviado aparece aqui (ou cole o link do Drive/YouTube)" style="width:100%;border:1.5px solid #D91F26;border-radius:8px;padding:7px;font-size:11px;min-height:44px;margin-top:5px">${pit.video||""}</textarea>
+        </div>
       </div>
       <button class="btn sm ghost" style="margin-top:6px" id="btnMid${it.id}" onclick="toggleMid(${it.id})">+ Anexar fotos e vídeo real</button>
     </div>`;
@@ -1583,6 +1593,40 @@ function simulaConfig(){
     <b style="font-size:14px">R$ ${brl(total)}</b> · R$ ${brl(total/exQtd)}/un ao cliente.<br>
     <span style="color:var(--soft)">Seu lucro neste exemplo: <b>R$ ${brl(total-prod-frete)}</b>. Mínimo cobrado: ${minM3} m³.</span>
   </div>`;
+}
+
+
+async function subirMidia(itemId,tipo,inp){
+  const fs=[...(inp.files||[])];if(!fs.length)return;
+  const ta=document.getElementById(`pp_${tipo}${itemId}`);
+  const prev=document.getElementById(`prev_${tipo}${itemId}`);
+  ta.value=(ta.value?ta.value+"\n":"")+"enviando…";
+  const urls=[];
+  for(const f of fs){
+    try{
+      let blob=f;
+      if(tipo==="ft"){
+        blob=await new Promise(res=>{
+          const rd=new FileReader();
+          rd.onload=()=>{const im=new Image();im.onload=()=>{
+            const cv=document.createElement("canvas");const e=Math.min(1,1400/Math.max(im.width,im.height));
+            cv.width=im.width*e;cv.height=im.height*e;cv.getContext("2d").drawImage(im,0,0,cv.width,cv.height);
+            cv.toBlob(b=>res(b),"image/jpeg",.85);};im.src=rd.result;};
+          rd.readAsDataURL(f);
+        });
+      }
+      const path=`proposta/${selCot.id}/${itemId}_${Date.now()}_${Math.random().toString(36).slice(2,7)}.${tipo==="ft"?"jpg":(f.name.split(".").pop()||"mp4")}`;
+      const {error}=await sb.storage.from("buscas").upload(path,blob,{contentType:tipo==="ft"?"image/jpeg":f.type,upsert:true});
+      if(error){throw error;}
+      const {data}=sb.storage.from("buscas").getPublicUrl(path);
+      urls.push(data.publicUrl);
+    }catch(e){console.log(e);}
+  }
+  ta.value=ta.value.replace(/enviando…\n?/,"").trim();
+  if(!urls.length){alert("Não consegui enviar. Tenta de novo ou cole o link.");return;}
+  ta.value=(ta.value?ta.value+"\n":"")+urls.join("\n");
+  if(prev)prev.innerHTML=ta.value.split("\n").filter(Boolean).slice(0,6).map(u=>`<img src="${u}" style="width:48px;height:48px;object-fit:cover;border-radius:6px;border:1px solid var(--line)"/>`).join("");
+  toast&&toast(`${urls.length} arquivo(s) enviado(s)`);
 }
 
 boot();
