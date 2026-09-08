@@ -813,7 +813,7 @@ async function enviarCotacao(pos){
     window._ldNome=nome;window._ldWhats=whats;window._ldQuiz=quiz;
     {
     try{
-      const {data:num,error:eL}=await sb.rpc("cotacao_lead",{p_nome:window._ldNome,p_whats:window._ldWhats,p_quiz:window._ldQuiz||{},p_obs:$("obsAluno").value.trim()||"",p_total:tot,p_itens:CART.map(c=>({offer_id:c.offer_id,nome:c.nome,img:c.img,qtd:c.qtd,moq:c.moq,brl:c.brl}))});
+      const {data:num,error:eL}=await sb.rpc("cotacao_lead",{p_nome:window._ldNome,p_whats:window._ldWhats,p_quiz:window._ldQuiz||{},p_obs:$("obsAluno").value.trim()||"",p_total:tot,p_itens:CART.map(c=>({offer_id:c.offer_id,nome:c.nome,img:c.img,qtd:c.qtd,moq:c.moq,brl:(c.fabu||c.brl)}))});
       if(eL){alert("Não consegui enviar sua cotação 😕\n\n"+eL.message+"\n\nTenta de novo — se persistir, chama a gente no WhatsApp!");return;}
       localStorage.setItem("ev_lead_ok","1");
       CART=[];updCart();$("obsAluno").value="";
@@ -829,7 +829,7 @@ async function enviarCotacao(pos){
     if(r.error){alert("Não foi possível enviar: "+r.error.message);return;}
     cot=r.data;
   }catch(e){alert("Não foi possível enviar: "+(e.message||e));return;}
-  const itens=CART.map(c=>({cotacao_id:cot.id,offer_id:c.offer_id,nome:c.nome,img:c.img,qtd:c.qtd,moq:c.moq,brl_estimado_un:c.brl}));
+  const itens=CART.map(c=>({cotacao_id:cot.id,offer_id:c.offer_id,nome:c.nome,img:c.img,qtd:c.qtd,moq:c.moq,brl_estimado_un:(c.fabu||c.brl)}));
   const {error:e2}=await sb.from("cotacao_itens").insert(itens);
   if(e2){alert("Itens não gravados: "+e2.message);return;}
   CART=[];updCart();$("obsAluno").value="";
@@ -837,6 +837,13 @@ async function enviarCotacao(pos){
   irMinhas();
 }
 // ---------- MINHAS ----------
+function _un(c,i){
+  const v=Number(i.brl_estimado_un)||0;
+  const soma=(c.cotacao_itens||[]).reduce((s,x)=>s+(Number(x.brl_estimado_un)||0)*x.qtd,0);
+  const tot=Number(c.total_estimado)||0;
+  // se o total gravado for bem menor que a soma dos itens, os itens estão no preço antigo
+  return (tot>0&&soma>tot*1.5)?v/1.944:v;
+}
 async function carregaMinhas(){
   const {data:cots}=await sb.from("cotacoes").select("*, cotacao_itens(*)").eq("user_id",USER.id).order("criado_em",{ascending:false});
   const {data:peds}=await sb.from("pedidos").select("*").eq("user_id",USER.id).order("criado_em",{ascending:false});
@@ -860,9 +867,9 @@ async function carregaMinhas(){
           <img src="${i.img}" style="width:44px;height:44px;border-radius:8px;object-fit:cover;border:1px solid var(--line)"/>
           <div style="flex:1;min-width:0">
             <div style="font-size:12.5px;font-weight:600;line-height:1.35">${i.nome}</div>
-            <div style="font-size:11px;color:var(--soft)">${i.qtd} unidades · R$ ${brl(i.brl_estimado_un)}/un na fábrica</div>
+            <div style="font-size:11px;color:var(--soft)">${i.qtd} unidades · R$ ${brl(_un(c,i))}/un na fábrica</div>
           </div>
-          <div style="font-size:12px;font-weight:700;white-space:nowrap">R$ ${brl(i.brl_estimado_un*i.qtd)}</div>
+          <div style="font-size:12px;font-weight:700;white-space:nowrap">R$ ${brl(_un(c,i)*i.qtd)}</div>
         </div>`).join("")}
         ${c.status==="nova"||c.status==="em_cotacao"?`<div style="margin-top:9px;background:#FDF9F2;border:1px solid #F0D9B8;border-radius:9px;padding:9px;font-size:11.5px;line-height:1.5">
           <b>O que acontece agora:</b> nosso time está negociando com a fábrica o preço na sua quantidade, calculando frete e impostos. Você recebe o valor final da importação no seu WhatsApp.</div>`:""}
