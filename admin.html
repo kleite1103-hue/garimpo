@@ -261,9 +261,14 @@ tr.click{cursor:pointer}tr.click:hover{background:#FAFAFB}
     <!-- CONFIG -->
     <div id="vCfg" class="hidden">
       <div class="ahead"><h2>Configurações</h2><span class="sub">salva direto na fundação</span></div>
+      <div id="cfgSim" class="panel" style="padding:14px;margin-bottom:12px;border-color:#CDE6D9;background:#F7FBF8"></div>
       <div class="grid2">
-        <div class="panel cfg"><div class="ph2">Preço e câmbio</div><div id="cfgPreco"></div></div>
-        <div class="panel cfg"><div class="ph2">Cotação</div><div id="cfgCot"></div></div>
+        <div class="panel cfg"><div class="ph2">1 · Preço que o cliente vê na vitrine</div><div class="hint" style="margin-bottom:8px">Define o valor mostrado no site. Não muda o preço final da cotação.</div><div id="cfgPreco"></div></div>
+        <div class="panel cfg"><div class="ph2">2 · Custo real da importação</div><div class="hint" style="margin-bottom:8px">Entra direto na conta da cotação instantânea e da proposta.</div><div id="cfgCusto"></div></div>
+      </div>
+      <div class="grid2" style="margin-top:12px">
+        <div class="panel cfg"><div class="ph2">3 · Sua margem e mínimos</div><div class="hint" style="margin-bottom:8px">O que você ganha e o pedido mínimo aceito.</div><div id="cfgMargem"></div></div>
+        <div class="panel cfg"><div class="ph2">4 · Amostras e atendimento</div><div class="hint" style="margin-bottom:8px">Valores da amostra e regras de resposta ao cliente.</div><div id="cfgCot"></div></div>
       </div>
     </div>
 
@@ -546,18 +551,27 @@ function cfgField(chave,campo,label,hint,sufixo=""){
 }
 function renderCfg(){
   $("cfgPreco").innerHTML=
-    cfgField("multiplicador","fator","Multiplicador de chegada","origem × câmbio × este fator")+
-    cfgField("margem_seguranca","pct","Margem de segurança %","estimativa sempre pra cima")+
-    cfgField("custo_m3","usd","Custo China→BR US$/m³","all-in do seu canal (frete+imposto)")+
-    cfgField("frete_padrao","brl_un","Frete fallback R$/un","usado se o volume não for informado")+
-    cfgField("margem_time","pct","Margem do time %","sugerida ao responder");
+    cfgField("multiplicador","fator","Multiplicador da vitrine","preço de fábrica × este fator = preço exibido no site")+
+    cfgField("margem_seguranca","pct","Margem de segurança %","protege a estimativa da vitrine contra variação de câmbio");
+  $("cfgCusto").innerHTML=
+    cfgField("custo_m3","usd","Frete marítimo US$/m³","all-in do seu canal: frete + impostos + desembaraço")+
+    cfgField("custo_kg_aereo","usd","Frete aéreo US$/kg","all-in da modalidade aérea")+
+    cfgField("custo_kg_aereo","min_kg","Mínimo aéreo (kg)","abaixo disso, cobramos o mínimo")+
+    cfgField("frete_padrao","brl_un","Frete fallback R$/un","só usado quando não há cubagem");
+  $("cfgMargem").innerHTML=
+    cfgField("margem_time","pct","Sua margem %","aplicada sobre produto + frete na cotação")+
+    cfgField("minimos","m3","Pedido mínimo (m³)","cobrança mínima de cubagem")+
+    cfgField("minimos","valor_brl","Pedido mínimo (R$)","valor mínimo em produtos");
   $("cfgCot").innerHTML=
     `<div class="crow2"><div><div>Cobrança por cotação</div><div class="hint">quando ligar, o cliente paga pela cotação</div></div>
       <span class="tog ${(CFGS.cobranca_cotacao||{}).ativa?'on':''}" onclick="togCobranca(this)"></span></div>`+
     cfgField("cobranca_cotacao","valor_brl","Valor por cotação R$","defina quando ligar a cobrança")+
     cfgField("cobranca_cotacao","gratis_por_aluno","Cotações grátis por aluno","as primeiras, pra experimentar")+
     cfgField("validade_preco","dias","Validade do preço (dias)","depois disso, expira")+
-    cfgField("meta_resposta","texto","Meta de resposta","aparece pro aluno");
+    cfgField("meta_resposta","texto","Meta de resposta","aparece pro cliente")+
+    cfgField("amostra","taxa_brl","Amostra · serviço R$","compra, conferência, fotos e vídeo")+
+    cfgField("amostra","frete_brl","Amostra · frete China R$","fábrica até nosso depósito");
+  try{simulaConfig();}catch(e){}
 }
 async function salvaCfg(chave,campo,valor){
   const v=CFGS[chave]||{};
@@ -1277,10 +1291,10 @@ function gerarPDF(){
       <tr><td><b>Cubagem deste pedido</b></td><td>${cub?cub+" m³":"a confirmar"} ${parseFloat(cub||"0")<Number(MIN.m3||0)?`— abaixo do mínimo, cobrado como ${MIN.m3} m³`:""}</td></tr>
       <tr><td><b>Modalidade</b></td><td>${modal} · valores já incluem frete internacional e impostos</td></tr>
       <tr><td><b>Pagamento</b></td><td>Valor total no ato do pedido — é o pagamento que garante a produção e o seu lugar no contêiner</td></tr>
-      <tr><td><b>Composição do metro cúbico</b></td><td>Até 2 produtos diferentes por metro cúbico — assim mantemos o custo e a conferência sob controle</td></tr>
+      <tr><td><b>Composição do metro cúbico</b></td><td>Priorizamos <b>um produto por metro cúbico</b>. Se sobrar espaço, completamos com no máximo mais um item — isso protege seu custo e a conferência.</td></tr>
       <tr><td><b>Validade desta proposta</b></td><td>7 dias (câmbio e disponibilidade da fábrica podem variar)</td></tr>
     </table>
-    ${its.length>2?`<div class="sugbox" style="margin-top:8px"><b>Atenção:</b> esta cotação tem ${its.length} produtos diferentes. Trabalhamos com até 2 produtos por metro cúbico — nosso time vai organizar seu pedido em mais de um metro cúbico ou ajustar os itens com você.</div>`:""}
+    ${its.length>2?`<div class="sugbox" style="margin-top:8px"><b>Atenção:</b> esta cotação tem ${its.length} produtos diferentes. Trabalhamos com um produto por metro cúbico (no máximo dois, quando sobra espaço) — nosso time vai organizar seu pedido em mais de um metro cúbico ou ajustar os itens com você.</div>`:""}
     ${abaixoMin?`<div class="sugbox" style="margin-top:8px"><b>Dá para aproveitar melhor este pedido:</b> ele ainda não preenche o mínimo de ${MIN.m3} m³ / R$ ${brl(MIN.valor_brl)}. Somando mais itens você dilui o frete e o custo por unidade cai — nosso time te ajuda a completar o metro cúbico.</div>`:""}
 
     <h2>O que está incluso</h2>
@@ -1547,6 +1561,28 @@ function toggleMid(id){
   const abrir=(m.style.display==="none"||!m.style.display);
   m.style.display=abrir?"grid":"none";
   if(b)b.textContent=abrir?"− Esconder mídias":"+ Anexar fotos e vídeo real";
+}
+
+
+function simulaConfig(){
+  const el=document.getElementById("cfgSim");if(!el)return;
+  const m3usd=Number((CFGS.custo_m3||{}).usd||900), USD=window._USD||5.4;
+  const marg=Number((CFGS.margem_time||{}).pct||35);
+  const mult=Number((CFGS.multiplicador||{}).fator||1.8);
+  const seg=Number((CFGS.margem_seguranca||{}).pct||8);
+  const minM3=Number((CFGS.minimos||{}).m3||0.5);
+  const exFab=5, exQtd=500, exM3=0.6;
+  const prod=exFab*exQtd;
+  const frete=Math.max(exM3,minM3)*m3usd*USD;
+  const total=(prod+frete)*(1+marg/100);
+  el.innerHTML=`<b style="font-size:13.5px">Como suas configurações afetam o dinheiro</b>
+  <div style="font-size:12px;line-height:1.75;margin-top:7px">
+    <b>Na vitrine:</b> produto de R$ ${brl(exFab)} na fábrica aparece por <b>R$ ${brl(exFab*mult*(1+seg/100))}</b> (fator ${mult} + ${seg}% de segurança). <i>Só afeta o site.</i><br>
+    <b>Na cotação:</b> exemplo de ${exQtd} un a R$ ${brl(exFab)} ocupando ${exM3} m³ →
+    produtos R$ ${brl(prod)} + frete R$ ${brl(frete)} (US$ ${m3usd}/m³ × câmbio ${USD.toFixed(2)}) + margem ${marg}% =
+    <b style="font-size:14px">R$ ${brl(total)}</b> · R$ ${brl(total/exQtd)}/un ao cliente.<br>
+    <span style="color:var(--soft)">Seu lucro neste exemplo: <b>R$ ${brl(total-prod-frete)}</b>. Mínimo cobrado: ${minM3} m³.</span>
+  </div>`;
 }
 
 boot();
