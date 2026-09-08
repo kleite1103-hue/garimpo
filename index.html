@@ -387,7 +387,7 @@ body{-webkit-font-smoothing:antialiased}
     <div class="crumbs">Catálogo / <b>Meu pedido de cotação</b></div>
     <div class="cotgrid">
       <div class="panel"><div class="ph2">Itens da cotação (<span id="nItens">0</span>)</div><div id="cartItems"></div>
-        <div id="cubometro" style="margin-bottom:12px"></div>
+        <div id="cubômetro" style="margin-bottom:12px"></div>
         <div class="obsbox"><label style="font-size:12px;font-weight:600;color:var(--soft);display:block;margin-bottom:6px">Observações (opcional)</label><textarea id="obsAluno" placeholder="Ex.: prefiro na cor dourada; é pra revenda…"></textarea></div>
         
       </div>
@@ -703,11 +703,11 @@ function renderCart(){setTimeout(desenhaCubo,0);
 }
 function volCart(){return CART.reduce((s,c)=>{const p=PROD.find(x=>x.offer_id===c.offer_id);return s+((p&&p.volume_l)||0)*c.qtd;},0);}
 function desenhaCubo(){
-  const el=$("cubometro");if(!el)return;
+  const el=$("cubômetro");if(!el)return;
   const L=volCart();const m3=L/1000;const MIN=1;
   if(!CART.length||L<=0){el.innerHTML="";return;}
   const pct=Math.min(100,m3/MIN*100);
-  const freteMin=MIN*1200*USD;                     // paga o cubo cheio
+  const freteMin=MIN*1200*USD;                     // paga o metro cúbico cheio
   const freteReal=Math.max(m3,MIN)*1200*USD;
   const unTotal=CART.reduce((s,c)=>s+c.qtd,0);
   const freteUn=freteReal/unTotal;
@@ -718,7 +718,7 @@ function desenhaCubo(){
     <div style="height:9px;background:#E8E4DC;border-radius:6px;overflow:hidden"><div style="height:100%;width:${pct}%;background:${ok?'var(--green)':'var(--orange)'};border-radius:6px"></div></div>
     <div style="font-size:11.5px;color:var(--soft);margin-top:7px;line-height:1.5">
     ${ok?`✓ Pedido viável: frete rateado ≈ <b>R$ ${brl(freteUn)}/un</b> (estimativa, confirmado na cotação).`
-    :`⚠ <b>Abaixo do mínimo de importação (1 m³).</b> O frete do cubo é fixo (≈ R$ ${brl(freteMin)}), e rateado nesse volume sai <b>R$ ${brl(freteUn)}/un</b> — pode inviabilizar. Aumente as quantidades ou <b>complete o cubo com outros produtos</b> do catálogo até ${MIN} m³.`}
+    :`⚠ <b>Abaixo do mínimo de importação (1 m³).</b> O frete do metro cúbico é fixo (≈ R$ ${brl(freteMin)}), e rateado nesse volume sai <b>R$ ${brl(freteUn)}/un</b> — pode inviabilizar. Aumente as quantidades ou <b>complete o metro cúbico com outros produtos</b> do catálogo até ${MIN} m³.`}
     </div></div>`;
 }
 function qtd(i,d){CART[i].qtd=Math.max(CART[i].moq,CART[i].qtd+d);renderCart();}
@@ -771,7 +771,7 @@ async function enviarCotacao(pos){
     if(g==="dados"){$("leadmodal").classList.add("show");return;}
   }
   const _m3=volCart()/1000;
-  if(_m3>0&&_m3<1&&!confirm(`Seu pedido ocupa ${_m3.toFixed(2)} m³ e o mínimo de importação é 1 m³ (o frete do cubo é cobrado cheio).\n\nQuer enviar mesmo assim? Nosso time vai avaliar, mas o frete por unidade pode ficar alto.`))return;
+  if(_m3>0&&_m3<1&&!confirm(`Seu pedido ocupa ${_m3.toFixed(2)} m³ e o mínimo de importação é 1 m³ (o frete do metro cúbico é cobrado cheio).\n\nQuer enviar mesmo assim? Nosso time vai avaliar, mas o frete por unidade pode ficar alto.`))return;
   const tot=CART.reduce((s,c)=>s+c.brl*c.qtd,0);
   if(!USER){
     
