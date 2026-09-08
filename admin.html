@@ -1458,15 +1458,28 @@ function trocaModal(){
   const aer=$("cModal").value==="aer";
   $("rowVol").classList.toggle("hidden",aer);
   $("rowKg").classList.toggle("hidden",!aer);
-  const kg=((CFGS.custo_kg_aereo||{}).usd)||45;
+  const kgUsd=Number((CFGS.custo_kg_aereo||{}).usd||45), minKg=Number((CFGS.custo_kg_aereo||{}).min_kg||20);
   $("cCanal").textContent=aer
-    ? `Aéreo: US$ ${kg}/kg all-in (frete + impostos + nacionalização) · mínimo 20 kg`
-    : `Marítimo: US$ ${((CFGS.custo_m3||{}).usd||900)}/m³ all-in · digite os litros que o frete calcula sozinho`;
-  if(aer){$("cPrazo").value="20–30 dias (aéreo)";const e=pesoEstimado();if(e.kg&&!$("cKg").value)$("cKg").value=e.kg.toFixed(1);calcKg();}
-  else{$("cPrazo").value="60–75 dias (marítimo)";calcVol();}
+    ? `Aéreo: US$ ${kgUsd}/kg all-in (frete + impostos + nacionalização) · mínimo ${minKg} kg`
+    : `Marítimo: US$ ${((CFGS.custo_m3||{}).usd||900)}/m³ all-in · mínimo ${CUB_MIN} m³`;
+  if(aer){
+    $("cPrazo").value="20–30 dias (aéreo)";
+    if(!parseFloat(($("cKg").value||"0").replace(",","."))){
+      const e=pesoEstimado();
+      let kg=e.kg||0;
+      // sem peso informado: usa peso volumétrico aéreo (1 m³ ≈ 167 kg)
+      if(!kg){const m3=parseFloat(($("cVolM3").value||"0").replace(",","."))||0;kg=m3*167;}
+      if(kg)$("cKg").value=kg.toFixed(1);
+    }
+    calcKg();
+  }else{
+    $("cPrazo").value="60–75 dias (marítimo)";
+    cubaM3();
+  }
 }
 function calcKg(){
-  const kg=parseFloat(($("cKg").value||"0").replace(",","."))||0;
+  let kg=parseFloat(($("cKg").value||"0").replace(",","."))||0;
+  if(!kg){const m3=parseFloat(($("cVolM3").value||"0").replace(",","."))||0;kg=m3*167;if(kg)$("cKg").value=kg.toFixed(1);}
   const min=Number((CFGS.custo_kg_aereo||{}).min_kg||20);
   const usdkg=Number((CFGS.custo_kg_aereo||{}).usd||45);
   const cob=Math.max(kg,min);
