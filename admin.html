@@ -135,6 +135,14 @@ tr.click{cursor:pointer}tr.click:hover{background:#FAFAFB}
 .upbtn{display:block;border:1.5px dashed var(--line);border-radius:9px;padding:9px;text-align:center;font-size:11.5px;color:var(--soft);cursor:pointer}
 .upbtn:hover{border-color:var(--ink);color:var(--ink)}
 .upbtn.vd{border-color:#F0C0C2;color:#B21C22}
+
+#cotMask{position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:80;display:none}
+#cotMask.on{display:block}
+#cotDetail{display:none}
+#cotDetail.on{display:block;position:fixed;z-index:81;left:50%;top:50%;transform:translate(-50%,-50%);width:min(1080px,95vw);max-height:90vh;overflow-y:auto;background:var(--bg,#FAF7F2);border-radius:16px;padding:20px;box-shadow:0 24px 60px rgba(0,0,0,.3)}
+#cotX{display:none}
+#cotDetail.on #cotX{display:block;position:sticky;top:0;float:right;background:#fff;border:1.5px solid var(--line);border-radius:50%;width:32px;height:32px;font-size:15px;cursor:pointer;color:var(--soft);z-index:3}
+@media(max-width:840px){#cotDetail.on{width:100%;height:100%;max-height:100%;top:0;left:0;transform:none;border-radius:0;padding:14px}}
 </style></head>
 <body>
 
@@ -202,7 +210,8 @@ tr.click{cursor:pointer}tr.click:hover{background:#FAFAFB}
         <span class="tab" data-f="aceita" onclick="cotFiltro(this)">Aceitas</span>
       </div>
       <div id="cotList"><div class="loading">Carregando…</div></div>
-      <div id="cotDetail"></div>
+      <div id="cotMask" onclick="fechaCotDet()"></div>
+      <div id="cotDetail"><button id="cotX" onclick="fechaCotDet()">✕</button><div id="cotDetIn"></div></div>
     </div>
 
     <!-- PEDIDOS -->
@@ -421,7 +430,8 @@ function renderCots(){
         </div>
       </div></div>`;
   }).join(""):`<div class="panel"><div class="loading">Nenhuma cotação ${curFiltro==='todas'?'ainda':'neste filtro'}.</div></div>`;
-  $("cotDetail").innerHTML="";
+  $("cotDetIn").innerHTML="";
+  try{fechaCotDet();}catch(e){}
 }
 
 async function abreCot(id){
@@ -445,7 +455,7 @@ async function abreCot(id){
   const custoBrl=custoRmb*FX;
   const frete=Number((CFGS.frete_padrao||{}).brl_un||0.73)*(c.cotacao_itens||[]).reduce((s,i)=>s+i.qtd,0);
   const marg=Number((CFGS.margem_time||{}).pct||35);
-  $("cotDetail").innerHTML=`<div class="detail">
+  $("cotDetIn").innerHTML=`<div class="detail">
     <div class="panel">
       <div class="ph2">Detalhe ${c.numero}${c.lead_nome?` <span class="leadinfo" style="font-size:12px;font-weight:600">👤 ${c.lead_nome} · 📱 <a href="https://wa.me/55${(c.lead_whatsapp||'').replace(/\D/g,'')}" target="_blank" style="color:var(--green)">${c.lead_whatsapp}</a>${c.lead_quiz?`${c.lead_quiz.cliente?' · ⭐ '+c.lead_quiz.cliente:''} · 💰 ${c.lead_quiz.faturamento} · 🛒 ${c.lead_quiz.canal} · ✈️ ${c.lead_quiz.importa} · 🏛 ${c.lead_quiz.regime}`:(c.lead_loja?' · '+c.lead_loja:'')}</span>`:''}<span style="margin-left:auto;font-weight:400;font-size:11px;color:var(--faint)">${new Date(c.criado_em).toLocaleString('pt-BR')}</span></div>
       <div class="solic">
@@ -509,7 +519,7 @@ async function abreCot(id){
   if(totalL>0){$("cVol").value=totalL.toFixed(1);calcVol();}else{calcFirme();}
   window._cpDados={};
   try{const CP=(c.copiloto&&typeof c.copiloto==="object")?c.copiloto:{};(c.cotacao_itens||[]).forEach((i,ix)=>{if(CP[i.id]&&CP[i.id].parsed)window._cpDados[ix]={parsed:CP[i.id].parsed,qtd:i.qtd};});}catch(e){}
-  $("cotDetail").scrollIntoView({behavior:"smooth"});
+  abreCotDet();
 }
 function calcVol(){
   const L=parseFloat(($("cVol").value||"0").replace(",","."))||0;
@@ -1182,7 +1192,7 @@ async function abreProposta(){
     </div>`;
   }).join("");
   document.getElementById("ppBox")?.remove();
-  $("cotDetail").insertAdjacentHTML("beforeend",`<div id="ppBox" class="panel" style="margin-top:14px;padding:14px;border-color:#F0D9B8">
+  $("cotDetIn").insertAdjacentHTML("beforeend",`<div id="ppBox" class="panel" style="margin-top:14px;padding:14px;border-color:#F0D9B8">
     <div class="ph2">Proposta de importação — até 3 fornecedores por produto</div>
     <div style="background:#F1F7F3;border:1px solid #CDE6D9;border-radius:10px;padding:10px;font-size:12px;line-height:1.6">
       Pré-montada automaticamente · Cubagem <b>${(litros/1000).toFixed(3)} m³</b>${litros/1000<CUB_MIN?` (cobrando mínimo ${CUB_MIN} m³)`:""} ·
@@ -1766,6 +1776,21 @@ function pintaChecklist(ix){
   const box=document.getElementById("cpChk"+ix);
   if(box)box.innerHTML=checklistHTML(ix);
 }
+
+
+function abreCotDet(){
+  document.getElementById("cotDetail").classList.add("on");
+  document.getElementById("cotMask").classList.add("on");
+  document.body.style.overflow="hidden";
+  document.getElementById("cotDetail").scrollTop=0;
+}
+function fechaCotDet(){
+  document.getElementById("cotDetail").classList.remove("on");
+  document.getElementById("cotMask").classList.remove("on");
+  document.body.style.overflow="";
+  const b=document.getElementById("ppBox");if(b)b.remove();
+}
+document.addEventListener("keydown",e=>{if(e.key==="Escape")try{fechaCotDet();}catch(_){}});
 
 boot();
 </script>
