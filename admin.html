@@ -1276,10 +1276,12 @@ function gerarPDF(){
       <tr><td style="width:45%"><b>Pedido mínimo</b></td><td>${MIN.m3} m³ de cubagem <b>ou</b> R$ ${brl(MIN.valor_brl)} em produtos</td></tr>
       <tr><td><b>Cubagem deste pedido</b></td><td>${cub?cub+" m³":"a confirmar"} ${parseFloat(cub||"0")<Number(MIN.m3||0)?`— abaixo do mínimo, cobrado como ${MIN.m3} m³`:""}</td></tr>
       <tr><td><b>Modalidade</b></td><td>${modal} · valores já incluem frete internacional e impostos</td></tr>
-      <tr><td><b>Pagamento</b></td><td>Sinal na confirmação do pedido e saldo antes do embarque</td></tr>
+      <tr><td><b>Pagamento</b></td><td>Valor total no ato do pedido — é o pagamento que garante a produção e o seu lugar no contêiner</td></tr>
+      <tr><td><b>Composição do metro cúbico</b></td><td>Até 2 produtos diferentes por metro cúbico — assim mantemos o custo e a conferência sob controle</td></tr>
       <tr><td><b>Validade desta proposta</b></td><td>7 dias (câmbio e disponibilidade da fábrica podem variar)</td></tr>
     </table>
-    ${abaixoMin?`<div class="sugbox" style="margin-top:8px"><b>Dá para aproveitar melhor este pedido:</b> ele ainda não preenche o mínimo de ${MIN.m3} m³ / R$ ${brl(MIN.valor_brl)}. Somando mais itens você dilui o frete e o custo por unidade cai — nosso time te ajuda a completar o cubo.</div>`:""}
+    ${its.length>2?`<div class="sugbox" style="margin-top:8px"><b>Atenção:</b> esta cotação tem ${its.length} produtos diferentes. Trabalhamos com até 2 produtos por metro cúbico — nosso time vai organizar seu pedido em mais de um metro cúbico ou ajustar os itens com você.</div>`:""}
+    ${abaixoMin?`<div class="sugbox" style="margin-top:8px"><b>Dá para aproveitar melhor este pedido:</b> ele ainda não preenche o mínimo de ${MIN.m3} m³ / R$ ${brl(MIN.valor_brl)}. Somando mais itens você dilui o frete e o custo por unidade cai — nosso time te ajuda a completar o metro cúbico.</div>`:""}
 
     <h2>O que está incluso</h2>
     <div class="cols">
@@ -1290,8 +1292,7 @@ function gerarPDF(){
     </div>
 
     <div class="cta"><b>Próximo passo:</b> confirme os itens e as quantidades para iniciarmos a negociação final com a fábrica.
-      <div style="margin-top:9px"><a class="btnResp" href="${linkResp}">QUERO SEGUIR COM ESTA PROPOSTA</a></div>
-      <div style="font-size:9.5px;color:#8A8378;margin-top:5px">${zap?`Ou chame direto: (${zap.slice(2,4)}) ${zap.slice(4,9)}-${zap.slice(9)}`:"efeitovendasnachina.com.br"}</div></div>
+      ${zap?`<div style="margin-top:9px"><a class="btnResp" href="${linkResp}">QUERO SEGUIR COM ESTA PROPOSTA</a></div>`:`<div style="margin-top:7px;font-size:11.5px">Responda esta proposta no mesmo WhatsApp em que ela foi enviada — nosso time já está com seu pedido em mãos.</div>`}</div>
 
     <div class="foot">Fazemos tudo com você — do pedido na fábrica à chegada no Brasil, com o apoio e a segurança da Efeito Vendas na China.<br>
     efeitovendasnachina.com.br${q.faturamento?` · Proposta personalizada para o perfil informado (${q.faturamento})`:""}</div>
