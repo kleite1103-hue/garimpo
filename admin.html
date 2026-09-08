@@ -563,8 +563,8 @@ function renderCfg(){
     cfgField("validade_preco","dias","Validade da proposta (dias)","depois disso o preço expira");
   $("cfgMargem").innerHTML=
     cfgField("margem_time","pct","Sua margem %","aplicada sobre produto + frete na cotação")+
-    cfgField("minimos","m3","Pedido mínimo (m³)","cobrança mínima de cubagem")+
-    cfgField("minimos","valor_brl","Pedido mínimo (R$)","valor mínimo em produtos");
+    cfgField("minimos","m3","Pedido mínimo (m³)","cobrança mínima de cubagem");
+
   $("cfgCot").innerHTML=
     `<div class="crow2"><div><div>Cobrança por cotação</div><div class="hint">quando ligar, o cliente paga pela cotação</div></div>
       <span class="tog ${(CFGS.cobranca_cotacao||{}).ativa?'on':''}" onclick="togCobranca(this)"></span></div>`+
@@ -1194,7 +1194,7 @@ function gerarPDF(){
   const CT=(CFGS.contato||{});
   const zap=String(CT.whatsapp||"").replace(/\D/g,"");
   const linkResp=zap?`https://wa.me/55${zap}?text=${encodeURIComponent("Olá! Quero seguir com a proposta "+c.numero+" da Efeito Vendas na China.")}`:"https://efeitovendasnachina.com.br";
-  const abaixoMin=(total<Number(MIN.valor_brl||0))||(parseFloat(cub||"0")<Number(MIN.m3||0));
+  const abaixoMin=(parseFloat(cub||"0")>0)&&(parseFloat(cub||"0")<Number(MIN.m3||0));
   const custoProd=its.reduce((s,it)=>{const f=(P[it.id]?.forn||[])[0]||{};return s+0;},0);
   const bloco=its.map((it,ix)=>{
     const pit=P[it.id]||{forn:[]};
@@ -1297,7 +1297,7 @@ function gerarPDF(){
 
     <h2>Condições e mínimos</h2>
     <table style="font-size:11px">
-      <tr><td style="width:45%"><b>Pedido mínimo</b></td><td>${MIN.m3} m³ de cubagem <b>ou</b> R$ ${brl(MIN.valor_brl)} em produtos</td></tr>
+      <tr><td style="width:45%"><b>Pedido mínimo</b></td><td>${MIN.m3} m³ de cubagem — pedidos menores são cobrados como ${MIN.m3} m³</td></tr>
       <tr><td><b>Cubagem deste pedido</b></td><td>${cub?cub+" m³":"a confirmar"} ${parseFloat(cub||"0")<Number(MIN.m3||0)?`— abaixo do mínimo, cobrado como ${MIN.m3} m³`:""}</td></tr>
       <tr><td><b>Modalidade</b></td><td>${modal} · valores já incluem frete internacional e impostos</td></tr>
       <tr><td><b>Pagamento</b></td><td>Valor total no ato do pedido — é o pagamento que garante a produção e o seu lugar no contêiner</td></tr>
@@ -1305,7 +1305,7 @@ function gerarPDF(){
       <tr><td><b>Validade desta proposta</b></td><td>7 dias (câmbio e disponibilidade da fábrica podem variar)</td></tr>
     </table>
     ${its.length>2?`<div class="sugbox" style="margin-top:8px"><b>Atenção:</b> esta cotação tem ${its.length} produtos diferentes. Trabalhamos com um produto por metro cúbico (no máximo dois, quando sobra espaço) — nosso time vai organizar seu pedido em mais de um metro cúbico ou ajustar os itens com você.</div>`:""}
-    ${abaixoMin?`<div class="sugbox" style="margin-top:8px"><b>Dá para aproveitar melhor este pedido:</b> ele ainda não preenche o mínimo de ${MIN.m3} m³ / R$ ${brl(MIN.valor_brl)}. Somando mais itens você dilui o frete e o custo por unidade cai — nosso time te ajuda a completar o metro cúbico.</div>`:""}
+    ${abaixoMin?`<div class="sugbox" style="margin-top:8px"><b>Dá para aproveitar melhor este pedido:</b> ele ocupa menos que o mínimo de ${MIN.m3} m³. Somando mais itens você dilui o frete e o custo por unidade cai — nosso time te ajuda a completar o metro cúbico.</div>`:""}
 
     <h2>O que está incluso</h2>
     <div class="cols">
@@ -1591,7 +1591,7 @@ function simulaConfig(){
     <b>Na cotação:</b> exemplo de ${exQtd} un a R$ ${brl(exFab)} ocupando ${exM3} m³ →
     produtos R$ ${brl(prod)} + frete R$ ${brl(frete)} (US$ ${m3usd}/m³ × câmbio ${USD.toFixed(2)}) + margem ${marg}% =
     <b style="font-size:14px">R$ ${brl(total)}</b> · R$ ${brl(total/exQtd)}/un ao cliente.<br>
-    <span style="color:var(--soft)">Seu lucro neste exemplo: <b>R$ ${brl(total-prod-frete)}</b>. Mínimo cobrado: ${minM3} m³.</span>
+    <span style="color:var(--soft)">Seu lucro neste exemplo: <b>R$ ${brl(total-prod-frete)}</b>. Mínimo cobrado: ${minM3} m³ de cubagem.</span>
   </div>`;
 }
 
