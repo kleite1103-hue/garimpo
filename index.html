@@ -792,10 +792,16 @@ let LEADCFG={ativo:false,max_cotacoes:999};
 async function leadGate(){
   try{const {data}=await sb.from("config").select("valor").eq("chave","modo_lead").single();if(data)LEADCFG=data.valor;}catch(e){}
   if(!LEADCFG.ativo||["admin","equipe"].includes(PAPEL))return "ok";
-  const {count}=await sb.from("cotacoes").select("id",{count:"exact",head:true}).eq("user_id",USER.id);
-  if((count||0)>=(LEADCFG.max_cotacoes||1))return "limite";
-  const {data:pf}=await sb.from("perfis").select("nome,whatsapp").eq("id",USER.id).single();
-  if(!pf||!pf.nome||!pf.whatsapp)return "dados";
+  const max=Number(LEADCFG.max_cotacoes||1);
+  try{
+    const {count,error}=await sb.from("cotacoes").select("id",{count:"exact",head:true}).eq("user_id",USER.id);
+    if(error)throw error;
+    if((count||0)>=max)return "limite";
+  }catch(e){
+    // se não conseguir contar, tenta pelo histórico local (nunca liberar por engano)
+    const feitas=Number(localStorage.getItem("ev_cot_feitas")||0);
+    if(feitas>=max)return "limite";
+  }
   return "ok";
 }
 async function leadSalva(){
@@ -848,7 +854,11 @@ async function enviarCotacao(pos){
     }
     window._pfNome=pf.nome;window._pfWhats=pf.whatsapp;
     let g="ok";try{g=await leadGate();}catch(e){g="ok";}
-    if(g==="limite"){alert("Sua cotação já está com nosso time! 🎉\n\nVocê vai receber no WhatsApp o preço final da sua importação e todos os detalhes pra fazer tudo com nosso apoio e segurança — do pedido à chegada no Brasil.");return;}
+    if(g==="limite"){alert(`Você já enviou sua cotação! 🎉
+
+Nosso time está trabalhando nela e responde no seu WhatsApp com o valor final da importação.
+
+Quer cotar mais produtos? Fale com a gente pelo WhatsApp que liberamos na hora.`);return;}
     if(g==="dados"){$("leadmodal").classList.add("show");return;}
   }
   try{
