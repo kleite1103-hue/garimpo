@@ -699,7 +699,19 @@ function add(id){
 function updCart(){$("cartN").textContent=CART.length;try{document.getElementById("tbN").textContent=CART.length;}catch(e){}}
 function irCarrinho(){
   try{document.getElementById("pMetodo").classList.add("hidden");}catch(e){}
-  try{document.getElementById("leadInline").classList.toggle("hidden",!!USER);}catch(e){}
+  try{
+    const li=document.getElementById("leadInline");
+    if(li){
+      if(!USER){li.classList.remove("hidden");}
+      else{
+        sb.from("perfis").select("nome,whatsapp").eq("id",USER.id).single().then(({data})=>{
+          const ok=data&&data.nome&&String(data.nome).trim().length>=5&&data.whatsapp&&String(data.whatsapp).replace(/\D/g,"").length>=10;
+          li.classList.toggle("hidden",!!ok);
+          if(!ok&&data){if(data.nome&&$("liNome"))$("liNome").value=data.nome;if(data.whatsapp&&$("liWhats"))$("liWhats").value=data.whatsapp;}
+        });
+      }
+    }
+  }catch(e){}
   const p=document.getElementById("pCart");
   p.classList.remove("hidden");p.classList.add("modalCart");
   document.getElementById("cartMask").classList.add("on");
@@ -792,7 +804,7 @@ async function leadSalva(){
   const quiz={cliente:$("ldCli").value,faturamento:$("ldFat").value,canal:$("ldCanal").value,importa:$("ldImp").value,regime:$("ldReg").value};
     const falta=["liCli","liFat","liCanal","liImp","liReg"].find(id=>!$(id).value);
     if(falta){marcaFalta(falta);return;}
-  if(USER){await sb.from("perfis").update({nome,whatsapp:whats}).eq("id",USER.id);}
+  if(USER){await sb.from("perfis").update({nome,whatsapp:whats}).eq("id",USER.id);window._pfNome=nome;window._pfWhats=whats;}
   window._ldNome=nome;window._ldWhats=whats;window._ldQuiz=quiz;
   $("leadmodal").classList.remove("show");
   enviarCotacao(true);
@@ -823,6 +835,18 @@ async function enviarCotacao(pos){
     return;
   }
   if(!pos&&USER){
+    // todo pedido precisa de nome e WhatsApp — inclusive de quem está logado
+    let pf=null;
+    try{const r=await sb.from("perfis").select("nome,whatsapp").eq("id",USER.id).single();pf=r.data;}catch(e){}
+    if(!pf||!pf.nome||String(pf.nome).trim().length<5||!pf.whatsapp||String(pf.whatsapp).replace(/\D/g,"").length<10){
+      const li=document.getElementById("leadInline");
+      if(li){li.classList.remove("hidden");
+        if(pf&&pf.nome&&$("liNome"))$("liNome").value=pf.nome;
+        if(pf&&pf.whatsapp&&$("liWhats"))$("liWhats").value=pf.whatsapp;}
+      marcaFalta((pf&&pf.nome&&String(pf.nome).trim().length>=5)?"liWhats":"liNome");
+      return;
+    }
+    window._pfNome=pf.nome;window._pfWhats=pf.whatsapp;
     let g="ok";try{g=await leadGate();}catch(e){g="ok";}
     if(g==="limite"){alert("Sua cotação já está com nosso time! 🎉\n\nVocê vai receber no WhatsApp o preço final da sua importação e todos os detalhes pra fazer tudo com nosso apoio e segurança — do pedido à chegada no Brasil.");return;}
     if(g==="dados"){$("leadmodal").classList.add("show");return;}
@@ -854,7 +878,9 @@ async function enviarCotacao(pos){
   }
   let cot=null;
   try{
-    const r=await sb.from("cotacoes").insert({user_id:USER.id,total_estimado:tot,obs_aluno:($("obsAluno")?$("obsAluno").value.trim():"")||null}).select().single();
+    const r=await sb.from("cotacoes").insert({user_id:USER.id,total_estimado:tot,
+      lead_nome:window._pfNome||null,lead_whatsapp:window._pfWhats||null,
+      obs_aluno:($("obsAluno")?$("obsAluno").value.trim():"")||null}).select().single();
     if(r.error){alert("Não foi possível enviar: "+r.error.message);return;}
     cot=r.data;
   }catch(e){alert("Não foi possível enviar: "+(e.message||e));return;}
