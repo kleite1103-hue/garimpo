@@ -445,6 +445,27 @@ async function abreCot(id){
   if(oids.length){
     const {data:og}=await sb.from("catalogo_origem").select("*").in("offer_id",oids);
     (og||[]).forEach(o=>origem[o.offer_id]=o);window._cotOrigem=origem;
+  try{
+    const _its=c.cotacao_itens||[];
+    const _ids=_its.map(i=>i.offer_id);
+    sb.from("catalogo").select("offer_id,descricao,categoria,volume_l").in("offer_id",_ids).then(({data})=>{
+      const FB={};(data||[]).forEach(x=>FB[x.offer_id]=x);
+      window._FBprop=FB;
+      let custo=0,litros=0;
+      _its.forEach(i=>{
+        const p=FB[i.offer_id]||{};
+        const un=fabAdm2(p)||Number(i.brl_estimado_un)||0;
+        custo+=un*i.qtd;
+        litros+=(Number(p.volume_l)||VOL_CAT[p.categoria]||VOL_PADRAO)*i.qtd;
+      });
+      window._custoBrl=Math.round(custo*100)/100;
+      window._litrosEst=litros;
+      const el=document.querySelector(".calc .crow b");
+      if(el&&!el.dataset.real)el.textContent="R$ "+brl(custo);
+      if($("cVolM3")&&!$("cVolM3").value){$("cVolM3").value=(litros/1000).toFixed(3);cubaM3();}
+      else{try{calcFirme();}catch(e){}}
+    });
+  }catch(e){}
     const mids=[...new Set((og||[]).map(o=>o.member_id).filter(Boolean))];
     if(mids.length){const {data:fs}=await sb.from("fornecedores_origem").select("*").in("member_id",mids);(fs||[]).forEach(f=>forn[f.member_id]=f);}
   }
@@ -494,6 +515,7 @@ async function abreCot(id){
           <div style="font-size:10px;color:var(--faint);padding:2px 0 4px" id="cCanal">Custo do canal: US$ ${((CFGS.custo_m3||{}).usd||900)} /m³ all-in · digite os litros que o frete calcula sozinho</div>
           <div class="crow"><span>Margem do time %</span><input id="cMarg" value="${marg}" oninput="calcFirme()"/></div>
           <div id="cAlerta" style="display:none;font-size:11.5px;border-radius:9px;padding:8px 10px;margin:6px 0;line-height:1.5"></div>
+          <div id="cDetalhe" style="font-size:11px;color:var(--soft);margin:4px 0 2px"></div>
           <div class="cfinal"><span>Preço final da importação</span><span class="v" id="cFinal">R$ —</span></div>
         </div>
         <div class="selrow">
@@ -530,10 +552,16 @@ function calcVol(){
 }
 function calcFirme(){
   const f=parseFloat(($("cFrete").value||"0").replace(",","."))||0;
-  const m=parseFloat(($("cMarg").value||"0").replace(",","."))||0;
-  const v=(window._custoBrl+f)*(1+m/100);
+  let m=parseFloat(($("cMarg").value||"0").replace(",","."));if(!m||m<0)m=35;
+  const custo=Number(window._custoBrl)||0;
+  const v=(custo+f)*(1+m/100);
   window._firme=Math.round(v*100)/100;
   $("cFinal").textContent="R$ "+brl(window._firme);
+  try{
+    const un=((selCot&&selCot.cotacao_itens)||[]).reduce((s,i)=>s+i.qtd,0);
+    const d=document.getElementById("cDetalhe");
+    if(d)d.innerHTML=`produtos R$ ${brl(custo)} + frete/impostos R$ ${brl(f)} + margem ${m}% ${un?`· <b>R$ ${brl(window._firme/un)}/un</b> (${un} un)`:""}`;
+  }catch(e){}
   try{comparaModal();}catch(e){}
 }
 async function responder(){
