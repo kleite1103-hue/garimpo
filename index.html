@@ -541,7 +541,7 @@ async function boot(){
 }
 // ---------- CATALOGO ----------
 const CARD_COLS="offer_id,nome,categoria,subcategoria,brl,brl_max,img,moq,vendas,destaque,forn_fabrica,forn_anos,eh_kit,grupo_id,nota_ia,certificacao,descricao";
-let MINQ={un_item:10,un_pedido:50,m3:0.5};
+let MINQ={un_item:10,un_pedido:50,m3:1};
 async function carregaMinimos(){try{const {data}=await sb.from("config").select("valor").eq("chave","minimos").single();if(data&&data.valor)MINQ={...MINQ,...data.valor};}catch(e){}}
 async function carregaCatalogo(){
   let off=0;PROD=[];

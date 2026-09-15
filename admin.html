@@ -513,7 +513,7 @@ async function abreCot(id){
           <div class="crow"><span>Modalidade</span><select id="cModal" onchange="trocaModal()" style="border:1.5px solid var(--line);border-radius:8px;padding:6px;font-size:12px">
             <option value="mar">🚢 Marítimo (mais barato · 60–75d)</option>
             <option value="aer">✈️ Aéreo (rápido · 20–30d · mín. 20kg)</option></select></div>
-          <div class="crow" id="rowVol"><span>Cubagem do pedido (m³)<div style="font-size:10px;color:var(--faint);font-weight:400">quanto o pedido ocupa no contêiner · cobramos no mínimo 0,5 m³</div></span><input id="cVolM3" placeholder="ex.: 0,5" oninput="cubaM3()"/></div>
+          <div class="crow" id="rowVol"><span>Cubagem do pedido (m³)<div style="font-size:10px;color:var(--faint);font-weight:400">quanto o pedido ocupa no contêiner · cobramos no mínimo 1 m³</div></span><input id="cVolM3" placeholder="ex.: 0,5" oninput="cubaM3()"/></div>
           <input type="hidden" id="cVol"/>
           <div class="crow hidden" id="rowKg"><span>Peso do pedido (kg)</span><input id="cKg" placeholder="ex.: 25" oninput="calcKg()"/></div>
           <div class="crow"><span>Frete China→BR (rateio m³)</span><input id="cFrete" value="${frete.toFixed(2)}" oninput="calcFirme()"/></div>
@@ -1657,7 +1657,7 @@ function aplicaInstantanea(total){
 }
 
 
-const CUB_MIN=0.5; // meio metro cúbico é o mínimo cobrado
+const CUB_MIN=Number((window.CFGS&&(CFGS.minimos||{}).m3)||1); // metro cúbico é o mínimo
 function cubaM3(){
   const m3=parseFloat(($("cVolM3").value||"0").replace(",","."))||0;
   const cob=Math.max(m3,CUB_MIN);
