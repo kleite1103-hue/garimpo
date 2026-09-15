@@ -462,6 +462,7 @@ async function abreCot(id){
       window._litrosEst=litros;
       const el=document.querySelector(".calc .crow b");
       if(el&&!el.dataset.real)el.textContent="R$ "+brl(custo);
+      if($("cUsdFrete")&&!$("cUsdFrete").value)$("cUsdFrete").value=Number((CFGS.custo_m3||{}).usd||1200);
       if($("cVolM3")&&!$("cVolM3").value){$("cVolM3").value=(litros/1000).toFixed(3);cubaM3();}
       else{try{calcFirme();}catch(e){}}
     });
@@ -505,6 +506,10 @@ async function abreCot(id){
         <div class="ph2">Fechar preço</div>
         <div class="calc">
           <div class="crow"><span>Custo de origem</span><b>¥ ${custoRmb.toFixed(2)} · R$ ${brl(custoBrl)}</b></div>
+          <div class="crow"><span>Custo do frete<div style="font-size:10px;color:var(--faint);font-weight:400">o que seu canal cobra nesta importação</div></span>
+            <span style="display:flex;align-items:center;gap:5px">US$ <input id="cUsdFrete" style="width:80px" oninput="recalcFrete()"/> <b id="cUsdUn" style="font-size:11px;color:var(--soft)">/m³</b></span></div>
+          <div class="crow"><span>Margem no produto %</span><input id="cMargProd" placeholder="25" oninput="calcFirme()"/></div>
+          <div class="crow"><span>Margem no frete %</span><input id="cMargFrete" placeholder="10" oninput="calcFirme()"/></div>
           <div class="crow"><span>Modalidade</span><select id="cModal" onchange="trocaModal()" style="border:1.5px solid var(--line);border-radius:8px;padding:6px;font-size:12px">
             <option value="mar">🚢 Marítimo (mais barato · 60–75d)</option>
             <option value="aer">✈️ Aéreo (rápido · 20–30d · mín. 20kg)</option></select></div>
@@ -552,15 +557,19 @@ function calcVol(){
 }
 function calcFirme(){
   const f=parseFloat(($("cFrete").value||"0").replace(",","."))||0;
-  let m=parseFloat(($("cMarg").value||"0").replace(",","."));if(!m||m<0)m=35;
   const custo=Number(window._custoBrl)||0;
-  const v=(custo+f)*(1+m/100);
+  let mp=parseFloat((($("cMargProd")&&$("cMargProd").value)||"").replace(",","."));
+  let mf=parseFloat((($("cMargFrete")&&$("cMargFrete").value)||"").replace(",","."));
+  if(isNaN(mp))mp=Number((CFGS.margem_time||{}).pct_produto??25);
+  if(isNaN(mf))mf=Number((CFGS.margem_time||{}).pct_frete??10);
+  const v=custo*(1+mp/100)+f*(1+mf/100);
+  const m=(custo+f)>0?Math.round(((v/(custo+f))-1)*100):0;
   window._firme=Math.round(v*100)/100;
   $("cFinal").textContent="R$ "+brl(window._firme);
   try{
     const un=((selCot&&selCot.cotacao_itens)||[]).reduce((s,i)=>s+i.qtd,0);
     const d=document.getElementById("cDetalhe");
-    if(d)d.innerHTML=`produtos R$ ${brl(custo)} + frete/impostos R$ ${brl(f)} + margem ${m}% ${un?`· <b>R$ ${brl(window._firme/un)}/un</b> (${un} un)`:""}`;
+    if(d)d.innerHTML=`produtos R$ ${brl(custo)} (+${mp}%) + frete R$ ${brl(f)} (+${mf}%) · margem efetiva ${m}% · seu lucro R$ ${brl(v-custo-f)} ${un?`· <b>R$ ${brl(window._firme/un)}/un</b> (${un} un)`:""}`;
   }catch(e){}
   try{comparaModal();}catch(e){}
 }
@@ -1503,6 +1512,8 @@ async function cpPrint(ix,inp){
 
 function trocaModal(){
   const aer=$("cModal").value==="aer";
+  try{$("cUsdUn").textContent=aer?"/kg":"/m³";
+    $("cUsdFrete").value=aer?Number((CFGS.custo_kg_aereo||{}).usd||45):Number((CFGS.custo_m3||{}).usd||1200);}catch(e){}
   $("rowVol").classList.toggle("hidden",aer);
   $("rowKg").classList.toggle("hidden",!aer);
   const kgUsd=Number((CFGS.custo_kg_aereo||{}).usd||45), minKg=Number((CFGS.custo_kg_aereo||{}).min_kg||20);
@@ -1528,7 +1539,7 @@ function calcKg(){
   let kg=parseFloat(($("cKg").value||"0").replace(",","."))||0;
   if(!kg){const m3=parseFloat(($("cVolM3").value||"0").replace(",","."))||0;kg=m3*167;if(kg)$("cKg").value=kg.toFixed(1);}
   const min=Number((CFGS.custo_kg_aereo||{}).min_kg||20);
-  const usdkg=Number((CFGS.custo_kg_aereo||{}).usd||45);
+  const usdkg=usdFrete();
   const cob=Math.max(kg,min);
   if(kg>0){
     $("cFrete").value=(cob*usdkg*(window._USD||5.4)).toFixed(2);
@@ -1651,7 +1662,7 @@ function cubaM3(){
   const m3=parseFloat(($("cVolM3").value||"0").replace(",","."))||0;
   const cob=Math.max(m3,CUB_MIN);
   $("cVol").value=(cob*1000).toFixed(1);
-  const usdm3=Number((CFGS.custo_m3||{}).usd||900), USD=window._USD||5.4;
+  const usdm3=usdFrete(), USD=window._USD||5.4;
   $("cFrete").value=(cob*usdm3*USD).toFixed(2);
   if(m3>0&&m3<CUB_MIN){toast&&toast(`Pedido de ${m3.toFixed(3)} m³ — cobrando o mínimo de ${CUB_MIN} m³`);}
   try{calcFirme();}catch(e){}
@@ -1819,6 +1830,18 @@ function fechaCotDet(){
   const b=document.getElementById("ppBox");if(b)b.remove();
 }
 document.addEventListener("keydown",e=>{if(e.key==="Escape")try{fechaCotDet();}catch(_){}});
+
+
+function usdFrete(){
+  const v=parseFloat((($("cUsdFrete")&&$("cUsdFrete").value)||"").replace(",","."));
+  if(v>0)return v;
+  const aer=$("cModal")&&$("cModal").value==="aer";
+  return aer?Number((CFGS.custo_kg_aereo||{}).usd||45):Number((CFGS.custo_m3||{}).usd||1200);
+}
+function recalcFrete(){
+  const aer=$("cModal")&&$("cModal").value==="aer";
+  if(aer)calcKg(); else cubaM3();
+}
 
 boot();
 </script>
