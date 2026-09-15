@@ -518,7 +518,6 @@ async function abreCot(id){
           <div class="crow hidden" id="rowKg"><span>Peso do pedido (kg)</span><input id="cKg" placeholder="ex.: 25" oninput="calcKg()"/></div>
           <div class="crow"><span>Frete China→BR (rateio m³)</span><input id="cFrete" value="${frete.toFixed(2)}" oninput="calcFirme()"/></div>
           <div style="font-size:10px;color:var(--faint);padding:2px 0 4px" id="cCanal">Custo do canal: US$ ${((CFGS.custo_m3||{}).usd||900)} /m³ all-in · digite os litros que o frete calcula sozinho</div>
-          <div class="crow"><span>Margem do time %</span><input id="cMarg" value="${marg}" oninput="calcFirme()"/></div>
           <div id="cAlerta" style="display:none;font-size:11.5px;border-radius:9px;padding:8px 10px;margin:6px 0;line-height:1.5"></div>
           <div id="cDetalhe" style="font-size:11px;color:var(--soft);margin:4px 0 2px"></div>
           <div class="cfinal"><span>Preço final da importação</span><span class="v" id="cFinal">R$ —</span></div>
@@ -579,7 +578,7 @@ async function responder(){
   const {error}=await sb.from("cotacoes").update({
     status:"respondida",total_firme:window._firme,prazo_estimado:$("cPrazo").value.trim()||null,
     frete_estimado:parseFloat(($("cFrete").value||"0").replace(",","."))||null,modalidade:($("cModal")&&$("cModal").value==="aer")?"aereo":"maritimo",
-    margem_pct:parseFloat(($("cMarg").value||"0").replace(",","."))||null,
+    margem_pct:(()=>{const{mp,mf}=margens();return mp;})(),
     validade,responsavel:$("cResp").value.trim()||null,respondido_em:new Date().toISOString()
   }).eq("id",selCot.id);
   if(error){alert("Erro: "+error.message);return;}
@@ -1147,7 +1146,7 @@ async function abreProposta(){
   const P=(c.proposta&&typeof c.proposta==="object")?c.proposta:{};
   const dd=window._cpDados||{};
   const fx=(window._USD?window._USD/7.2:0.764);
-  let _mg=parseFloat((($("cMarg")&&$("cMarg").value)||"").replace(",","."));if(!_mg||_mg<10)_mg=35;const marg=1+_mg/100;
+  const {mp:_mp,mf:_mf}=margens();const marg=1+_mp/100;
   // --- cálculo automático: custo, cubagem (mín 0,5 m³), frete e preço por item ---
   let custo=0,litros=0;const base={};
   its.forEach((it,ix)=>{
@@ -1161,7 +1160,7 @@ async function abreProposta(){
   const m3=Math.max(litros/1000,CUB_MIN);
   const usdm3=Number((CFGS.custo_m3||{}).usd||900), USD=window._USD||5.4;
   const frete=m3*usdm3*USD;
-  const calc=(custo+frete)*marg;
+  const calc=totalCom(custo,frete);
   const totalGeral=(window._firme&&window._firme>=custo+frete)?window._firme:calc;
   const fator=custo>0?totalGeral/custo:1;
   const prazoPad=($("cPrazo")&&$("cPrazo").value)||"60–75 dias (marítimo)";
@@ -1233,7 +1232,7 @@ async function abreProposta(){
     <div class="ph2">Proposta de importação — até 3 fornecedores por produto</div>
     <div style="background:#F1F7F3;border:1px solid #CDE6D9;border-radius:10px;padding:10px;font-size:12px;line-height:1.6">
       Pré-montada automaticamente · Cubagem <b>${(litros/1000).toFixed(3)} m³</b>${litros/1000<CUB_MIN?` (cobrando mínimo ${CUB_MIN} m³)`:""} ·
-      Produtos <b>R$ ${brl(custo)}</b> · Frete+impostos <b>R$ ${brl(frete)}</b> · Margem <b>${((marg-1)*100).toFixed(0)}%</b> ·
+      Produtos <b>R$ ${brl(custo)}</b> · Frete+impostos <b>R$ ${brl(frete)}</b> · Margem <b>${margens().mp}%/${margens().mf}%</b> ·
       <b style="font-size:13px">Total R$ ${brl(totalGeral)}</b>
     </div>${box}
     <div style="display:flex;gap:8px;margin-top:10px;flex-wrap:wrap">
@@ -1625,18 +1624,18 @@ async function cotacaoInstantanea(){
   const usdm3=Number((CFGS.custo_m3||{}).usd||900), USD=window._USD||5.4;
   const m3=Math.max(litros/1000,CUB_MIN);   // sempre no mínimo meio metro cúbico
   const frete=m3*usdm3*USD;
-  let _mg=parseFloat((($("cMarg")&&$("cMarg").value)||"").replace(",","."));if(!_mg||_mg<10)_mg=35;const marg=1+_mg/100;
-  const total=(custo+frete)*marg;
+  const {mp:_mp,mf:_mf}=margens();const marg=1+_mp/100;
+  const total=totalCom(custo,frete);
   const un=its.reduce((s,i)=>s+i.qtd,0);
   $("cVolM3").value=(litros/1000).toFixed(3);$("cVol").value=(Math.max(litros/1000,CUB_MIN)*1000).toFixed(1);
   $("cFrete").value=frete.toFixed(2);
-  if($("cMarg")&&!$("cMarg").value)$("cMarg").value=35;
+  
   try{cubaM3();}catch(e){}
   try{calcFirme();}catch(e){}
   const box=`<div style="background:#F1F7F3;border:1.5px solid #CDE6D9;border-radius:12px;padding:13px;margin-top:10px;font-size:12.5px;line-height:1.7">
     <b style="font-size:13.5px">Pré-cotação calculada</b><br>
     Produtos (${un} un): <b>R$ ${brl(custo)}</b> · Cubagem estimada: <b>${(litros/1000).toFixed(3)} m³</b>${litros/1000<CUB_MIN?` <span style="color:#8A6100">(cobrando o mínimo de ${CUB_MIN} m³)</span>`:""}<br>
-    Frete + impostos (rateio): <b>R$ ${brl(frete)}</b> · Margem: <b>${(((marg-1)*100)).toFixed(0)}%</b><br>
+    Frete + impostos (rateio): <b>R$ ${brl(frete)}</b> · Margem: <b>${margens().mp}% no produto / ${margens().mf}% no frete</b><br>
     <span style="font-size:15px">Total ao cliente: <b>R$ ${brl(total)}</b> · <b>R$ ${brl(total/un)}</b>/un</span>
     ${semCub.length?`<div style="color:#8A6100;margin-top:7px">Conferir cubagem real: ${semCub.slice(0,3).join(", ")}${semCub.length>3?" +"+(semCub.length-3):""}</div>`:""}
     <div style="margin-top:9px;display:flex;gap:7px;flex-wrap:wrap">
@@ -1759,8 +1758,7 @@ function escalaHTML(it,puFinal){
     const vu=Number(p.volume_l)||VOL_CAT[p.categoria]||VOL_PADRAO;          // litros por unidade
     const usdm3=Number((CFGS.custo_m3||{}).usd||900), USD=window._USD||5.4;
     const fretem3=usdm3*USD;
-    let mg=parseFloat((($("cMarg")&&$("cMarg").value)||"").replace(",","."));if(!mg||mg<10)mg=35;
-    const marg=1+mg/100;
+    const {mp:_mp2,mf:_mf2}=margens();const marg=1+_mp2/100;
     const custoUn=fabAdm2(p)||Number(it.brl_estimado_un)||0;               // preço real na fábrica
     if(!custoUn)return "";
     const porM3=Math.max(1,Math.round(1000/vu));
@@ -1770,9 +1768,9 @@ function escalaHTML(it,puFinal){
     const linhas=alvos.slice(0,4).map(q=>{
       const m3=Math.max(q*vu/1000,CUB_MIN);
       const frete=m3*fretem3;
-      const tot=(custoUn*q+frete)*marg;
+      const tot=totalCom(custoUn*q,frete);
       const un=tot/q;
-      const base=(custoUn*it.qtd+Math.max(it.qtd*vu/1000,CUB_MIN)*fretem3)*marg/it.qtd;
+      const base=totalCom(custoUn*it.qtd,Math.max(it.qtd*vu/1000,CUB_MIN)*fretem3)/it.qtd;
       const eco=(q===it.qtd)?"":(un<base?` <span style="color:#1F6B4A">−${Math.round((1-un/base)*100)}% por peça</span>`:"");
       return `<tr ${q===it.qtd?'class="best"':''}><td>${q} un${q===it.qtd?" (sua cotação)":""}</td><td>${m3.toFixed(2)} m³</td><td>R$ ${brl(frete)}</td><td><b>R$ ${brl(un)}</b>${eco}</td><td>R$ ${brl(tot)}</td></tr>`;
     }).join("");
@@ -1842,6 +1840,16 @@ function recalcFrete(){
   const aer=$("cModal")&&$("cModal").value==="aer";
   if(aer)calcKg(); else cubaM3();
 }
+
+
+function margens(){
+  let mp=parseFloat((($("cMargProd")&&$("cMargProd").value)||"").replace(",","."));
+  let mf=parseFloat((($("cMargFrete")&&$("cMargFrete").value)||"").replace(",","."));
+  if(isNaN(mp))mp=Number((CFGS.margem_time||{}).pct_produto??25);
+  if(isNaN(mf))mf=Number((CFGS.margem_time||{}).pct_frete??10);
+  return {mp,mf};
+}
+function totalCom(custo,frete){const{mp,mf}=margens();return custo*(1+mp/100)+frete*(1+mf/100);}
 
 boot();
 </script>
