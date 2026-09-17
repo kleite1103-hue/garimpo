@@ -201,7 +201,8 @@ tr.click{cursor:pointer}tr.click:hover{background:#FAFAFB}
         <input id="cotBusca" placeholder="buscar por nome, WhatsApp, número ou produto…" oninput="renderCots()" style="border:1.5px solid var(--line);border-radius:9px;padding:8px 11px;font-size:12.5px;min-width:260px;margin-right:8px"/>
         <span class="tab on" onclick="evFiltro='todas';marcaFiltro(this);renderCots()">Todas</span>
         <span class="tab" onclick="evFiltro='cliente';marcaFiltro(this);renderCots()">⭐ Clientes EV</span>
-        <span class="tab" onclick="evFiltro='lead';marcaFiltro(this);renderCots()">Leads</span></span></div>
+        <span class="tab" onclick="evFiltro='lead';marcaFiltro(this);renderCots()">Leads</span>
+        <span class="tab" onclick="evFiltro='parceiro';marcaFiltro(this);renderCots()">Parceiros</span></span></div>
       <div class="tabs" id="cotTabs">
         <span class="tab on" data-f="todas" onclick="cotFiltro(this)">Todas</span>
         <span class="tab" data-f="nova" onclick="cotFiltro(this)">Novas</span>
@@ -414,7 +415,7 @@ function renderCots(){
           <div style="font-size:14px;font-weight:700;margin-top:5px">${c.lead_nome||"(aluno logado)"}</div>
           <div style="font-size:11.5px;color:var(--soft);margin-top:2px">
             ${zap?`<a href="https://wa.me/55${zap}" target="_blank" onclick="event.stopPropagation()" style="color:var(--green,#1F6B4A);font-weight:600">WhatsApp ${c.lead_whatsapp}</a> · `:""}
-            ${q.origem?`<b>veio de ${q.origem}</b> · `:""}${q.faturamento?`fatura ${q.faturamento} · `:""}${q.canal&&q.canal!=="—"?`${q.canal} · `:""}${q.importa&&q.importa!=="—"?`${q.importa} · `:""}${q.regime&&q.regime!=="—"?q.regime:""}
+            ${q.parceiro?`<span class="badge" style="background:#1F6B4A;color:#fff">PARCEIRO: ${String(q.parceiro).toUpperCase()}</span> `:""}${q.origem?`<b>veio de ${q.origem}</b> · `:""}${q.faturamento?`fatura ${q.faturamento} · `:""}${q.canal&&q.canal!=="—"?`${q.canal} · `:""}${q.importa&&q.importa!=="—"?`${q.importa} · `:""}${q.regime&&q.regime!=="—"?q.regime:""}
           </div>
           <div style="display:flex;gap:5px;margin-top:8px;align-items:center;flex-wrap:wrap">
             ${its.slice(0,4).map(i=>`<img src="${i.img}" style="width:34px;height:34px;border-radius:6px;object-fit:cover;border:1px solid var(--line)"/>`).join("")}
@@ -1437,6 +1438,7 @@ function passaFiltro(c){
   const ev=c.lead_quiz&&c.lead_quiz.cliente&&c.lead_quiz.cliente!=="Ainda não";
   if(evFiltro==="cliente")return ev;
   if(evFiltro==="lead")return !!c.lead_nome&&!ev;
+  if(evFiltro==="parceiro")return !!(c.lead_quiz&&c.lead_quiz.parceiro);
   return true;
 }
 

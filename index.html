@@ -418,6 +418,7 @@ body{-webkit-font-smoothing:antialiased}
           <option>TikTok</option>
           <option>Sou aluno(a) do curso</option>
           <option>Indicação de amigo(a)</option>
+          <option>Indicação de parceiro / representante</option>
           <option>Evento presencial</option>
           <option>Grupo de WhatsApp / Telegram</option>
           <option>Google / pesquisa</option>
@@ -519,7 +520,7 @@ async function enviaEspecial(){
   if(desc.length<5){alert("Descreve o produto que você procura.");return;}
   if(nome.length<5||whats.length<10){alert("Preencha nome completo e WhatsApp com DDD.");return;}
   if(!$("espFat").value||!$("espCli").value){alert("Responde as duas perguntinhas 🙏");return;}
-  const quiz={origem:($("espOrigem")?$("espOrigem").value:""),cliente:$("espCli").value,faturamento:$("espFat").value,canal:"—",importa:"—",regime:"—",tipo:"pedido_especial"};
+  const quiz={parceiro:parceiroAtual(),origem:($("espOrigem")?$("espOrigem").value:""),cliente:$("espCli").value,faturamento:$("espFat").value,canal:"—",importa:"—",regime:"—",tipo:"pedido_especial"};
   try{
     const {data:num,error}=await sb.rpc("cotacao_lead",{p_nome:nome,p_whats:whats,p_quiz:quiz,
       p_obs:"🔎 PEDIDO ESPECIAL (produto fora do catálogo): "+desc+(ESPB64?" [cliente anexou foto]":""),
@@ -529,7 +530,27 @@ async function enviaEspecial(){
     alert("Pedido enviado! 🎉\n\nNosso time vai procurar esse produto nas fábricas e te chamar no WhatsApp com a cotação.");
   }catch(e){alert("Não consegui enviar. Tenta de novo.");}
 }
+
+function capturaParceiro(){
+  try{
+    const u=new URLSearchParams(location.search);
+    const p=(u.get("p")||u.get("parceiro")||"").trim().toLowerCase();
+    if(p){localStorage.setItem("ev_parceiro",p);localStorage.setItem("ev_parceiro_em",new Date().toISOString());}
+  }catch(e){}
+}
+function parceiroAtual(){try{return localStorage.getItem("ev_parceiro")||"";}catch(e){return "";}}
 async function boot(){
+  capturaParceiro();
+  try{
+    const p=parceiroAtual();
+    if(p){
+      const d=document.createElement("div");
+      d.style.cssText="background:#F1F7F3;border-bottom:1px solid #CDE6D9;color:#1F6B4A;font-size:12px;padding:7px 14px;text-align:center";
+      d.innerHTML=`Você chegou pela indicação de <b>${p.toUpperCase()}</b> — seu atendimento já está identificado com nosso time.`;
+      const app=document.getElementById("vApp");
+      if(app&&app.firstChild)app.insertBefore(d,app.firstChild);
+    }
+  }catch(e){}
   try{rodaAviso();}catch(e){}
   carregaMinimos();
   try{localStorage.removeItem('ev_lead_ok');}catch(e){}
@@ -818,7 +839,7 @@ async function leadGate(){
 async function leadSalva(){
   const nome=$("ldNome").value.trim(),whats=$("ldWhats").value.replace(/\D/g,"");
   if(nome.length<5||whats.length<10){alert("Preencha nome completo e WhatsApp com DDD.");return;}
-  const quiz={origem:($("ldOrigem")?$("ldOrigem").value:""),cliente:$("ldCli").value,faturamento:$("ldFat").value,canal:$("ldCanal").value,importa:$("ldImp").value,regime:$("ldReg").value};
+  const quiz={parceiro:parceiroAtual(),origem:($("ldOrigem")?$("ldOrigem").value:""),cliente:$("ldCli").value,faturamento:$("ldFat").value,canal:$("ldCanal").value,importa:$("ldImp").value,regime:$("ldReg").value};
     const falta=["liOrigem","liCli","liFat","liCanal","liImp","liReg"].find(id=>!$(id).value);
     if(falta){marcaFalta(falta);return;}
   if(USER){await sb.from("perfis").update({nome,whatsapp:whats}).eq("id",USER.id);window._pfNome=nome;window._pfWhats=whats;}
@@ -902,7 +923,7 @@ Quer cotar mais produtos? Fale com a gente pelo WhatsApp que liberamos na hora.`
   if(!USER){
     
     const nome=$("liNome").value.trim(),whats=$("liWhats").value.replace(/\D/g,"");
-    const quiz={origem:$("liOrigem").value,cliente:$("liCli").value,faturamento:$("liFat").value,canal:$("liCanal").value,importa:$("liImp").value,regime:$("liReg").value};
+    const quiz={parceiro:parceiroAtual(),origem:$("liOrigem").value,cliente:$("liCli").value,faturamento:$("liFat").value,canal:$("liCanal").value,importa:$("liImp").value,regime:$("liReg").value};
     if(nome.length<5||whats.length<10){marcaFalta(nome.length<5?"liNome":"liWhats");return;}
       const falta=["liOrigem","liCli","liFat","liCanal","liImp","liReg"].find(id=>!$(id).value);
     if(falta){marcaFalta(falta);return;}
@@ -1234,6 +1255,7 @@ function abreAmostra(...a){
           <option>TikTok</option>
           <option>Sou aluno(a) do curso</option>
           <option>Indicação de amigo(a)</option>
+          <option>Indicação de parceiro / representante</option>
           <option>Evento presencial</option>
           <option>Grupo de WhatsApp / Telegram</option>
           <option>Google / pesquisa</option>
@@ -1297,6 +1319,7 @@ function abreAmostra(...a){
           <option>TikTok</option>
           <option>Sou aluno(a) do curso</option>
           <option>Indicação de amigo(a)</option>
+          <option>Indicação de parceiro / representante</option>
           <option>Evento presencial</option>
           <option>Grupo de WhatsApp / Telegram</option>
           <option>Google / pesquisa</option>
