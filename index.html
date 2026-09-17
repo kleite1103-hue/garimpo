@@ -344,6 +344,7 @@ body{-webkit-font-smoothing:antialiased}
   <div class="searchbar"><input id="q" placeholder="Buscar produto…" oninput="render()"/><button onclick="render()">Buscar</button></div>
   <div class="navbtns">
     <div class="nb" onclick="irMetodo()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="9"/><path d="M12 16v-4M12 8h.01"/></svg><span>Como funciona</span></div>
+    <div class="nb" onclick="abreBuscaFoto()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 8.5A2.5 2.5 0 015.5 6h1.7l1.2-2h7.2l1.2 2h1.7A2.5 2.5 0 0121 8.5v9A2.5 2.5 0 0118.5 20h-13A2.5 2.5 0 013 17.5z"/><circle cx="12" cy="12.5" r="3.4"/></svg><span>Buscar por foto</span></div>
     <div class="nb" onclick="abreMeus()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 8.5L12 4l9 4.5v7L12 20l-9-4.5z"/><path d="M3 8.5L12 13l9-4.5M12 13v7"/></svg><span>Amostras</span></div>
     <div class="nb soLogado" onclick="irMinhas()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3.5" y="3.5" width="17" height="17" rx="3"/><path d="M8 9h8M8 13h8M8 17h5"/></svg><span>Minhas cotações</span></div>
     <div class="nb dark" onclick="irCarrinho()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 5h2l2.2 10.5a2 2 0 002 1.5h7.8a2 2 0 002-1.6L20 8H6.5"/><circle cx="10" cy="20" r="1.3"/><circle cx="17" cy="20" r="1.3"/></svg><span>Cotação</span><span class="n" id="cartN">0</span></div>
@@ -534,6 +535,57 @@ function capturaParceiro(){
   }catch(e){}
 }
 function parceiroAtual(){try{return localStorage.getItem("ev_parceiro")||"";}catch(e){return "";}}
+
+let BFB64=null;
+function abreBuscaFoto(){
+  BFB64=null;$("bfPrev").style.display="none";$("bfRes").innerHTML="";$("bfStatus").textContent="";
+  $("bfBtn").style.display="none";$("bfmodal").classList.add("show");
+}
+function bfEscolheu(inp){
+  const f=inp.files&&inp.files[0];if(!f)return;
+  const rd=new FileReader();
+  rd.onload=()=>{const im=new Image();im.onload=()=>{
+    const cv=document.createElement("canvas");const e=Math.min(1,900/Math.max(im.width,im.height));
+    cv.width=im.width*e;cv.height=im.height*e;cv.getContext("2d").drawImage(im,0,0,cv.width,cv.height);
+    BFB64=cv.toDataURL("image/jpeg",.82);
+    const p=$("bfPrev");p.src=BFB64;p.style.display="block";
+    $("bfBtn").style.display="block";$("bfDrop").innerHTML="✓ Foto escolhida — toque pra trocar"+$("bfDrop").innerHTML.slice($("bfDrop").innerHTML.indexOf("<input"));
+  };im.src=rd.result;};
+  rd.readAsDataURL(f);
+}
+async function bfBuscar(){
+  if(!BFB64){alert("Escolha uma foto primeiro.");return;}
+  $("bfBtn").style.display="none";
+  $("bfStatus").innerHTML='<div class="loading">Procurando no nosso catálogo…</div>';
+  try{
+    const r=await fetch(CFG.SUPABASE_URL+"/functions/v1/buscafoto",{method:"POST",
+      headers:{"Content-Type":"application/json","apikey":CFG.SUPABASE_ANON,"Authorization":"Bearer "+CFG.SUPABASE_ANON},
+      body:JSON.stringify({action:"buscar_catalogo",image:BFB64.split(",").pop()})});
+    const j=await r.json();
+    const m=(j&&j.matches)||[];
+    if(m.length){
+      $("bfStatus").innerHTML=`<b>Encontramos ${m.length} produto${m.length>1?"s":""} parecido${m.length>1?"s":""} no nosso catálogo:</b>`;
+      $("bfRes").innerHTML=m.map(p=>`<div class="fitem" style="cursor:pointer" onclick="$('bfmodal').classList.remove('show');abreProd('${p.offer_id}')">
+        <img src="${mini(p.img)}"/><div class="fi"><div class="fn">${p.nome}</div>
+        <div class="fm">R$ ${brl(p.fab||p.brl)}/un na China · a partir de ${p.moq} un</div></div>
+        <span style="font-weight:800;color:var(--orange)">ver</span></div>`).join("");
+    }else{
+      $("bfStatus").innerHTML='<b>Ainda não temos esse produto no catálogo.</b>';
+      $("bfRes").innerHTML=`<div style="background:#F1F7F3;border:1px solid #CDE6D9;border-radius:11px;padding:12px;font-size:12.5px;line-height:1.6;margin-top:6px">
+        Nosso time pode procurar esse produto direto nas fábricas na China e te mandar a cotação.
+        <button class="btn p full" style="margin-top:9px" onclick="$('bfmodal').classList.remove('show');abreEspecialComFoto()">Quero que o time procure pra mim</button></div>`;
+    }
+  }catch(e){
+    $("bfStatus").innerHTML='<b>Não consegui procurar agora.</b>';
+    $("bfRes").innerHTML=`<button class="btn p full" style="margin-top:8px" onclick="$('bfmodal').classList.remove('show');abreEspecialComFoto()">Pedir para o time procurar</button>`;
+  }
+}
+function abreEspecialComFoto(){
+  abreEspecial();
+  if(BFB64){ESPB64=BFB64;const p=$("espPrev");if(p){p.src=BFB64;p.style.display="block";}
+    const b=$("espFotoBtn");if(b)b.innerHTML="✓ Foto anexada"+b.innerHTML.slice(b.innerHTML.indexOf("<input"));}
+  const d=$("espDesc");if(d&&!d.value)d.value="Produto da foto anexada";
+}
 async function boot(){
   capturaParceiro();
   try{
@@ -1328,6 +1380,22 @@ function abreAmostra(...a){
     </div>
     <div id="limBtn"></div>
     <div style="font-size:11px;color:var(--faint);margin-top:9px">Você pode continuar navegando e montando sua lista de produtos.</div>
+  </div>
+</div>
+
+<div class="fmodal" id="bfmodal" onclick="if(event.target===this)$('bfmodal').classList.remove('show')">
+  <div class="fbox" style="max-width:460px">
+    <button class="fclose" onclick="$('bfmodal').classList.remove('show')">✕</button>
+    <h3 style="font-size:17px;font-weight:800">Buscar produto por foto</h3>
+    <div style="font-size:12.5px;color:var(--soft);margin:5px 0 12px">Mande a foto do produto que você procura. Vamos procurar no nosso catálogo — e se não tivermos, nosso time busca na China pra você.</div>
+    <label id="bfDrop" style="display:block;border:1.5px dashed var(--line);border-radius:12px;padding:22px;text-align:center;font-size:13px;color:var(--soft);cursor:pointer">
+      📷 Escolher foto do produto
+      <input type="file" id="bfFile" accept="image/*" style="display:none" onchange="bfEscolheu(this)"/>
+    </label>
+    <img id="bfPrev" style="display:none;width:100%;max-height:200px;object-fit:contain;border-radius:11px;margin-top:9px"/>
+    <div id="bfStatus" style="font-size:12.5px;color:var(--soft);margin-top:9px"></div>
+    <div id="bfRes" style="margin-top:9px"></div>
+    <button class="btn p full" id="bfBtn" style="margin-top:10px;display:none" onclick="bfBuscar()">Procurar no catálogo</button>
   </div>
 </div>
 </body></html>
