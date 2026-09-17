@@ -833,7 +833,15 @@ function toastLead(msg){
   t.textContent=msg;t.style.display="block";
   clearTimeout(window._tl);window._tl=setTimeout(()=>{t.style.display="none";},2600);
 }
+let _enviando=false;
+function travaBotao(on){
+  document.querySelectorAll('[onclick*="enviarCotacao"]').forEach(b=>{
+    if(on){b.dataset.txt=b.textContent;b.textContent="Enviando…";b.style.opacity=".6";b.style.pointerEvents="none";}
+    else{if(b.dataset.txt)b.textContent=b.dataset.txt;b.style.opacity="";b.style.pointerEvents="";}
+  });
+}
 async function enviarCotacao(pos){
+  if(_enviando)return;
   if(!CART.length){alert("Adicione produtos antes de enviar.");return;}
   const unTot=CART.reduce((s,c)=>s+c.qtd,0);
   if(unTot<MINQ.un_pedido){
@@ -865,6 +873,8 @@ Quer cotar mais produtos? Fale com a gente pelo WhatsApp que liberamos na hora.`
     const _m3=(typeof volCart==="function"?volCart():0)/1000;
     if(_m3>0&&_m3<(MINQ.m3||0.5)&&!confirm(`Seu pedido ocupa ${_m3.toFixed(2)} m³ e o mínimo é ${MINQ.m3||0.5} m³ (o frete do metro cúbico é cobrado cheio).\n\nQuer enviar mesmo assim? Nosso time avalia e te orienta a completar o metro cúbico.`))return;
   }catch(e){}
+  _enviando=true;travaBotao(true);
+  try{
   const tot=CART.reduce((s,c)=>s+(c.fabu||c.brl)*c.qtd,0);
   if(!USER){
     
@@ -877,7 +887,11 @@ Quer cotar mais produtos? Fale com a gente pelo WhatsApp que liberamos na hora.`
     {
     try{
       const {data:num,error:eL}=await sb.rpc("cotacao_lead",{p_nome:window._ldNome,p_whats:window._ldWhats,p_quiz:window._ldQuiz||{},p_obs:$("obsAluno").value.trim()||"",p_total:tot,p_itens:CART.map(c=>({offer_id:c.offer_id,nome:c.nome,img:c.img,qtd:c.qtd,moq:c.moq,brl:(c.fabu||c.brl)}))});
-      if(eL){alert("Não consegui enviar sua cotação 😕\n\n"+eL.message+"\n\nTenta de novo — se persistir, chama a gente no WhatsApp!");return;}
+      if(eL){
+        const msg=String(eL.message||"");
+        if(msg.includes("LIMITE")){alert("Você já enviou sua cotação! 🎉\n\nNosso time está trabalhando nela e responde no seu WhatsApp.\n\nQuer cotar mais produtos? É só falar com a gente que liberamos na hora.");}
+        else{alert("Não consegui enviar sua cotação 😕\n\n"+msg+"\n\nTenta de novo — se persistir, chama a gente no WhatsApp!");}
+        return;}
       localStorage.setItem("ev_lead_ok","1");
       CART=[];updCart();$("obsAluno").value="";
       alert("Cotação "+(num||"")+" enviada! 🎉\n\nNosso time vai entrar em contato pelo seu WhatsApp com o preço final da sua importação e todos os detalhes pra importar com nosso apoio e segurança.");
@@ -900,6 +914,7 @@ Quer cotar mais produtos? Fale com a gente pelo WhatsApp que liberamos na hora.`
   CART=[];updCart();$("obsAluno").value="";
   alert("Cotação "+cot.numero+" enviada! Nosso time responde em breve.");
   irMinhas();
+  }finally{_enviando=false;travaBotao(false);}
 }
 // ---------- MINHAS ----------
 function _un(c,i){
