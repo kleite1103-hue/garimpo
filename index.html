@@ -840,6 +840,18 @@ function travaBotao(on){
     else{if(b.dataset.txt)b.textContent=b.dataset.txt;b.style.opacity="";b.style.pointerEvents="";}
   });
 }
+
+async function mostraLimite(){
+  let zap="";
+  try{const {data}=await sb.from("config").select("valor").eq("chave","contato").single();zap=String((data&&data.valor&&data.valor.whatsapp)||"").replace(/\D/g,"");}catch(e){}
+  const el=document.getElementById("limBtn");
+  if(el){
+    el.innerHTML=zap
+      ? `<a class="btn p full" style="display:block;text-align:center;text-decoration:none" target="_blank" href="https://wa.me/55${zap}?text=${encodeURIComponent("Oi! Já enviei uma cotação pelo site e quero cotar mais produtos.")}">Falar com nosso time no WhatsApp</a>`
+      : `<div style="background:#F1F7F3;border:1px solid #CDE6D9;border-radius:10px;padding:10px;font-size:12.5px">Nosso time entra em contato pelo WhatsApp que você cadastrou.</div>`;
+  }
+  document.getElementById("limmodal").classList.add("show");
+}
 async function enviarCotacao(pos){
   if(_enviando)return;
   if(!CART.length){alert("Adicione produtos antes de enviar.");return;}
@@ -889,7 +901,7 @@ Quer cotar mais produtos? Fale com a gente pelo WhatsApp que liberamos na hora.`
       const {data:num,error:eL}=await sb.rpc("cotacao_lead",{p_nome:window._ldNome,p_whats:window._ldWhats,p_quiz:window._ldQuiz||{},p_obs:$("obsAluno").value.trim()||"",p_total:tot,p_itens:CART.map(c=>({offer_id:c.offer_id,nome:c.nome,img:c.img,qtd:c.qtd,moq:c.moq,brl:(c.fabu||c.brl)}))});
       if(eL){
         const msg=String(eL.message||"");
-        if(msg.includes("LIMITE")){alert("Você já enviou sua cotação! 🎉\n\nNosso time está trabalhando nela e responde no seu WhatsApp.\n\nQuer cotar mais produtos? É só falar com a gente que liberamos na hora.");}
+        if(msg.includes("LIMITE")){mostraLimite();}
         else{alert("Não consegui enviar sua cotação 😕\n\n"+msg+"\n\nTenta de novo — se persistir, chama a gente no WhatsApp!");}
         return;}
       localStorage.setItem("ev_lead_ok","1");
@@ -1263,4 +1275,18 @@ function abreAmostra(...a){
 </div>
 <div id="catMask" onclick="toggleCats()"></div>
 <div id="cartMask" onclick="fechaCarrinho()"></div>
+
+<div class="fmodal" id="limmodal" onclick="if(event.target===this)$('limmodal').classList.remove('show')">
+  <div class="fbox" style="max-width:420px;text-align:center">
+    <button class="fclose" onclick="$('limmodal').classList.remove('show')">✕</button>
+    <div style="font-size:34px;margin-bottom:4px">📋</div>
+    <h3 style="font-size:17px;font-weight:800">Sua cotação já está com nosso time</h3>
+    <div style="font-size:12.8px;color:var(--soft);line-height:1.6;margin:8px 0 14px">
+      Estamos negociando com a fábrica e você recebe o valor final da importação no seu WhatsApp.<br><br>
+      <b>Quer cotar outros produtos agora?</b> Nosso time monta uma <b>cotação personalizada</b> — com pesquisa em até 5 fábricas, fotos e vídeos reais do produto. Fala com a gente que explicamos como funciona.
+    </div>
+    <div id="limBtn"></div>
+    <div style="font-size:11px;color:var(--faint);margin-top:9px">Você pode continuar navegando e montando sua lista de produtos.</div>
+  </div>
+</div>
 </body></html>
