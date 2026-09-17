@@ -813,13 +813,41 @@ async function loadSol(){
   const L=data||[];
   const novas=L.filter(x=>x.status==="nova").length;
   $("bdSol").textContent=novas;$("bdSol").classList.toggle("hidden",!novas);
-  $("solList").innerHTML=L.length?L.map(x=>`<div class="fitem">
-    <img src="${x.foto_url||''}"/>
-    <div class="fi"><div class="fn">${new Date(x.criado_em).toLocaleString('pt-BR')} · <span class="mono" style="font-size:10px">${(x.user_id||'').slice(0,8)}</span></div>
-    <div class="fm">${x.obs||'(sem observação)'} · <b>${x.status}</b></div></div>
-    ${x.status!=='respondida'?`<button class="btn sm p" onclick="pesquisarSol(${x.id},'${x.foto_url}')">🔍 Garimpar essa foto</button>`:`<span class="st respondida">Respondida ✓</span>`}
-  </div>`).join(""):`<div class="panel"><div class="loading">Nenhuma solicitação ainda.</div></div>`;
+  // identifica quem pediu
+  const ids=[...new Set(L.map(x=>x.user_id).filter(Boolean))];
+  let PF={};
+  if(ids.length){
+    const {data:ps}=await sb.from("perfis").select("id,nome,whatsapp,papel").in("id",ids);
+    (ps||[]).forEach(p=>PF[p.id]=p);
+  }
+  $("solList").innerHTML=L.length?L.map(x=>{
+    const p=PF[x.user_id]||{};
+    const zap=String(p.whatsapp||"").replace(/\D/g,"");
+    const quem=p.nome||"(sem cadastro)";
+    const dias=Math.floor((Date.now()-new Date(x.criado_em))/86400000);
+    return `<div class="panel" style="padding:12px 14px;margin-bottom:9px;${x.status==='nova'&&dias>=2?'border-color:#F0C0C2':''}">
+      <div style="display:flex;gap:11px;align-items:flex-start">
+        <img src="${x.foto_url||''}" style="width:78px;height:78px;border-radius:9px;object-fit:cover;border:1px solid var(--line);cursor:pointer" onclick="window.open('${x.foto_url}','_blank')"/>
+        <div style="flex:1;min-width:0">
+          <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap">
+            <b style="font-size:13.5px">${quem}</b>
+            ${p.papel&&p.papel!=="aluno"?`<span class="badge">${p.papel}</span>`:""}
+            <span class="st ${x.status}">${x.status}</span>
+            ${x.status==='nova'&&dias>=2?`<span class="badge" style="background:#FDECEC;color:#B21C22">${dias} dias parada</span>`:""}
+          </div>
+          <div style="font-size:11.5px;color:var(--soft);margin-top:3px">
+            ${zap?`<a href="https://wa.me/55${zap}" target="_blank" style="color:var(--green,#1F6B4A);font-weight:600">WhatsApp ${p.whatsapp}</a> · `:'<span style="color:#B21C22">sem WhatsApp no cadastro</span> · '}
+            ${new Date(x.criado_em).toLocaleString('pt-BR')}
+          </div>
+          <div style="font-size:12px;margin-top:5px">${x.obs||'<span style="color:var(--faint)">(sem observação)</span>'}</div>
+        </div>
+        <div style="text-align:right">
+          ${x.status!=='respondida'?`<button class="btn sm p" onclick="pesquisarSol(${x.id},'${x.foto_url}')">Garimpar essa foto</button>`:`<span class="st respondida">Respondida</span>`}
+        </div>
+      </div></div>`;
+  }).join(""):`<div class="panel"><div class="loading">Nenhuma solicitação ainda.</div></div>`;
 }
+
 async function pesquisarSol(id,url){
   window._solId=id;
   await sb.from("solicitacoes_foto").update({status:"pesquisando"}).eq("id",id);
