@@ -414,7 +414,7 @@ function renderCots(){
           <div style="font-size:14px;font-weight:700;margin-top:5px">${c.lead_nome||"(aluno logado)"}</div>
           <div style="font-size:11.5px;color:var(--soft);margin-top:2px">
             ${zap?`<a href="https://wa.me/55${zap}" target="_blank" onclick="event.stopPropagation()" style="color:var(--green,#1F6B4A);font-weight:600">WhatsApp ${c.lead_whatsapp}</a> · `:""}
-            ${q.faturamento?`fatura ${q.faturamento} · `:""}${q.canal&&q.canal!=="—"?`${q.canal} · `:""}${q.importa&&q.importa!=="—"?`${q.importa} · `:""}${q.regime&&q.regime!=="—"?q.regime:""}
+            ${q.origem?`<b>veio de ${q.origem}</b> · `:""}${q.faturamento?`fatura ${q.faturamento} · `:""}${q.canal&&q.canal!=="—"?`${q.canal} · `:""}${q.importa&&q.importa!=="—"?`${q.importa} · `:""}${q.regime&&q.regime!=="—"?q.regime:""}
           </div>
           <div style="display:flex;gap:5px;margin-top:8px;align-items:center;flex-wrap:wrap">
             ${its.slice(0,4).map(i=>`<img src="${i.img}" style="width:34px;height:34px;border-radius:6px;object-fit:cover;border:1px solid var(--line)"/>`).join("")}
@@ -479,7 +479,7 @@ async function abreCot(id){
   const marg=Number((CFGS.margem_time||{}).pct||35);
   $("cotDetIn").innerHTML=`<div class="detail">
     <div class="panel">
-      <div class="ph2">Detalhe ${c.numero}${c.lead_nome?` <span class="leadinfo" style="font-size:12px;font-weight:600">👤 ${c.lead_nome} · 📱 <a href="https://wa.me/55${(c.lead_whatsapp||'').replace(/\D/g,'')}" target="_blank" style="color:var(--green)">${c.lead_whatsapp}</a>${c.lead_quiz?`${c.lead_quiz.cliente?' · ⭐ '+c.lead_quiz.cliente:''} · 💰 ${c.lead_quiz.faturamento} · 🛒 ${c.lead_quiz.canal} · ✈️ ${c.lead_quiz.importa} · 🏛 ${c.lead_quiz.regime}`:(c.lead_loja?' · '+c.lead_loja:'')}</span>`:''}<span style="margin-left:auto;font-weight:400;font-size:11px;color:var(--faint)">${new Date(c.criado_em).toLocaleString('pt-BR')}</span></div>
+      <div class="ph2">Detalhe ${c.numero}${c.lead_nome?` <span class="leadinfo" style="font-size:12px;font-weight:600">👤 ${c.lead_nome} · 📱 <a href="https://wa.me/55${(c.lead_whatsapp||'').replace(/\D/g,'')}" target="_blank" style="color:var(--green)">${c.lead_whatsapp}</a>${c.lead_quiz?`${c.lead_quiz.origem?' · 📍 '+c.lead_quiz.origem:''}${c.lead_quiz.cliente?' · ⭐ '+c.lead_quiz.cliente:''} · 💰 ${c.lead_quiz.faturamento} · 🛒 ${c.lead_quiz.canal} · ✈️ ${c.lead_quiz.importa} · 🏛 ${c.lead_quiz.regime}`:(c.lead_loja?' · '+c.lead_loja:'')}</span>`:''}<span style="margin-left:auto;font-weight:400;font-size:11px;color:var(--faint)">${new Date(c.criado_em).toLocaleString('pt-BR')}</span></div>
       <div class="solic">
         <div class="f2"><div class="k">Solicitante</div><div class="v">${perfil.nome||'—'}</div></div>
         <div class="f2"><div class="k">WhatsApp</div><div class="v">${perfil.whatsapp||'—'}</div></div>
