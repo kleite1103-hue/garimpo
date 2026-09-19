@@ -588,7 +588,8 @@ function abreEspecialComFoto(){
 async function boot(){
   capturaParceiro();
   try{
-    const p=parceiroAtual();
+    const veioAgora=new URLSearchParams(location.search).get("p")||new URLSearchParams(location.search).get("parceiro");
+    const p=veioAgora?parceiroAtual():"";
     if(p){
       const d=document.createElement("div");
       d.style.cssText="background:#F1F7F3;border-bottom:1px solid #CDE6D9;color:#1F6B4A;font-size:12px;padding:7px 14px;text-align:center";
