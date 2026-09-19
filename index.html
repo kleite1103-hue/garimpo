@@ -943,6 +943,13 @@ async function enviarCotacao(pos){
     // todo pedido precisa de nome e WhatsApp — inclusive de quem está logado
     let pf=null;
     try{const r=await sb.from("perfis").select("nome,whatsapp").eq("id",USER.id).single();pf=r.data;}catch(e){}
+    // se a pessoa digitou no formulário agora, vale o que ela digitou
+    const _nomeForm=($("liNome")&&$("liNome").value||"").trim();
+    const _zapForm=($("liWhats")&&$("liWhats").value||"").replace(/\D/g,"");
+    if(_nomeForm.length>=5&&_zapForm.length>=10){
+      try{await sb.from("perfis").update({nome:_nomeForm,whatsapp:_zapForm}).eq("id",USER.id);}catch(e){}
+      pf={nome:_nomeForm,whatsapp:_zapForm};
+    }
     if(!pf||!pf.nome||String(pf.nome).trim().length<5||!pf.whatsapp||String(pf.whatsapp).replace(/\D/g,"").length<10){
       const li=document.getElementById("leadInline");
       if(li){li.classList.remove("hidden");
