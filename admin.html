@@ -1234,7 +1234,8 @@ async function abreProposta(){
       const alt=(ALT[it.id]||[])[i-1];
       const altFab=alt?fabAdm2(alt):null;
       const vNome=f.nome||(i===0?autoA:(alt?`${alt.forn_nome}${alt.forn_anos?" · "+alt.forn_anos+" anos":""}`:""));
-      const vPreco=f.preco||(i===0?sug:(altFab?(altFab*fator).toFixed(2):""));
+      // preço é SEMPRE recalculado com a configuração atual (nunca reaproveita valor salvo antigo)
+      const vPreco=(i===0?sug:(altFab?(altFab*fator).toFixed(2):(f.preco||"")));
       const vMoq=f.moq||(i===0?(it.moq||p.moq||1):(alt?(alt.moq||1):""));
       const vPz=f.prazo||((i===0||alt)?prazoPad:"");
       return `<div class="pprow" style="display:grid;grid-template-columns:1.3fr .7fr .5fr .9fr;gap:5px;margin-top:4px">
