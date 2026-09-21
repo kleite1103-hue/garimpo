@@ -390,11 +390,11 @@ function renderGeral(){
   $("kVal").textContent="R$ "+brl(val);
   $("kPend").textContent=COTS.filter(c=>["nova","em_cotacao"].includes(c.status)).length;
   const cnt={},usr={};
-  COTS.forEach(c=>{(c.cotacao_itens||[]).forEach(i=>cnt[i.nome]=(cnt[i.nome]||0)+1);usr[c.user_id]=(usr[c.user_id]||0)+1;});
+  COTS.forEach(c=>{(c.cotacao_itens||[]).forEach(i=>cnt[i.nome]=(cnt[i.nome]||0)+1);const _k=(c.lead_nome||'').split(' · ')[0]||(c.lead_whatsapp||'')||'sem nome';usr[_k]=(usr[_k]||0)+1;});
   const top=Object.entries(cnt).sort((a,b)=>b[1]-a[1]).slice(0,6);
   $("topProd").innerHTML=top.length?top.map(([n,q],i)=>`<div class="mrow"><span class="rk">${i+1}</span><span class="nm">${n}</span><span class="n2">${q}</span></div>`).join(""):`<div class="loading">Sem cotações ainda.</div>`;
   const topu=Object.entries(usr).sort((a,b)=>b[1]-a[1]).slice(0,6);
-  $("topUser").innerHTML=topu.length?topu.map(([u,q],i)=>`<div class="mrow"><span class="rk">${i+1}</span><span class="nm mono" style="font-size:11px">${u.slice(0,8)}…</span><span class="n2">${q} cotações</span></div>`).join(""):`<div class="loading">Sem cotações ainda.</div>`;
+  $("topUser").innerHTML=topu.length?topu.map(([u,q],i)=>`<div class="mrow"><span class="rk">${i+1}</span><span class="nm">${u}</span><span class="n2">${q} cotaç${q>1?"ões":"ão"}</span></div>`).join(""):`<div class="loading">Sem cotações ainda.</div>`;
 }
 // ---------- COTACOES ----------
 function cotFiltro(el){document.querySelectorAll("#cotTabs .tab").forEach(t=>t.classList.remove("on"));el.classList.add("on");curFiltro=el.dataset.f;renderCots();}
