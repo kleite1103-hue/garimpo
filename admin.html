@@ -468,7 +468,8 @@ async function abreCot(id){
         custo+=un*i.qtd;
         litros+=(Number(p.volume_l)||VOL_CAT[p.categoria]||VOL_PADRAO)*i.qtd;
       });
-      window._custoBrl=Math.round(custo*100)/100;
+      window._custoFab=Math.round(custo*100)/100;
+      if(!window._custoBrl)window._custoBrl=window._custoFab;
       window._litrosEst=litros;
       const el=document.querySelector(".calc .crow b");
       if(el&&!el.dataset.real)el.textContent="R$ "+brl(custo);
@@ -1195,8 +1196,9 @@ async function abreProposta(){
     custo+=unit*it.qtd;
     litros+=(VOL_CAT[p.categoria]||VOL_PADRAO)*it.qtd;
   });
+  custo=custo*ajusteCambio();Object.keys(base).forEach(k=>base[k].unit*=ajusteCambio());
   const m3=Math.max(litros/1000,CUB_MIN);
-  const usdm3=Number((CFGS.custo_m3||{}).usd||900), USD=window._USD||5.4;
+  const usdm3=usdFrete(), USD=window._USD||5.4;
   const frete=m3*usdm3*USD;
   const calc=totalCom(custo,frete);
   const totalGeral=(window._firme&&window._firme>=custo+frete)?window._firme:calc;
@@ -1667,7 +1669,8 @@ async function cotacaoInstantanea(){
     litros+=vu*i.qtd;
     linhas.push({nome:i.nome,qtd:i.qtd,unit,vu,fonte:real?"fábrica":"catálogo"});
   });
-  const usdm3=Number((CFGS.custo_m3||{}).usd||900), USD=window._USD||5.4;
+  custo=custo*ajusteCambio();
+  const usdm3=usdFrete(), USD=window._USD||5.4;
   const m3=Math.max(litros/1000,CUB_MIN);   // sempre no mínimo meio metro cúbico
   const frete=m3*usdm3*USD;
   const {mp:_mp,mf:_mf}=margens();const marg=1+_mp/100;
@@ -1802,10 +1805,10 @@ function escalaHTML(it,puFinal){
   try{
     const p=(window._FBprop||{})[it.offer_id]||{};
     const vu=Number(p.volume_l)||VOL_CAT[p.categoria]||VOL_PADRAO;          // litros por unidade
-    const usdm3=Number((CFGS.custo_m3||{}).usd||900), USD=window._USD||5.4;
+    const usdm3=usdFrete(), USD=window._USD||5.4;
     const fretem3=usdm3*USD;
     const {mp:_mp2,mf:_mf2}=margens();const marg=1+_mp2/100;
-    const custoUn=fabAdm2(p)||Number(it.brl_estimado_un)||0;               // preço real na fábrica
+    const custoUn=(fabAdm2(p)||Number(it.brl_estimado_un)||0)*ajusteCambio();   // preço de fábrica no câmbio de hoje
     if(!custoUn)return "";
     const porM3=Math.max(1,Math.round(1000/vu));
     const alvos=[];
@@ -1916,6 +1919,9 @@ function toast(msg){
   if(!t){t=document.createElement("div");t.id="evToast";t.style.cssText="position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:#1A1A1A;color:#fff;padding:11px 18px;border-radius:11px;font-size:13px;font-weight:600;z-index:200;opacity:0;transition:opacity .2s";document.body.appendChild(t);}
   t.textContent=msg;t.style.opacity="1";clearTimeout(t._h);t._h=setTimeout(()=>t.style.opacity="0",2600);
 }
+
+
+function ajusteCambio(){const a=Number(window._custoBrl)||0,b=Number(window._custoFab)||0;return (a>0&&b>0)?a/b:1;}
 
 boot();
 </script>
