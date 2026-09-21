@@ -485,7 +485,7 @@ async function abreCot(id){
   const totalL=(c.cotacao_itens||[]).reduce((s,i)=>s+(vols[i.offer_id]||0)*i.qtd,0);
   const custoRmb=(c.cotacao_itens||[]).reduce((s,i)=>{const o=origem[i.offer_id];return s+(o?Number(o.rmb)*i.qtd:0);},0);
   const custoBrl=custoRmb*FX;
-  const frete=Number((CFGS.frete_padrao||{}).brl_un||0.73)*(c.cotacao_itens||[]).reduce((s,i)=>s+i.qtd,0);
+  const frete=1*Number((CFGS.custo_m3||{}).usd||1200)*(window._USD||5.4);   // começa no mínimo de 1 m³
   const marg=Number((CFGS.margem_time||{}).pct||35);
   $("cotDetIn").innerHTML=`<div class="detail">
     <div class="panel">
@@ -517,7 +517,7 @@ async function abreCot(id){
         <div class="calc">
           <div class="crow"><span>Custo de origem</span><b>¥ ${custoRmb.toFixed(2)} · R$ ${brl(custoBrl)}</b></div>
           <div class="crow"><span>Custo do frete<div style="font-size:10px;color:var(--faint);font-weight:400">o que seu canal cobra nesta importação</div></span>
-            <span style="display:flex;align-items:center;gap:5px">US$ <input id="cUsdFrete" style="width:80px" oninput="recalcFrete()"/> <b id="cUsdUn" style="font-size:11px;color:var(--soft)">/m³</b></span></div>
+            <span style="display:flex;align-items:center;gap:5px">US$ <input id="cUsdFrete" style="width:80px" value="${Number((CFGS.custo_m3||{}).usd||1200)}" oninput="recalcFrete()"/> <b id="cUsdUn" style="font-size:11px;color:var(--soft)">/m³</b></span></div>
           <div class="crow"><span>Margem no produto %</span><input id="cMargProd" placeholder="25" oninput="calcFirme()"/></div>
           <div class="crow"><span>Margem no frete %</span><input id="cMargFrete" placeholder="10" oninput="calcFirme()"/></div>
           <div class="crow"><span>Modalidade</span><select id="cModal" onchange="trocaModal()" style="border:1.5px solid var(--line);border-radius:8px;padding:6px;font-size:12px">
@@ -527,7 +527,7 @@ async function abreCot(id){
           <input type="hidden" id="cVol"/>
           <div class="crow hidden" id="rowKg"><span>Peso do pedido (kg)</span><input id="cKg" placeholder="ex.: 25" oninput="calcKg()"/></div>
           <div class="crow"><span>Frete China→BR (rateio m³)</span><input id="cFrete" value="${frete.toFixed(2)}" oninput="calcFirme()"/></div>
-          <div style="font-size:10px;color:var(--faint);padding:2px 0 4px" id="cCanal">Custo do canal: US$ ${((CFGS.custo_m3||{}).usd||900)} /m³ all-in · digite os litros que o frete calcula sozinho</div>
+          <div style="font-size:10px;color:var(--faint);padding:2px 0 4px" id="cCanal">Custo do canal: US$ ${((CFGS.custo_m3||{}).usd||900)} /m³ all-in · o frete parte do mínimo de 1 m³ e se ajusta à cubagem informada</div>
           <div id="cAlerta" style="display:none;font-size:11.5px;border-radius:9px;padding:8px 10px;margin:6px 0;line-height:1.5"></div>
           <div id="cDetalhe" style="font-size:11px;color:var(--soft);margin:4px 0 2px"></div>
           <div class="cfinal"><span>Preço final da importação</span><span class="v" id="cFinal">R$ —</span></div>
@@ -559,9 +559,9 @@ async function abreCot(id){
 }
 function calcVol(){
   const L=parseFloat(($("cVol").value||"0").replace(",","."))||0;
-  const Lc=Math.max(L,1000); // piso: 1 m³ por pedido
-  const m3brl=(((CFGS.custo_m3||{}).usd)||900)*(window._USD||5.4);
-  if(L>0){$("cFrete").value=(Lc/1000*m3brl).toFixed(2);if(L<1000){(typeof toast==='function'?toast:(m=>{}))("Pedido abaixo de 1 m³ — frete calculado pelo cubo cheio");}}
+  const Lc=Math.max(L,CUB_MIN*1000); // piso: mínimo de metro cúbico
+  const m3brl=usdFrete()*(window._USD||5.4);
+  if(L>0){$("cFrete").value=(Lc/1000*m3brl).toFixed(2);if(L<1000){(typeof toast==='function'?toast:(m=>{}))("Pedido abaixo de 1 m³ — frete calculado pelo metro cúbico cheio");}}
   calcFirme();
 }
 function calcFirme(){
