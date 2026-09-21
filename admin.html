@@ -1339,7 +1339,7 @@ function gerarPDF(){
         </div></div>
       <table><tr><th></th><th>Fornecedor</th><th>Valor final no Brasil (un)</th><th>Mínimo</th><th>Produção</th></tr>${rows}</table>
       ${escalaHTML(it,puA)}
-      :""}
+      ${fotos.length?`<div class="midias">${fotos.slice(0,4).map(u=>`<img src="${u}"/>`).join("")}</div>`:""}
       ${vids.length?`<div class="vids">${vids.map(u=>`<a class="vbtn" href="${u}">▶ &nbsp;ASSISTIR AO VÍDEO REAL DO PRODUTO</a><div class="vurl">${u}</div>`).join("")}</div>`:""}
     </section>`;
   }).join("");
