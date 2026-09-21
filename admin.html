@@ -162,7 +162,7 @@ tr.click{cursor:pointer}tr.click:hover{background:#FAFAFB}
   <div class="logo"><span class="ev">Efeito Vendas</span><span class="g">na <i>China</i></span></div>
   <span class="adm">PAINEL DO TIME</span>
   <a href="index.html" style="text-decoration:none;font-size:12px;font-weight:700;color:var(--orange);border:1.5px solid var(--orange);border-radius:9px;padding:7px 12px">← Loja</a>
-  <div class="uchip"><span class="uav" id="uAv">?</span><span id="uNome"></span><span class="sair" onclick="sair()">sair</span></div>
+  <div class="uchip"><span class="uav" id="uAv">?</span><span id="uNome"></span><span class="sair" onclick="abreSenha()" style="margin-right:8px">trocar senha</span><span class="sair" onclick="sair()">sair</span></div>
 </div></div>
 <div class="layout">
   <aside class="aside">
@@ -199,6 +199,14 @@ tr.click{cursor:pointer}tr.click:hover{background:#FAFAFB}
     <!-- COTACOES -->
     <div id="vCot" class="hidden">
       <div class="ahead"><h2>Cotações</h2><button class="btn sm p" style="margin-left:10px" onclick="abreNovaCot()">+ Nova cotação (time)</button><span class="tabs" style="margin-left:12px">
+        <select id="cotFat" onchange="renderCots()" style="border:1.5px solid var(--line);border-radius:9px;padding:8px 10px;font-size:12.5px;margin-right:8px;background:#fff">
+          <option value="">Todo faturamento</option>
+          <option>Ainda não vendo</option>
+          <option>Até R$ 10 mil</option>
+          <option>R$ 10 a 50 mil</option>
+          <option>R$ 50 a 200 mil</option>
+          <option>Acima de R$ 200 mil</option>
+        </select>
         <input id="cotBusca" placeholder="buscar por nome, WhatsApp, número ou produto…" oninput="renderCots()" style="border:1.5px solid var(--line);border-radius:9px;padding:8px 11px;font-size:12.5px;min-width:260px;margin-right:8px"/>
         <span class="tab on" onclick="evFiltro='todas';marcaFiltro(this);renderCots()">Todas</span>
         <span class="tab" onclick="evFiltro='cliente';marcaFiltro(this);renderCots()">⭐ Clientes EV</span>
@@ -1436,7 +1444,16 @@ function gerarPDF(){
 
     <div class="foot">Fazemos tudo com você — do pedido na fábrica à chegada no Brasil, com o apoio e a segurança da Efeito Vendas na China.<br>
     efeitovendasnachina.com.br${q.faturamento?` · Proposta personalizada para o perfil informado (${q.faturamento})`:""}</div>
-  </body></html>`);
+  
+<div id="senhaMask" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:90" onclick="fechaSenha()"></div>
+<div id="senhaBox" style="display:none;position:fixed;z-index:91;left:50%;top:50%;transform:translate(-50%,-50%);width:min(380px,92vw);background:#fff;border-radius:16px;padding:20px;box-shadow:0 24px 60px rgba(0,0,0,.3)">
+  <h3 style="font-size:16px;font-weight:800;margin-bottom:4px">Trocar minha senha</h3>
+  <div style="font-size:12px;color:var(--soft);margin-bottom:12px">Use pelo menos 8 caracteres, misturando letras e números.</div>
+  <input id="senhaNova" type="password" placeholder="Nova senha" style="width:100%;border:1.5px solid var(--line);border-radius:10px;padding:11px;font-size:13px;margin-bottom:8px"/>
+  <input id="senhaConf" type="password" placeholder="Repita a nova senha" style="width:100%;border:1.5px solid var(--line);border-radius:10px;padding:11px;font-size:13px;margin-bottom:12px"/>
+  <div style="display:flex;gap:8px"><button class="btn p" style="flex:1" onclick="salvaSenha()">Salvar nova senha</button><button class="btn ghost" onclick="fechaSenha()">cancelar</button></div>
+</div>
+</body></html>`);
   w.document.close();
   setTimeout(()=>{try{w.focus();w.print();}catch(e){}},900);
 }
@@ -1464,6 +1481,8 @@ async function ppPuxa(itemId,i){
 let evFiltro="todas";
 function marcaFiltro(el){el.parentElement.querySelectorAll(".tab").forEach(t=>t.classList.remove("on"));el.classList.add("on");}
 function passaFiltro(c){
+  const _fat=(document.getElementById("cotFat")||{}).value||"";
+  if(_fat&&String((c.lead_quiz||{}).faturamento||"")!==_fat)return false;
   const ev=c.lead_quiz&&c.lead_quiz.cliente&&c.lead_quiz.cliente!=="Ainda não";
   if(evFiltro==="cliente")return ev;
   if(evFiltro==="lead")return !!c.lead_nome&&!ev;
@@ -1876,6 +1895,19 @@ function margens(){
   return {mp,mf};
 }
 function totalCom(custo,frete){const{mp,mf}=margens();return custo*(1+mp/100)+frete*(1+mf/100);}
+
+
+function abreSenha(){document.getElementById("senhaMask").style.display="block";document.getElementById("senhaBox").style.display="block";document.getElementById("senhaNova").value="";document.getElementById("senhaConf").value="";setTimeout(()=>document.getElementById("senhaNova").focus(),50);}
+function fechaSenha(){document.getElementById("senhaMask").style.display="none";document.getElementById("senhaBox").style.display="none";}
+async function salvaSenha(){
+  const a=document.getElementById("senhaNova").value, b=document.getElementById("senhaConf").value;
+  if(a.length<8){alert("A senha precisa ter pelo menos 8 caracteres.");return;}
+  if(!/[a-zA-Z]/.test(a)||!/[0-9]/.test(a)){alert("Misture letras e números na senha.");return;}
+  if(a!==b){alert("As duas senhas não são iguais.");return;}
+  const {error}=await sb.auth.updateUser({password:a});
+  if(error){alert("Não consegui trocar: "+error.message);return;}
+  fechaSenha();alert("Senha trocada com sucesso ✓");
+}
 
 boot();
 </script>
