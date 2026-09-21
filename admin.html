@@ -561,7 +561,7 @@ function calcVol(){
   const L=parseFloat(($("cVol").value||"0").replace(",","."))||0;
   const Lc=Math.max(L,1000); // piso: 1 m³ por pedido
   const m3brl=(((CFGS.custo_m3||{}).usd)||900)*(window._USD||5.4);
-  if(L>0){$("cFrete").value=(Lc/1000*m3brl).toFixed(2);if(L<1000){toast&&toast("Pedido abaixo de 1 m³ — frete calculado pelo cubo cheio");}}
+  if(L>0){$("cFrete").value=(Lc/1000*m3brl).toFixed(2);if(L<1000){(typeof toast==='function'?toast:(m=>{}))("Pedido abaixo de 1 m³ — frete calculado pelo cubo cheio");}}
   calcFirme();
 }
 function calcFirme(){
@@ -983,7 +983,7 @@ async function cpParseItem(ix){
     const CP=(selCot.copiloto&&typeof selCot.copiloto==="object")?selCot.copiloto:{};
     CP[it.id]={raw:txt,parsed:p,quando:new Date().toISOString()};
     selCot.copiloto=CP;
-    sb.from("cotacoes").update({copiloto:CP}).eq("id",selCot.id).then(({error})=>{if(!error)toast&&toast("Resposta salva ✓ — pode fechar e retomar quando quiser");});
+    sb.from("cotacoes").update({copiloto:CP}).eq("id",selCot.id).then(({error})=>{if(!error)(typeof toast==='function'?toast:(m=>{}))("Resposta salva ✓ — pode fechar e retomar quando quiser");});
   }catch(e){}
   const vs=p.variacoes||[];
   $("cpOk"+ix).innerHTML=vs.length>1?`✓ ${vs.length} variações: `+vs.map(v=>`${v.nome} ¥${v.preco_unit_rmb}${v.un_por_caixa?` (${v.un_por_caixa}/cx)`:''}`).join(" · ")+` · ${p.prazo_dias||"?"}d`
@@ -1147,7 +1147,7 @@ function usarRespostas(){
   if(el)el.innerHTML=`¥ ${rmb.toFixed(2)} · R$ ${brl(window._custoBrl)} <span class="badge" style="background:#F1F7F3;color:var(--green)">da fábrica ✓</span>`;
   if(litros>0){$("cVolM3").value=(litros/1000).toFixed(3);$("cVol").value=(Math.max(litros/1000,CUB_MIN)*1000).toFixed(1);calcVol();}else{calcFirme();}
   if(prazo)$("cPrazo").value=`${prazo}d produção + 30–40d logística`;
-  toast&&toast(`Preço real de ${itensOk} item(ns) aplicado — confere a margem e responde.`);
+  (typeof toast==='function'?toast:(m=>{}))(`Preço real de ${itensOk} item(ns) aplicado — confere a margem e responde.`);
 }
 function msgCliente(){
   const c=selCot;if(!c)return;
@@ -1291,7 +1291,7 @@ async function salvaProposta(){
   });
   const {error}=await sb.from("cotacoes").update({proposta:P}).eq("id",c.id);
   if(error){alert("Salvar falhou: "+error.message+"\n(rodou o SQL da proposta?)");return;}
-  selCot.proposta=P;toast&&toast("Proposta salva ✓");
+  selCot.proposta=P;(typeof toast==='function'?toast:(m=>{}))("Proposta salva ✓");
 }
 function gerarPDF(){
   const c=selCot;if(!c)return;
@@ -1473,7 +1473,7 @@ async function ppPuxa(itemId,i){
     const f=j.ficha;
     campo.value=`${f.empresa_pt||f.empresa||"Fornecedor"}${f.anos?" · "+f.anos+" anos":""}${f.fabrica?" · fábrica":""}`;
     if(f.preco&&!$(`pp_p${itemId}_${i}`).value)$(`pp_p${itemId}_${i}`).placeholder="¥"+f.preco+" na origem";
-    toast&&toast(j.veredito==="aprovado"?"Fornecedor investigado: aprovado ✓":"Investigado — confere a análise: "+(j.analise||""));
+    (typeof toast==='function'?toast:(m=>{}))(j.veredito==="aprovado"?"Fornecedor investigado: aprovado ✓":"Investigado — confere a análise: "+(j.analise||""));
   }catch(e){campo.value="";alert("Investigação falhou.");}
 }
 
@@ -1549,7 +1549,7 @@ async function cpPrint(ix,inp){
     $("cpOk"+ix).innerHTML=(vs.length>1?`✓ print lido · ${vs.length} variações`:`✓ print lido · ¥${p.preco_unit_rmb||"?"}/un · ${p.prazo_dias||"?"}d`)+(p.resumo?` — ${p.resumo.slice(0,80)}`:"");
     try{pintaChecklist(ix);}catch(e){}
   cpResumo&&cpResumo();
-    toast&&toast("Print lido e salvo ✓");
+    (typeof toast==='function'?toast:(m=>{}))("Print lido e salvo ✓");
   }catch(e){$("cpOk"+ix).textContent="erro no print";}
 }
 
@@ -1587,7 +1587,7 @@ function calcKg(){
   const cob=Math.max(kg,min);
   if(kg>0){
     $("cFrete").value=(cob*usdkg*(window._USD||5.4)).toFixed(2);
-    if(kg<min)toast&&toast(`Abaixo do mínimo de ${min}kg — cobrando ${min}kg`);
+    if(kg<min)(typeof toast==='function'?toast:(m=>{}))(`Abaixo do mínimo de ${min}kg — cobrando ${min}kg`);
   }
   calcFirme();
 }
@@ -1692,12 +1692,12 @@ async function cotacaoInstantanea(){
   document.getElementById("ciBox")?.remove();
   const d=document.createElement("div");d.id="ciBox";d.innerHTML=box;
   alvo.parentNode.insertBefore(d,alvo);
-  toast&&toast("Pré-cotação pronta");
+  (typeof toast==='function'?toast:(m=>{}))("Pré-cotação pronta");
 }
 function aplicaInstantanea(total){
   window._firme=total;
   const e=$("cFinal");if(e)e.textContent="R$ "+brl(total);
-  toast&&toast("Valor aplicado — confira e responda ao cliente");
+  (typeof toast==='function'?toast:(m=>{}))("Valor aplicado — confira e responda ao cliente");
 }
 
 
@@ -1708,7 +1708,7 @@ function cubaM3(){
   $("cVol").value=(cob*1000).toFixed(1);
   const usdm3=usdFrete(), USD=window._USD||5.4;
   $("cFrete").value=(cob*usdm3*USD).toFixed(2);
-  if(m3>0&&m3<CUB_MIN){toast&&toast(`Pedido de ${m3.toFixed(3)} m³ — cobrando o mínimo de ${CUB_MIN} m³`);}
+  if(m3>0&&m3<CUB_MIN){(typeof toast==='function'?toast:(m=>{}))(`Pedido de ${m3.toFixed(3)} m³ — cobrando o mínimo de ${CUB_MIN} m³`);}
   try{calcFirme();}catch(e){}
 }
 
@@ -1781,7 +1781,7 @@ async function subirMidia(itemId,tipo,inp){
   if(!urls.length){alert("Não consegui enviar. Tenta de novo ou cole o link.");return;}
   ta.value=(ta.value?ta.value+"\n":"")+urls.join("\n");
   if(prev)prev.innerHTML=ta.value.split("\n").filter(Boolean).slice(0,6).map(u=>`<img src="${u}" style="width:48px;height:48px;object-fit:cover;border-radius:6px;border:1px solid var(--line)"/>`).join("");
-  toast&&toast(`${urls.length} arquivo(s) enviado(s)`);
+  (typeof toast==='function'?toast:(m=>{}))(`${urls.length} arquivo(s) enviado(s)`);
 }
 
 
@@ -1792,7 +1792,7 @@ async function curLote(ok){
   for(let i=0;i<ids.length;i+=80){
     await sb.from("catalogo").update({visivel:ok,curadoria:ok?"karina_aprovou":"karina_vetou"}).in("offer_id",ids.slice(i,i+80));
   }
-  toast&&toast(`${ids.length} produtos atualizados`);
+  (typeof toast==='function'?toast:(m=>{}))(`${ids.length} produtos atualizados`);
   loadCur();
 }
 
@@ -1907,6 +1907,13 @@ async function salvaSenha(){
   const {error}=await sb.auth.updateUser({password:a});
   if(error){alert("Não consegui trocar: "+error.message);return;}
   fechaSenha();alert("Senha trocada com sucesso ✓");
+}
+
+
+function toast(msg){
+  let t=document.getElementById("evToast");
+  if(!t){t=document.createElement("div");t.id="evToast";t.style.cssText="position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:#1A1A1A;color:#fff;padding:11px 18px;border-radius:11px;font-size:13px;font-weight:600;z-index:200;opacity:0;transition:opacity .2s";document.body.appendChild(t);}
+  t.textContent=msg;t.style.opacity="1";clearTimeout(t._h);t._h=setTimeout(()=>t.style.opacity="0",2600);
 }
 
 boot();
