@@ -1003,7 +1003,7 @@ Quer cotar mais produtos? Fale com a gente pelo WhatsApp que liberamos na hora.`
     const r=await sb.from("cotacoes").insert({user_id:USER.id,total_estimado:tot,
       lead_nome:window._pfNome||null,lead_whatsapp:window._pfWhats||null,
       obs_aluno:($("obsAluno")?$("obsAluno").value.trim():"")||null}).select().single();
-    if(r.error){alert("Não foi possível enviar: "+r.error.message);return;}
+    if(r.error){if(String(r.error.message||"").includes("LIMITE")){mostraLimite();return;}alert("Não foi possível enviar: "+r.error.message);return;}
     cot=r.data;
   }catch(e){alert("Não foi possível enviar: "+(e.message||e));return;}
   const itens=CART.map(c=>({cotacao_id:cot.id,offer_id:c.offer_id,nome:c.nome,img:c.img,qtd:c.qtd,moq:c.moq,brl_estimado_un:(c.fabu||c.brl)}));
