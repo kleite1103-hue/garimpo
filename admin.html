@@ -484,8 +484,14 @@ async function abreCot(id){
   let vols={};
   if(oids.length){const {data:vv}=await sb.from("catalogo").select("offer_id,volume_l").in("offer_id",oids);(vv||[]).forEach(v=>vols[v.offer_id]=Number(v.volume_l)||0);}
   const totalL=(c.cotacao_itens||[]).reduce((s,i)=>s+(vols[i.offer_id]||0)*i.qtd,0);
-  const custoRmb=(c.cotacao_itens||[]).reduce((s,i)=>{const o=origem[i.offer_id];return s+(o?Number(o.rmb)*i.qtd:0);},0);
+  const custoRmb=(c.cotacao_itens||[]).reduce((s,i)=>{
+    const o=origem[i.offer_id];
+    if(o&&Number(o.rmb))return s+Number(o.rmb)*i.qtd;
+    const f=Number(i.brl_estimado_un)||0;          // sem origem: usa o preço de fábrica do item
+    return s+(f/FX)*i.qtd;
+  },0);
   const custoBrl=custoRmb*FX;
+  const _itensSemOrigem=(c.cotacao_itens||[]).filter(i=>!origem[i.offer_id]).length;
   const frete=1*Number((CFGS.custo_m3||{}).usd||1200)*(window._USD||5.4);   // começa no mínimo de 1 m³
   const marg=Number((CFGS.margem_time||{}).pct||35);
   $("cotDetIn").innerHTML=`<div class="detail">
@@ -502,13 +508,13 @@ async function abreCot(id){
         return `<div class="ditem"><img src="${i.img||''}"/><div style="flex:1;min-width:0">
           <div class="nm">${i.nome}</div>
           <div class="meta">Qtd <b>${i.qtd}</b> · MOQ ${i.moq} · estimado R$ ${brl(i.brl_estimado_un)}/un${o.rmb?` · origem ×${o.rmb}`:''}</div>
-          ${o.rmb?`<div class="supfull"><div class="sl">🔒 Fornecedor · só o time vê</div>
+          ${`<div class="supfull"><div class="sl">🔒 Fornecedor · só o time vê</div>
             <div class="sfrow"><span>Empresa</span><span>${f.empresa_pt||f.empresa||'—'}</span></div>
             <div class="sfrow"><span>Plataforma</span><span>${f.anos||'?'} anos · ${f.vendas_total||'?'} vendas${f.eh_fabrica?' · Fábrica':''}</span></div>
             <div class="sfrow"><span>Loja de origem</span><span>${f.url_loja?`<a href="${f.url_loja}" target="_blank">abrir ↗</a>`:'—'}</span></div>
-            ${o.empresa?`<div class="sfrow"><span>🏭 Fábrica</span><span><b>${o.empresa}</b></span></div>`:""}
+            ${(o.empresa||i.forn_nome)?`<div class="sfrow"><span>🏭 Fábrica</span><span><b>${o.empresa||i.forn_nome}</b></span></div>`:`<div class="sfrow"><span>🏭 Fábrica</span><span style="color:var(--faint)">ficha não disponível</span></div>`}
             ${o.url_origem?`<div class="sfrow"><span>Produto na origem</span><span><a href="${o.url_origem}" target="_blank">abrir ↗</a></span></div>`:''}
-          </div>`:''}
+          </div>`}
         </div></div>`;
       }).join("")}
     </div>
@@ -516,7 +522,8 @@ async function abreCot(id){
       <div class="panel">
         <div class="ph2">Fechar preço</div>
         <div class="calc">
-          <div class="crow"><span>Custo de origem</span><b>¥ ${custoRmb.toFixed(2)} · R$ ${brl(custoBrl)}</b></div>
+          <div class="crow"><span>Custo de origem<div style="font-size:10px;color:var(--faint);font-weight:400">soma dos ${(c.cotacao_itens||[]).length} item(ns) da cotação</div></span><b>¥ ${custoRmb.toFixed(2)} · R$ ${brl(custoBrl)}</b></div>
+          ${_itensSemOrigem?`<div style="font-size:10.5px;color:#8A6100;background:#FDF9F2;border:1px solid #F0D9B8;border-radius:7px;padding:6px 8px;margin-bottom:6px">${_itensSemOrigem} item(ns) sem ficha de origem — o cálculo usou o preço de fábrica do catálogo.</div>`:""}
           <div class="crow"><span>Custo do frete<div style="font-size:10px;color:var(--faint);font-weight:400">o que seu canal cobra nesta importação</div></span>
             <span style="display:flex;align-items:center;gap:5px">US$ <input id="cUsdFrete" style="width:80px" value="${Number((CFGS.custo_m3||{}).usd||1200)}" oninput="recalcFrete()"/> <b id="cUsdUn" style="font-size:11px;color:var(--soft)">/m³</b></span></div>
           <div class="crow"><span>Margem no produto %</span><input id="cMargProd" placeholder="25" oninput="calcFirme()"/></div>
