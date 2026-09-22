@@ -939,15 +939,21 @@ function abreCopiloto(){
   window._cpDados=window._cpDados||{};
   const CP=(selCot.copiloto&&typeof selCot.copiloto==="object")?selCot.copiloto:{};
   const its=selCot.cotacao_itens||[];
-  sb.from("catalogo_origem").select("offer_id,url_origem").in("offer_id",its.map(i=>i.offer_id)).then(({data})=>{
-    const urls={};(data||[]).forEach(o=>urls[o.offer_id]=o.url_origem);
+  sb.from("catalogo_origem").select("offer_id,url_origem,member_id").in("offer_id",its.map(i=>i.offer_id)).then(({data})=>{
+    const urls={},mids={};(data||[]).forEach(o=>{urls[o.offer_id]=o.url_origem;mids[o.offer_id]=o.member_id;});
     $("cpMsgs").innerHTML=its.map((i,ix)=>{
       const ref=`${selCot.numero}-${ix+1}`;
       const extras=(window._cpExtras||{})[ix]||[];
       let n=6;const linhasExtras=extras.map(e=>`${n++}) ${e}`).join("\n");
       const msg=`您好！我们是巴西的采购公司（参考号 ${ref}），想订购这个产品 ${i.qtd} 个。请告知：\n1) ${i.qtd}个的准确单价（含运费到义乌仓库）\n2) 一箱装多少个？外箱尺寸（长宽高cm）和毛重？\n3) ${i.qtd}个总共多少立方（CBM）？\n4) 生产周期几天？\n5) 请发这个产品的实拍照片和视频（发客户看的，越清晰越好）${linhasExtras?"\n"+linhasExtras:""}\n谢谢！`;
       return `<div style="border:1px solid var(--line);border-radius:11px;padding:11px;margin-bottom:9px" id="cpItem${ix}">
-        <div style="font-size:12px;font-weight:700;margin-bottom:5px"><span class="mono" style="color:var(--orange)">${ref}</span> · ${i.nome} · ${i.qtd} un ${urls[i.offer_id]?`· <a href="${urls[i.offer_id]}" target="_blank" style="color:var(--green);font-weight:700">abrir chat ↗</a>`:''}</div>
+        <div style="font-size:12px;font-weight:700;margin-bottom:5px"><span class="mono" style="color:var(--orange)">${ref}</span> · ${i.nome} · ${i.qtd} un · ${(()=>{
+          const mid=mids[i.offer_id], u=urls[i.offer_id];
+          const num=String(i.offer_id||"").match(/^\d{6,}$/)?i.offer_id:null;
+          const link = mid ? `https://air.1688.com/app/ctalk/index.html?memberId=${mid}` : (u || (num?`https://detail.1688.com/offer/${num}.html`:""));
+          const lab = mid ? "abrir chat ↗" : (u?"abrir produto ↗":(num?"abrir produto ↗":""));
+          return link?`<a href="${link}" target="_blank" style="color:var(--green);font-weight:700">${lab}</a>`:'<span style="color:var(--faint);font-weight:400">sem link da fábrica</span>';
+        })()}</div>
         <textarea readonly style="width:100%;min-height:80px;border:1px solid var(--line2);border-radius:8px;padding:8px;font-size:11.5px;font-family:inherit" onclick="this.select()">${msg}</textarea>
         <button class="btn sm s" style="margin-top:5px" onclick="navigator.clipboard.writeText(this.previousElementSibling.value);this.textContent='✓ copiado'">Copiar</button>
         <div style="margin-top:7px;font-size:11px;font-weight:700;color:var(--soft)">Perguntas específicas (clique pra incluir):</div>
