@@ -400,6 +400,7 @@ body{-webkit-font-smoothing:antialiased}
     <div class="cotgrid">
       <div class="panel"><div class="ph2">Itens da cotação (<span id="nItens">0</span>)</div><div id="cartItems"></div>
         <div id="cubômetro" style="margin-bottom:12px"></div>
+        <div id="avisoMax" style="display:none;background:#F1F7F3;border:1px solid #CDE6D9;border-radius:10px;padding:10px;font-size:12px;margin-bottom:10px">Sua cotação está completa: trabalhamos com <b>até 2 produtos por metro cúbico</b>. Para cotar mais itens, fale com nosso time.</div>
         <div id="avisoMin" style="display:none;background:#FDF9F2;border:1px solid #F0D9B8;border-radius:10px;padding:10px;font-size:12px;margin-bottom:10px"></div>
         <div class="obsbox"><label style="font-size:12px;font-weight:600;color:var(--soft);display:block;margin-bottom:6px">Observações (opcional)</label><textarea id="obsAluno" placeholder="Ex.: prefiro na cor dourada; é pra revenda…"></textarea></div>
         
@@ -620,7 +621,7 @@ async function boot(){
 }
 // ---------- CATALOGO ----------
 const CARD_COLS="offer_id,nome,categoria,subcategoria,brl,brl_max,img,moq,vendas,destaque,forn_fabrica,forn_anos,eh_kit,grupo_id,nota_ia,certificacao,descricao";
-let MINQ={un_item:10,un_pedido:50,m3:1};
+let MINQ={un_item:10,un_pedido:50,m3:1,max_produtos:2};
 async function carregaMinimos(){try{const {data}=await sb.from("config").select("valor").eq("chave","minimos").single();if(data&&data.valor)MINQ={...MINQ,...data.valor};}catch(e){}}
 async function carregaCatalogo(){
   let off=0;PROD=[];
@@ -772,7 +773,11 @@ function autoPag(){
 function add(id){
   const p=PROD.find(x=>x.offer_id===id);if(!p)return;
   const ex=CART.find(x=>x.offer_id===id);
-  if(ex)ex.qtd+=p.moq||1;else CART.push({offer_id:id,nome:p.nome,img:p.img,fabu:(fab(p)||p.brl/1.944),moq:p.moq||1,qtd:Math.max(p.moq||1,MINQ.un_item),brl:p.brl});
+  if(ex)ex.qtd+=p.moq||1;else if(CART.length>=(MINQ.max_produtos||2)){
+    showToast(`Máximo de ${MINQ.max_produtos||2} produtos por cotação — trabalhamos com até 2 produtos por metro cúbico`);
+    return;
+  }
+  CART.push({offer_id:id,nome:p.nome,img:p.img,fabu:(fab(p)||p.brl/1.944),moq:p.moq||1,qtd:Math.max(p.moq||1,MINQ.un_item),brl:p.brl});
   updCart();irCarrinho();showToast("Adicionado à sua cotação");
 }
 function updCart(){$("cartN").textContent=CART.length;try{document.getElementById("tbN").textContent=CART.length;}catch(e){}}
@@ -813,6 +818,10 @@ function irCatalogo(){try{fechaCarrinho();}catch(e){}
 function irMinhas(){try{document.getElementById("pMetodo").classList.add("hidden");}catch(e){}
   $("pCat").classList.add("hidden");$("pCart").classList.add("hidden");$("pMinhas").classList.remove("hidden");carregaMinhas();scrollTo(0,0);}
 function renderCart(){
+  try{
+    const el=document.getElementById("avisoMax");
+    if(el)el.style.display=(CART.length>=(MINQ.max_produtos||2))?"block":"none";
+  }catch(e){}
   try{
     const un=CART.reduce((s,c)=>s+c.qtd,0),el=document.getElementById("avisoMin");
     if(el){
