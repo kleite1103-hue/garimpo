@@ -21,7 +21,9 @@ body{font-family:'Segoe UI',system-ui,-apple-system,Arial,sans-serif;background:
 .chip.on{background:var(--ink);color:#fff;border-color:var(--ink)}
 .busca{border:1.5px solid var(--line);border-radius:10px;padding:8px 12px;font-size:12.5px;min-width:230px;font-family:inherit}
 .board{display:grid;grid-template-columns:repeat(5,minmax(240px,1fr));gap:11px;align-items:start}
-.col{background:#F2EEE7;border-radius:13px;padding:9px;min-height:120px}
+.col{background:#F2EEE7;border-radius:13px;padding:9px;min-height:120px;max-height:calc(100vh - 230px);overflow-y:auto}
+.col::-webkit-scrollbar{width:7px}.col::-webkit-scrollbar-thumb{background:#D9D2C7;border-radius:9px}
+.vermais{width:100%;background:#fff;border:1.5px dashed var(--line);border-radius:10px;padding:9px;font-size:12px;font-weight:700;color:var(--soft);cursor:pointer;font-family:inherit}
 .colh{display:flex;align-items:center;justify-content:space-between;padding:3px 5px 9px}
 .colh b{font-size:12.5px}
 .colh .soma{font-size:10.5px;color:var(--soft)}
@@ -132,9 +134,9 @@ const brl=n=>Number(n||0).toLocaleString("pt-BR",{minimumFractionDigits:2,maximu
 const COLS=[
  {k:"nova",t:"Novas"},
  {k:"em_cotacao",t:"Em cotação"},
- {k:"aguardando_fabrica",t:"Aguardando fábrica"},
  {k:"respondida",t:"Proposta enviada"},
- {k:"aceita",t:"Fechadas"}
+ {k:"aceita",t:"Fechadas"},
+ {k:"recusada",t:"Recusadas"}
 ];
 let COTS=[],EU=null,FILTRO="todas";
 
@@ -198,9 +200,12 @@ function render(){
   $("board").innerHTML=COLS.map(col=>{
     const cs=lista.filter(c=>(c.status||"nova")===col.k);
     const soma=cs.reduce((s,c)=>s+Number(c.total_firme||c.total_estimado||0),0);
+    const lim=LIMITES[col.k]||8;
+    const mostra=cs.slice(0,lim);
     return `<div class="col" ondragover="event.preventDefault()" ondrop="solta(event,'${col.k}')">
       <div class="colh"><b>${col.t} (${cs.length})</b><span class="soma">R$ ${brl(soma)}</span></div>
-      ${cs.length?cs.map(MODO==='visual'?cardVisual:card).join(""):'<div class="vazio">nada aqui</div>'}
+      ${cs.length?mostra.map(MODO==='visual'?cardVisual:card).join(""):'<div class="vazio">nada aqui</div>'}
+      ${cs.length>lim?`<button class="vermais" onclick="maisCol('${col.k}')">ver mais ${Math.min(8,cs.length-lim)} de ${cs.length-lim}</button>`:""}
     </div>`;
   }).join("");
   const nov=lista.filter(c=>(c.status||"nova")==="nova").length;
@@ -218,7 +223,7 @@ function etapa(c){
   const st=c.status||"nova";
   if(st==="aceita"||st==="fechada")return 4;
   if(st==="respondida")return 4;
-  if(st==="aguardando_fabrica")return 3;
+  
   if(st==="em_cotacao")return 2;
   return 1;
 }
@@ -277,6 +282,8 @@ function renderFunil(lista){
   }).join("");
 }
 
+const LIMITES={};
+function maisCol(k){LIMITES[k]=(LIMITES[k]||8)+8;render();}
 let arrastando=null;
 function arrasta(e,id){arrastando=id;e.currentTarget.classList.add("drag");}
 async function solta(e,status){
@@ -286,7 +293,12 @@ async function solta(e,status){
   if(!c||c.status===status){arrastando=null;return;}
   const antes=c.status;c.status=status;render();
   const {error}=await sb.from("cotacoes").update({status}).eq("id",c.id);
-  if(error){c.status=antes;render();alert("Não consegui mover: "+error.message);}
+  if(error){
+    c.status=antes;render();
+    alert(String(error.message||"").includes("status_check")
+      ? "Essa etapa ainda não está liberada no banco. Me avise que eu libero."
+      : "Não consegui mover: "+error.message);
+  }
   arrastando=null;
 }
 async function assumir(id,e){
