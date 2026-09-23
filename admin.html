@@ -1936,6 +1936,23 @@ function toast(msg){
 
 function ajusteCambio(){const a=Number(window._custoBrl)||0,b=Number(window._custoFab)||0;return (a>0&&b>0)?a/b:1;}
 
+
+// abre direto uma cotação quando chamada por outra tela: admin.html?cot=123
+(function(){
+  try{
+    const alvo=new URLSearchParams(location.search).get("cot");
+    if(!alvo)return;
+    const t=setInterval(()=>{
+      if(typeof COTS!=="undefined"&&COTS.length&&typeof abreCot==="function"){
+        clearInterval(t);
+        const el=document.querySelector('.al[data-v="cot"]');if(el)nav(el);
+        setTimeout(()=>abreCot(Number(alvo)),700);
+      }
+    },500);
+    setTimeout(()=>clearInterval(t),20000);
+  }catch(e){}
+})();
+
 boot();
 </script>
 

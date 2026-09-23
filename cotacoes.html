@@ -1,0 +1,214 @@
+<!doctype html><html lang="pt-BR"><head>
+<meta charset="utf-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>Cotações · Quadro do Time</title>
+<script src="assets/js/supabase.min.js"></script>
+<script src="config.js"></script>
+<style>
+:root{--ink:#1A1A1A;--soft:#6B6660;--faint:#A29C94;--line:#E7E0D6;--bg:#FAF7F2;--panel:#fff;--orange:#D91F26;--green:#1F6B4A;--amber:#8A6100}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Segoe UI',system-ui,-apple-system,Arial,sans-serif;background:var(--bg);color:var(--ink);font-size:14px}
+.top{background:#fff;border-bottom:1px solid var(--line);padding:12px 18px;display:flex;align-items:center;gap:14px;position:sticky;top:0;z-index:20;flex-wrap:wrap}
+.logo{font-family:Arial Black,Arial;font-size:15px;letter-spacing:.3px;line-height:1.05}
+.logo i{color:var(--orange);font-style:normal}
+.tag{font-size:10px;letter-spacing:.14em;color:var(--faint);text-transform:uppercase}
+.btn{border:none;border-radius:10px;padding:9px 14px;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit}
+.btn.p{background:var(--orange);color:#fff}.btn.d{background:var(--ink);color:#fff}
+.btn.ghost{background:#fff;color:var(--ink);border:1.5px solid var(--line)}
+.btn.sm{padding:6px 10px;font-size:11.5px;border-radius:8px}
+.wrap{padding:14px 18px 40px}
+.filtros{display:flex;gap:7px;flex-wrap:wrap;align-items:center;margin-bottom:12px}
+.chip{background:#fff;border:1.5px solid var(--line);border-radius:999px;padding:7px 13px;font-size:12.5px;font-weight:600;cursor:pointer;color:var(--soft)}
+.chip.on{background:var(--ink);color:#fff;border-color:var(--ink)}
+.busca{border:1.5px solid var(--line);border-radius:10px;padding:8px 12px;font-size:12.5px;min-width:230px;font-family:inherit}
+.board{display:grid;grid-template-columns:repeat(5,minmax(240px,1fr));gap:11px;align-items:start}
+.col{background:#F2EEE7;border-radius:13px;padding:9px;min-height:120px}
+.colh{display:flex;align-items:center;justify-content:space-between;padding:3px 5px 9px}
+.colh b{font-size:12.5px}
+.colh .soma{font-size:10.5px;color:var(--soft)}
+.card{background:#fff;border:1px solid var(--line);border-radius:11px;padding:10px;margin-bottom:8px;cursor:grab;position:relative}
+.card.drag{opacity:.45}
+.card .l1{display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-bottom:4px}
+.num{font-family:ui-monospace,monospace;font-size:11px;color:var(--faint)}
+.sel{font-size:9px;font-weight:800;padding:2px 6px;border-radius:5px;letter-spacing:.03em}
+.sel.ev{background:var(--ink);color:#F5C518}.sel.lead{background:#FDF3E0;color:var(--amber)}.sel.cheng{background:var(--orange);color:#fff}
+.nome{font-size:13.5px;font-weight:700;line-height:1.25}
+.meta{font-size:11px;color:var(--soft);margin-top:2px}
+.val{font-size:15px;font-weight:800;margin-top:6px}
+.val small{font-size:10px;color:var(--faint);font-weight:600;display:block}
+.tempo{font-size:10.5px;font-weight:700;padding:2px 7px;border-radius:999px;display:inline-block}
+.t0{background:#F1F7F3;color:var(--green)}.t1{background:#FDF9F2;color:var(--amber)}.t2{background:#FDECEC;color:#B21C22}
+.dono{display:flex;align-items:center;gap:5px;margin-top:7px;font-size:11px;color:var(--soft)}
+.av{width:21px;height:21px;border-radius:50%;background:var(--ink);color:#fff;font-size:9.5px;font-weight:800;display:flex;align-items:center;justify-content:center}
+.acts{display:flex;gap:5px;margin-top:8px;flex-wrap:wrap}
+.acts a,.acts button{text-decoration:none}
+.thumbs{display:flex;gap:3px;margin-top:6px}
+.thumbs img{width:26px;height:26px;border-radius:5px;object-fit:cover;border:1px solid var(--line)}
+.vazio{font-size:11.5px;color:var(--faint);text-align:center;padding:14px 4px}
+.gate{max-width:360px;margin:9vh auto;background:#fff;border:1px solid var(--line);border-radius:16px;padding:22px}
+.gate input{width:100%;border:1.5px solid var(--line);border-radius:10px;padding:11px;font-size:13px;margin-bottom:8px;font-family:inherit}
+.hidden{display:none!important}
+.aviso{background:#FDF9F2;border:1px solid #F0D9B8;border-radius:10px;padding:9px 12px;font-size:12px;color:var(--amber);margin-bottom:11px}
+@media(max-width:1100px){.board{grid-template-columns:repeat(2,1fr)}}
+@media(max-width:620px){.board{grid-template-columns:1fr}.busca{min-width:100%}}
+</style></head><body>
+
+<div id="gate" class="gate">
+  <div class="logo">EFEITO VENDAS <i>NA CHINA</i></div>
+  <div class="tag" style="margin:4px 0 12px">Quadro de cotações — entre com sua conta</div>
+  <input id="gtEmail" placeholder="email"/>
+  <input id="gtSenha" type="password" placeholder="senha" onkeydown="if(event.key==='Enter')entrar()"/>
+  <button class="btn d" style="width:100%" onclick="entrar()">Entrar</button>
+  <div id="gtErr" style="color:var(--orange);font-size:12px;margin-top:8px"></div>
+</div>
+
+<div id="app" class="hidden">
+  <div class="top">
+    <div><div class="logo">EFEITO VENDAS <i>NA CHINA</i></div><div class="tag">Quadro de cotações</div></div>
+    <a class="btn ghost sm" href="admin.html">← Painel completo</a>
+    <input id="busca" class="busca" placeholder="buscar nome, WhatsApp, número ou produto…" oninput="render()"/>
+    <div style="margin-left:auto;display:flex;align-items:center;gap:9px">
+      <span id="quem" style="font-size:12px;color:var(--soft)"></span>
+      <button class="btn ghost sm" onclick="sb.auth.signOut().then(()=>location.reload())">sair</button>
+    </div>
+  </div>
+
+  <div class="wrap">
+    <div class="aviso">Esta é a tela nova, em teste. O painel completo continua funcionando igual — use o botão acima para voltar a ele.</div>
+    <div class="filtros">
+      <span class="chip on" data-f="todas" onclick="setF(this)">Todas</span>
+      <span class="chip" data-f="minhas" onclick="setF(this)">Minhas</span>
+      <span class="chip" data-f="semdono" onclick="setF(this)">Sem dono</span>
+      <span class="chip" data-f="paradas" onclick="setF(this)">Paradas +2 dias</span>
+      <span class="chip" data-f="alto" onclick="setF(this)">Alto valor</span>
+      <span class="chip" data-f="ev" onclick="setF(this)">Clientes EV</span>
+      <span class="chip" data-f="cheng" onclick="setF(this)">Cheng</span>
+      <span style="margin-left:auto;font-size:12px;color:var(--soft)" id="resumo"></span>
+    </div>
+    <div class="board" id="board"></div>
+  </div>
+</div>
+
+<script>
+const CFG=window.GARIMPO_CONFIG;
+const sb=supabase.createClient(CFG.SUPABASE_URL,CFG.SUPABASE_ANON);
+const $=id=>document.getElementById(id);
+const brl=n=>Number(n||0).toLocaleString("pt-BR",{minimumFractionDigits:2,maximumFractionDigits:2});
+const COLS=[
+ {k:"nova",t:"Novas"},
+ {k:"em_cotacao",t:"Em cotação"},
+ {k:"aguardando_fabrica",t:"Aguardando fábrica"},
+ {k:"respondida",t:"Proposta enviada"},
+ {k:"aceita",t:"Fechadas"}
+];
+let COTS=[],EU=null,FILTRO="todas";
+
+async function entrar(){
+  const {error}=await sb.auth.signInWithPassword({email:$("gtEmail").value.trim(),password:$("gtSenha").value});
+  if(error){$("gtErr").textContent="Email ou senha incorretos.";return;}
+  boot();
+}
+function setF(el){document.querySelectorAll(".chip").forEach(c=>c.classList.remove("on"));el.classList.add("on");FILTRO=el.dataset.f;render();}
+function dias(d){return Math.floor((Date.now()-new Date(d))/86400000);}
+function tempoCls(d,st){if(st!=="nova"&&st!=="em_cotacao")return "t0";const n=dias(d);return n>=2?"t2":(n>=1?"t1":"t0");}
+function inic(n){return (n||"?").trim().slice(0,2).toUpperCase();}
+
+function passa(c){
+  const q=($("busca").value||"").toLowerCase().trim();
+  if(q){
+    const txt=((c.lead_nome||"")+" "+(c.lead_whatsapp||"")+" "+c.numero+" "+((c.cotacao_itens||[]).map(i=>i.nome).join(" "))).toLowerCase();
+    if(!txt.includes(q))return false;
+  }
+  const qz=c.lead_quiz||{};
+  if(FILTRO==="minhas")return (c.responsavel||"").toLowerCase()===(EU||"").toLowerCase();
+  if(FILTRO==="semdono")return !c.responsavel;
+  if(FILTRO==="paradas")return (c.status==="nova"||c.status==="em_cotacao")&&dias(c.criado_em)>=2;
+  if(FILTRO==="alto")return Number(c.total_estimado||0)>=1000||String(qz.faturamento||"").includes("200");
+  if(FILTRO==="ev")return String(qz.cliente||"").includes("cliente")||String(qz.origem||"").includes("cliente Efeito");
+  if(FILTRO==="cheng")return String(qz.parceiro||"").includes("cheng")||String(qz.origem||"").toLowerCase().includes("cheng");
+  return true;
+}
+
+function card(c){
+  const its=c.cotacao_itens||[];
+  const un=its.reduce((s,i)=>s+i.qtd,0);
+  const qz=c.lead_quiz||{};
+  const zap=String(c.lead_whatsapp||"").replace(/\D/g,"");
+  const ev=String(qz.cliente||"").includes("cliente")||String(qz.origem||"").includes("cliente Efeito");
+  const cheng=String(qz.parceiro||"").includes("cheng")||String(qz.origem||"").toLowerCase().includes("cheng");
+  const d=dias(c.criado_em);
+  return `<div class="card" draggable="true" data-id="${c.id}"
+      ondragstart="arrasta(event,${c.id})" ondragend="this.classList.remove('drag')">
+    <div class="l1">
+      <span class="num">${c.numero}</span>
+      ${cheng?'<span class="sel cheng">CHENG</span>':(ev?'<span class="sel ev">CLIENTE EV</span>':'<span class="sel lead">LEAD</span>')}
+      <span class="tempo ${tempoCls(c.criado_em,c.status)}">${d===0?"hoje":d+"d"}</span>
+    </div>
+    <div class="nome">${c.lead_nome||"(sem nome)"}</div>
+    <div class="meta">${qz.faturamento?qz.faturamento+" · ":""}${its.length} produto${its.length!==1?"s":""} · ${un} un</div>
+    ${its.length?`<div class="thumbs">${its.slice(0,5).map(i=>`<img src="${i.img}"/>`).join("")}</div>`:""}
+    <div class="val">R$ ${brl(c.total_firme||c.total_estimado)}<small>${c.total_firme?"valor final":"estimado na fábrica"}</small></div>
+    <div class="dono">${c.responsavel?`<span class="av">${inic(c.responsavel)}</span>${c.responsavel}`:'<span style="color:var(--faint)">sem dono</span>'}</div>
+    <div class="acts">
+      ${!c.responsavel?`<button class="btn sm p" onclick="assumir(${c.id},event)">Assumir</button>`:""}
+      ${zap?`<a class="btn sm ghost" href="https://wa.me/55${zap}" target="_blank" onclick="event.stopPropagation()">WhatsApp</a>`:""}
+      <a class="btn sm ghost" href="admin.html?cot=${c.id}" onclick="event.stopPropagation()">Abrir</a>
+    </div>
+  </div>`;
+}
+
+function render(){
+  const lista=COTS.filter(passa);
+  $("board").innerHTML=COLS.map(col=>{
+    const cs=lista.filter(c=>(c.status||"nova")===col.k);
+    const soma=cs.reduce((s,c)=>s+Number(c.total_firme||c.total_estimado||0),0);
+    return `<div class="col" ondragover="event.preventDefault()" ondrop="solta(event,'${col.k}')">
+      <div class="colh"><b>${col.t} (${cs.length})</b><span class="soma">R$ ${brl(soma)}</span></div>
+      ${cs.length?cs.map(card).join(""):'<div class="vazio">nada aqui</div>'}
+    </div>`;
+  }).join("");
+  const nov=lista.filter(c=>(c.status||"nova")==="nova").length;
+  const par=lista.filter(c=>(c.status==="nova"||c.status==="em_cotacao")&&dias(c.criado_em)>=2).length;
+  $("resumo").innerHTML=`${lista.length} cotações · <b>${nov} novas</b>${par?` · <span style="color:#B21C22"><b>${par} paradas há 2+ dias</b></span>`:""}`;
+}
+
+let arrastando=null;
+function arrasta(e,id){arrastando=id;e.currentTarget.classList.add("drag");}
+async function solta(e,status){
+  e.preventDefault();
+  if(!arrastando)return;
+  const c=COTS.find(x=>x.id===arrastando);
+  if(!c||c.status===status){arrastando=null;return;}
+  const antes=c.status;c.status=status;render();
+  const {error}=await sb.from("cotacoes").update({status}).eq("id",c.id);
+  if(error){c.status=antes;render();alert("Não consegui mover: "+error.message);}
+  arrastando=null;
+}
+async function assumir(id,e){
+  e.stopPropagation();
+  const c=COTS.find(x=>x.id===id);if(!c)return;
+  c.responsavel=EU;if((c.status||"nova")==="nova")c.status="em_cotacao";
+  render();
+  const {error}=await sb.from("cotacoes").update({responsavel:EU,status:c.status}).eq("id",id);
+  if(error){alert("Não consegui assumir: "+error.message);carrega();}
+}
+
+async function carrega(){
+  const {data}=await sb.from("cotacoes")
+    .select("id,numero,status,responsavel,lead_nome,lead_whatsapp,lead_quiz,total_estimado,total_firme,criado_em,cotacao_itens(nome,qtd,img)")
+    .order("criado_em",{ascending:false}).limit(300);
+  COTS=data||[];render();
+}
+
+async function boot(){
+  const {data:{session}}=await sb.auth.getSession();
+  if(!session){$("gate").classList.remove("hidden");$("app").classList.add("hidden");return;}
+  const {data:pf}=await sb.from("perfis").select("nome,papel").eq("id",session.user.id).single();
+  if(!pf||!["admin","equipe"].includes(pf.papel)){$("gtErr").textContent="Esta área é do time.";await sb.auth.signOut();return;}
+  EU=pf.nome||session.user.email.split("@")[0];
+  $("quem").textContent=EU+" · "+pf.papel;
+  $("gate").classList.add("hidden");$("app").classList.remove("hidden");
+  carrega();
+  setInterval(carrega,60000);
+}
+boot();
+</script></body></html>
