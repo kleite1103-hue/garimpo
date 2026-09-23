@@ -50,6 +50,40 @@ body{font-family:'Segoe UI',system-ui,-apple-system,Arial,sans-serif;background:
 .aviso{background:#FDF9F2;border:1px solid #F0D9B8;border-radius:10px;padding:9px 12px;font-size:12px;color:var(--amber);margin-bottom:11px}
 @media(max-width:1100px){.board{grid-template-columns:repeat(2,1fr)}}
 @media(max-width:620px){.board{grid-template-columns:1fr}.busca{min-width:100%}}
+
+/* --- modo visual --- */
+.funil{display:grid;grid-template-columns:repeat(5,1fr);gap:8px;margin-bottom:14px}
+.fq{background:#fff;border:1px solid var(--line);border-radius:12px;padding:11px 12px;position:relative;overflow:hidden}
+.fq .bar{position:absolute;left:0;top:0;bottom:0;width:4px}
+.fq b{display:block;font-size:20px;line-height:1.1}
+.fq span{font-size:10.5px;color:var(--soft);text-transform:uppercase;letter-spacing:.04em}
+.fq .vlr{font-size:11.5px;color:var(--ink);font-weight:700;margin-top:3px}
+.fq .conv{position:absolute;right:9px;top:9px;font-size:10px;color:var(--faint)}
+.vcard{background:#fff;border:1px solid var(--line);border-radius:14px;overflow:hidden;margin-bottom:9px;cursor:grab;position:relative}
+.vcard.drag{opacity:.45}
+.vcap{position:relative;height:118px;background:#F2EEE7}
+.vcap img{width:100%;height:100%;object-fit:cover;display:block}
+.vcap .fita{position:absolute;left:0;top:9px;font-size:9.5px;font-weight:800;padding:3px 9px;border-radius:0 6px 6px 0;letter-spacing:.03em}
+.fita.ev{background:var(--ink);color:#F5C518}.fita.lead{background:#fff;color:var(--amber)}.fita.cheng{background:var(--orange);color:#fff}
+.vcap .vlr{position:absolute;right:8px;bottom:8px;background:rgba(0,0,0,.72);color:#fff;font-size:13.5px;font-weight:800;padding:4px 9px;border-radius:8px}
+.vcap .temp{position:absolute;left:0;right:0;bottom:0;height:4px}
+.vcap .mais{position:absolute;right:8px;top:8px;background:rgba(255,255,255,.92);font-size:10px;font-weight:700;padding:2px 7px;border-radius:999px}
+.vbody{padding:9px 11px 11px}
+.vbody .nm{font-size:13.5px;font-weight:700;line-height:1.25}
+.vbody .sub{font-size:11px;color:var(--soft);margin-top:2px}
+.trilho{display:flex;align-items:center;gap:4px;margin:9px 0 3px}
+.tp{flex:1;height:5px;border-radius:99px;background:#EDE8E0}
+.tp.on{background:var(--green)}
+.tplab{font-size:9.5px;color:var(--faint);letter-spacing:.02em}
+.cubo{margin-top:7px}
+.cubo .cb{height:6px;background:#EDE8E0;border-radius:99px;overflow:hidden}
+.cubo .cf{height:100%;background:linear-gradient(90deg,#D91F26,#F5A623)}
+.cubo small{font-size:9.5px;color:var(--soft);display:block;margin-top:3px}
+.vdono{display:flex;align-items:center;gap:6px;margin-top:9px;font-size:11px;color:var(--soft)}
+.vav{width:23px;height:23px;border-radius:50%;color:#fff;font-size:9.5px;font-weight:800;display:flex;align-items:center;justify-content:center}
+.modo{display:flex;gap:4px;background:#EDE8E0;border-radius:999px;padding:3px}
+.modo span{padding:5px 12px;border-radius:999px;font-size:12px;font-weight:700;cursor:pointer;color:var(--soft)}
+.modo span.on{background:#fff;color:var(--ink)}
 </style></head><body>
 
 <div id="gate" class="gate">
@@ -82,8 +116,10 @@ body{font-family:'Segoe UI',system-ui,-apple-system,Arial,sans-serif;background:
       <span class="chip" data-f="alto" onclick="setF(this)">Alto valor</span>
       <span class="chip" data-f="ev" onclick="setF(this)">Clientes EV</span>
       <span class="chip" data-f="cheng" onclick="setF(this)">Cheng</span>
-      <span style="margin-left:auto;font-size:12px;color:var(--soft)" id="resumo"></span>
+      <div class="modo" style="margin-left:auto"><span id="mVis" class="on" onclick="setModo('visual')">Visual</span><span id="mCom" onclick="setModo('compacto')">Compacto</span></div>
+      <span style="font-size:12px;color:var(--soft)" id="resumo"></span>
     </div>
+    <div class="funil" id="funil"></div>
     <div class="board" id="board"></div>
   </div>
 </div>
@@ -158,17 +194,87 @@ function card(c){
 
 function render(){
   const lista=COTS.filter(passa);
+  renderFunil(lista);
   $("board").innerHTML=COLS.map(col=>{
     const cs=lista.filter(c=>(c.status||"nova")===col.k);
     const soma=cs.reduce((s,c)=>s+Number(c.total_firme||c.total_estimado||0),0);
     return `<div class="col" ondragover="event.preventDefault()" ondrop="solta(event,'${col.k}')">
       <div class="colh"><b>${col.t} (${cs.length})</b><span class="soma">R$ ${brl(soma)}</span></div>
-      ${cs.length?cs.map(card).join(""):'<div class="vazio">nada aqui</div>'}
+      ${cs.length?cs.map(MODO==='visual'?cardVisual:card).join(""):'<div class="vazio">nada aqui</div>'}
     </div>`;
   }).join("");
   const nov=lista.filter(c=>(c.status||"nova")==="nova").length;
   const par=lista.filter(c=>(c.status==="nova"||c.status==="em_cotacao")&&dias(c.criado_em)>=2).length;
   $("resumo").innerHTML=`${lista.length} cotações · <b>${nov} novas</b>${par?` · <span style="color:#B21C22"><b>${par} paradas há 2+ dias</b></span>`:""}`;
+}
+
+
+let MODO=localStorage.getItem("ev_modo_quadro")||"visual";
+function setModo(m){MODO=m;localStorage.setItem("ev_modo_quadro",m);
+  $("mVis").classList.toggle("on",m==="visual");$("mCom").classList.toggle("on",m==="compacto");render();}
+const CORES=["#1A1A1A","#D91F26","#1F6B4A","#8A6100","#3B5BA5","#7A3E9D"];
+function corDe(n){let h=0;for(const c of String(n||"?"))h=(h*31+c.charCodeAt(0))%CORES.length;return CORES[h];}
+function etapa(c){
+  const st=c.status||"nova";
+  if(st==="aceita"||st==="fechada")return 4;
+  if(st==="respondida")return 4;
+  if(st==="aguardando_fabrica")return 3;
+  if(st==="em_cotacao")return 2;
+  return 1;
+}
+function litrosCot(c){
+  const VOL={"Óculos":0.35,"Relógios":0.4,"Joias prata/aço":0.08,"Moda íntima & meias":0.6,"Moda praia":0.7,
+   "Infantil & bebê":1.0,"Bolsas & mochilas":6,"Pet":4,"Casa & organização":3,"Cozinha funcional":1.5,
+   "Festas & eventos":3,"Decoração & sazonais":2,"Natal":2,"Confeitaria":1,"Casa zen & aromas":1.2,
+   "Pesca & outdoor":0.8,"Beleza & pincéis":0.5,"Achados virais & gadgets":0.8,"Bicicleta & ciclismo":2};
+  return (c.cotacao_itens||[]).reduce((s,i)=>s+(VOL[i.categoria]||1.5)*i.qtd,0);
+}
+function cardVisual(c){
+  const its=c.cotacao_itens||[];
+  const un=its.reduce((s,i)=>s+i.qtd,0);
+  const qz=c.lead_quiz||{};
+  const zap=String(c.lead_whatsapp||"").replace(/\D/g,"");
+  const ev=String(qz.cliente||"").includes("cliente")||String(qz.origem||"").includes("cliente Efeito");
+  const cheng=String(qz.parceiro||"").includes("cheng")||String(qz.origem||"").toLowerCase().includes("cheng");
+  const d=dias(c.criado_em);
+  const cor=d>=2?"#D91F26":(d>=1?"#E6A23C":"#1F6B4A");
+  const e=etapa(c);
+  const m3=litrosCot(c)/1000, pct=Math.min(100,Math.round(m3/(1)*100));
+  const capa=(its[0]||{}).img||"";
+  return `<div class="vcard" draggable="true" data-id="${c.id}" ondragstart="arrasta(event,${c.id})" ondragend="this.classList.remove('drag')">
+    <div class="vcap">
+      ${capa?`<img src="${capa}" onerror="this.style.display='none'"/>`:""}
+      <span class="fita ${cheng?'cheng':(ev?'ev':'lead')}">${cheng?'CHENG':(ev?'CLIENTE EV':'LEAD')}</span>
+      ${its.length>1?`<span class="mais">+${its.length-1} produto${its.length>2?'s':''}</span>`:""}
+      <span class="vlr">R$ ${brl(c.total_firme||c.total_estimado)}</span>
+      <span class="temp" style="background:${cor}"></span>
+    </div>
+    <div class="vbody">
+      <div class="nm">${c.lead_nome||"(sem nome)"}</div>
+      <div class="sub">${c.numero} · ${d===0?"hoje":d+" dia"+(d>1?"s":"")} · ${un} un${qz.faturamento?" · "+qz.faturamento:""}</div>
+      <div class="trilho">${[1,2,3,4].map(n=>`<span class="tp ${e>=n?'on':''}"></span>`).join("")}</div>
+      <div class="tplab">${["recebida","calculando","com a fábrica","proposta enviada"][e-1]||"recebida"}</div>
+      <div class="cubo"><div class="cb"><div class="cf" style="width:${pct}%"></div></div>
+        <small>${m3.toFixed(2)} m³ de 1 m³ ${pct<100?`· faltam ${(1-m3).toFixed(2)} m³ para completar`:"· cubo completo"}</small></div>
+      <div class="vdono">${c.responsavel?`<span class="vav" style="background:${corDe(c.responsavel)}">${inic(c.responsavel)}</span>${c.responsavel}`:'<span style="color:var(--faint)">sem dono</span>'}</div>
+      <div class="acts">
+        ${!c.responsavel?`<button class="btn sm p" onclick="assumir(${c.id},event)">Assumir</button>`:""}
+        ${zap?`<a class="btn sm ghost" href="https://wa.me/55${zap}" target="_blank" onclick="event.stopPropagation()">WhatsApp</a>`:""}
+        <a class="btn sm ghost" href="admin.html?cot=${c.id}" onclick="event.stopPropagation()">Abrir</a>
+      </div>
+    </div></div>`;
+}
+function renderFunil(lista){
+  const cores=["#D91F26","#E6A23C","#3B5BA5","#1F6B4A","#1A1A1A"];
+  $("funil").innerHTML=COLS.map((col,ix)=>{
+    const cs=lista.filter(c=>(c.status||"nova")===col.k);
+    const soma=cs.reduce((s,c)=>s+Number(c.total_firme||c.total_estimado||0),0);
+    const ant=ix?lista.filter(c=>(c.status||"nova")===COLS[ix-1].k).length:0;
+    const conv=ix&&ant?Math.round(cs.length/ant*100)+"%":"";
+    return `<div class="fq"><span class="bar" style="background:${cores[ix]}"></span>
+      ${conv?`<span class="conv">${conv}</span>`:""}
+      <span>${col.t}</span><b>${cs.length}</b><div class="vlr">R$ ${brl(soma)}</div></div>`;
+  }).join("");
 }
 
 let arrastando=null;
@@ -194,7 +300,7 @@ async function assumir(id,e){
 
 async function carrega(){
   const {data}=await sb.from("cotacoes")
-    .select("id,numero,status,responsavel,lead_nome,lead_whatsapp,lead_quiz,total_estimado,total_firme,criado_em,cotacao_itens(nome,qtd,img)")
+    .select("id,numero,status,responsavel,lead_nome,lead_whatsapp,lead_quiz,total_estimado,total_firme,criado_em,cotacao_itens(nome,qtd,img,offer_id)")
     .order("criado_em",{ascending:false}).limit(300);
   COTS=data||[];render();
 }
@@ -207,6 +313,7 @@ async function boot(){
   EU=pf.nome||session.user.email.split("@")[0];
   $("quem").textContent=EU+" · "+pf.papel;
   $("gate").classList.add("hidden");$("app").classList.remove("hidden");
+  setModo(MODO);
   carrega();
   setInterval(carrega,60000);
 }
