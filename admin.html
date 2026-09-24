@@ -945,9 +945,10 @@ function abreCopiloto(){
       const ref=`${selCot.numero}-${ix+1}`;
       const extras=(window._cpExtras||{})[ix]||[];
       let n=6;const linhasExtras=extras.map(e=>`${n++}) ${e}`).join("\n");
-      const msg=`您好！我们是巴西的采购公司（参考号 ${ref}），想订购这个产品 ${i.qtd} 个。请告知：\n1) ${i.qtd}个的准确单价（含运费到义乌仓库）\n2) 一箱装多少个？外箱尺寸（长宽高cm）和毛重？\n3) ${i.qtd}个总共多少立方（CBM）？\n4) 生产周期几天？\n5) 请发这个产品的实拍照片和视频（发客户看的，越清晰越好）${linhasExtras?"\n"+linhasExtras:""}\n谢谢！`;
+      const qM3=qtdPorM3(i.offer_id,i.qtd,i.moq);
+      const msg=`您好！我们是巴西的采购公司（参考号 ${ref}），计划订购这个产品 ${qM3} 个（一个立方的量）。请告知：\n1) ${qM3}个的准确单价（含运费到义乌仓库）\n2) 一箱装多少个？外箱尺寸（长宽高cm）和毛重？\n3) ${qM3}个总共多少立方（CBM）？\n4) 生产周期几天？\n5) 请发这个产品的实拍照片和视频（发客户看的，越清晰越好）${linhasExtras?"\n"+linhasExtras:""}\n谢谢！`;
       return `<div style="border:1px solid var(--line);border-radius:11px;padding:11px;margin-bottom:9px" id="cpItem${ix}">
-        <div style="font-size:12px;font-weight:700;margin-bottom:5px"><span class="mono" style="color:var(--orange)">${ref}</span> · ${i.nome} · ${i.qtd} un · ${(()=>{
+        <div style="font-size:12px;font-weight:700;margin-bottom:5px"><span class="mono" style="color:var(--orange)">${ref}</span> · ${i.nome} · <b>${qM3} un</b> <span style="font-weight:400;color:var(--faint)">(1 m³ · cliente pediu ${i.qtd})</span> · ${(()=>{
           const mid=mids[i.offer_id], u=urls[i.offer_id];
           const num=String(i.offer_id||"").match(/^\d{6,}$/)?i.offer_id:null;
           const link = mid ? `https://air.1688.com/app/ctalk/index.html?memberId=${mid}` : (u || (num?`https://detail.1688.com/offer/${num}.html`:""));
@@ -1952,6 +1953,18 @@ function ajusteCambio(){const a=Number(window._custoBrl)||0,b=Number(window._cus
     setTimeout(()=>clearInterval(t),20000);
   }catch(e){}
 })();
+
+
+function qtdPorM3(offer_id,qtdCliente,moq){
+  const p=(window._FBprop||{})[offer_id]||{};
+  const vu=Number(p.volume_l)||VOL_CAT[p.categoria]||VOL_PADRAO;   // litros por unidade
+  let q=Math.floor(1000/vu);                                       // cabe em 1 m³
+  if(moq&&q<moq)q=moq;
+  if(q<(qtdCliente||0))q=qtdCliente;                               // nunca menos que o cliente pediu
+  if(q>=100)q=Math.round(q/50)*50;                                 // número redondo pra fábrica
+  else if(q>=20)q=Math.round(q/10)*10;
+  return q;
+}
 
 boot();
 </script>
