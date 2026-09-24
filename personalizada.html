@@ -15,11 +15,11 @@ body{font-family:'Segoe UI',system-ui,Arial,sans-serif;background:var(--bg);colo
 .btn.d{background:var(--ink);color:#fff}.btn.g{background:var(--green);color:#fff}
 .btn.ghost{background:#fff;color:var(--ink);border:1.5px solid var(--line)}
 .btn.sm{padding:7px 12px;font-size:11.5px;border-radius:9px}
-.hero{background:linear-gradient(135deg,#1A1A1A 0%,#2E2A26 100%);color:#fff;padding:26px 20px 92px;position:relative;overflow:hidden}
+.hero{background:linear-gradient(135deg,#1A1A1A 0%,#2E2A26 100%);color:#fff;padding:26px 20px 104px;position:relative;overflow:hidden}
 .hero:after{content:"";position:absolute;right:-90px;top:-90px;width:340px;height:340px;border-radius:50%;background:rgba(217,31,38,.18)}
 .hero h1{font-size:25px;font-weight:800;line-height:1.15;max-width:640px}
 .hero p{font-size:13.5px;color:#C9C3BA;margin-top:7px;max-width:640px}
-.shell{display:grid;grid-template-columns:1fr 380px;gap:18px;padding:0 20px 60px;align-items:start;margin-top:-70px;position:relative;z-index:2}
+.shell{display:grid;grid-template-columns:1fr 380px;gap:18px;padding:0 20px 60px;align-items:start;margin-top:-64px;position:relative;z-index:2}
 .planos{display:grid;grid-template-columns:repeat(3,1fr);gap:11px;margin-bottom:22px}
 .pl{background:#fff;border:2px solid var(--line);border-radius:17px;padding:16px;cursor:pointer;position:relative;transition:.15s}
 .pl:hover{transform:translateY(-3px);box-shadow:0 12px 30px rgba(0,0,0,.09)}
@@ -190,6 +190,12 @@ async function entrar(){
 }
 function svById(id){return SRV.find(s=>s.id===id)||{};}
 function brindesAtivos(sub){return BRINDES.filter(b=>sub>=b.v).map(b=>b.id);}
+function proximoBrinde(sub){
+  // o próximo prêmio é sempre um serviço que ainda não está na proposta
+  return BRINDES.find(b=>sub<b.v&&!SEL.has(b.id))
+      || BRINDES.find(b=>sub<b.v);
+}
+function brindeJaTem(id){return SEL.has(id);}
 
 function render(){
   $("combos").innerHTML=COMBOS.map(c=>{
@@ -263,9 +269,9 @@ function calc(){
       <span>${s.consulta?'sob consulta':(gratis?'grátis':'R$ '+brl(s.p))} <span class="x" onclick="toggle('${s.id}')">✕</span></span></div>`;
   }).join(""):'<div style="font-size:12px;color:var(--faint);padding:10px 0">Nenhum serviço escolhido ainda — clique nos cartões ao lado.</div>';
   // régua
-  const prox=BRINDES.find(b=>sub<b.v);
+  const prox=proximoBrinde(sub);
   $("regua").innerHTML=prox
-    ? `<div class="reg"><b>Faltam R$ ${brl(prox.v-sub)} para ganhar: ${prox.n}</b>
+    ? `<div class="reg"><b>${brindeJaTem(prox.id)?`Ao chegar em R$ ${brl(prox.v)}, ${prox.n} sai de cortesia (você já tem na proposta)`:`Faltam R$ ${brl(prox.v-sub)} para ganhar: ${prox.n}`}</b>
        <div class="bar"><div class="fill" style="width:${Math.min(100,sub/prox.v*100)}%"></div></div>
        <small>Ao chegar em R$ ${brl(prox.v)} este serviço entra de cortesia.</small></div>`
     : (BRINDES.length?`<div class="reg"><b>Todos os brindes conquistados</b><div class="bar"><div class="fill" style="width:100%"></div></div>
