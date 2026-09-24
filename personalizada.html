@@ -1,0 +1,299 @@
+<!doctype html><html lang="pt-BR"><head>
+<meta charset="utf-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>Cotação personalizada · Efeito Vendas na China</title>
+<script src="assets/js/supabase.min.js"></script>
+<script src="config.js"></script>
+<style>
+:root{--ink:#1A1A1A;--soft:#6B6660;--faint:#A29C94;--line:#E7E0D6;--bg:#FAF7F2;--orange:#D91F26;--green:#1F6B4A;--gold:#F5C518;--amber:#8A6100}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Segoe UI',system-ui,Arial,sans-serif;background:var(--bg);color:var(--ink);font-size:14px}
+.top{background:#fff;border-bottom:1px solid var(--line);padding:11px 18px;display:flex;align-items:center;gap:13px;position:sticky;top:0;z-index:30;flex-wrap:wrap}
+.logo{font-family:Arial Black,Arial;font-size:15px;line-height:1.05}.logo i{color:var(--orange);font-style:normal}
+.tag{font-size:10px;letter-spacing:.14em;color:var(--faint);text-transform:uppercase}
+.btn{border:none;border-radius:10px;padding:10px 15px;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit}
+.btn.p{background:var(--orange);color:#fff}.btn.d{background:var(--ink);color:#fff}.btn.g{background:var(--green);color:#fff}
+.btn.ghost{background:#fff;color:var(--ink);border:1.5px solid var(--line)}
+.btn.sm{padding:7px 11px;font-size:11.5px;border-radius:8px}
+.btn:disabled{opacity:.45;cursor:not-allowed}
+.shell{display:grid;grid-template-columns:1fr 372px;gap:16px;padding:16px 18px 50px;align-items:start}
+.grupo{margin-bottom:18px}
+.gtit{font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--faint);margin-bottom:8px;font-weight:700}
+.cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(232px,1fr));gap:9px}
+.sv{background:#fff;border:1.5px solid var(--line);border-radius:13px;padding:12px;cursor:pointer;position:relative;transition:.12s}
+.sv:hover{border-color:var(--ink);transform:translateY(-1px)}
+.sv.on{border-color:var(--green);background:#F6FBF8;box-shadow:0 0 0 3px rgba(31,107,74,.09)}
+.sv.brinde{border-color:var(--gold);background:#FFFDF4}
+.sv .n{font-size:13.5px;font-weight:700;line-height:1.3;padding-right:20px}
+.sv .d{font-size:11.5px;color:var(--soft);line-height:1.45;margin:4px 0 8px;min-height:32px}
+.sv .p{font-size:16px;font-weight:800}
+.sv .p small{font-size:10.5px;color:var(--faint);font-weight:600}
+.sv .pz{font-size:10.5px;color:var(--faint);margin-top:2px}
+.sv .mk{position:absolute;right:9px;top:9px;width:20px;height:20px;border-radius:50%;border:1.5px solid var(--line);display:flex;align-items:center;justify-content:center;font-size:12px;color:#fff}
+.sv.on .mk{background:var(--green);border-color:var(--green)}
+.sv .fita{position:absolute;left:-1px;top:11px;background:var(--orange);color:#fff;font-size:9px;font-weight:800;padding:2px 8px;border-radius:0 6px 6px 0;letter-spacing:.04em}
+.sv.brinde .fita{background:var(--gold);color:var(--ink)}
+.combos{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:9px;margin-bottom:6px}
+.cb{background:linear-gradient(140deg,#1A1A1A,#2E2A26);color:#fff;border-radius:14px;padding:13px;cursor:pointer;position:relative;overflow:hidden}
+.cb h4{font-size:14.5px;margin-bottom:3px}
+.cb p{font-size:11.5px;color:#C9C3BA;line-height:1.45;margin-bottom:9px}
+.cb .de{font-size:11px;color:#9A938A;text-decoration:line-through}
+.cb .por{font-size:19px;font-weight:800;color:var(--gold)}
+.cb .eco{position:absolute;right:11px;top:11px;background:var(--gold);color:var(--ink);font-size:10px;font-weight:800;padding:3px 8px;border-radius:999px}
+.painel{position:sticky;top:74px;background:#fff;border:1.5px solid var(--line);border-radius:16px;padding:15px}
+.painel h3{font-size:15px;margin-bottom:3px}
+.cli{display:grid;gap:6px;margin:10px 0}
+.cli input{border:1.5px solid var(--line);border-radius:9px;padding:9px;font-size:12.5px;font-family:inherit;width:100%}
+.lin{display:flex;justify-content:space-between;gap:8px;font-size:12.5px;padding:6px 0;border-bottom:1px dashed var(--line)}
+.lin .x{color:var(--faint);cursor:pointer;font-weight:700}
+.lin.free{color:var(--green);font-weight:700}
+.reg{background:#FFFDF4;border:1.5px solid #F0DFA8;border-radius:11px;padding:10px;margin:10px 0}
+.reg .bar{height:8px;background:#EDE8E0;border-radius:99px;overflow:hidden;margin:7px 0 5px}
+.reg .fill{height:100%;background:linear-gradient(90deg,var(--gold),#E6A23C);transition:width .3s}
+.reg b{font-size:12px}
+.reg small{font-size:11px;color:var(--amber)}
+.tot{margin-top:11px;border-top:2px solid var(--ink);padding-top:10px}
+.tot .l{display:flex;justify-content:space-between;font-size:12.5px;margin-bottom:4px}
+.tot .big{display:flex;justify-content:space-between;align-items:baseline;font-size:22px;font-weight:800}
+.tot .risc{text-decoration:line-through;color:var(--faint);font-size:13px;font-weight:600}
+.eco2{background:#F1F7F3;border:1px solid #CDE6D9;color:var(--green);border-radius:10px;padding:9px;font-size:12px;font-weight:700;text-align:center;margin-top:9px}
+.desc{display:flex;gap:6px;align-items:center;margin-top:9px}
+.desc input{width:78px;border:1.5px solid var(--line);border-radius:9px;padding:8px;font-size:12.5px;font-family:inherit}
+.gate{max-width:360px;margin:9vh auto;background:#fff;border:1px solid var(--line);border-radius:16px;padding:22px}
+.gate input{width:100%;border:1.5px solid var(--line);border-radius:10px;padding:11px;font-size:13px;margin-bottom:8px;font-family:inherit}
+.hidden{display:none!important}
+textarea{width:100%;border:1.5px solid var(--line);border-radius:10px;padding:10px;font-size:12.5px;font-family:inherit;min-height:60px;margin-top:8px}
+@media(max-width:980px){.shell{grid-template-columns:1fr}.painel{position:static}}
+</style></head><body>
+
+<div id="gate" class="gate">
+  <div class="logo">EFEITO VENDAS <i>NA CHINA</i></div>
+  <div class="tag" style="margin:4px 0 12px">Cotação personalizada — área do time</div>
+  <input id="gtEmail" placeholder="email"/>
+  <input id="gtSenha" type="password" placeholder="senha" onkeydown="if(event.key==='Enter')entrar()"/>
+  <button class="btn d" style="width:100%" onclick="entrar()">Entrar</button>
+  <div id="gtErr" style="color:var(--orange);font-size:12px;margin-top:8px"></div>
+</div>
+
+<div id="app" class="hidden">
+  <div class="top">
+    <div><div class="logo">EFEITO VENDAS <i>NA CHINA</i></div><div class="tag">Cotação personalizada</div></div>
+    <a class="btn ghost sm" href="admin.html">← Painel</a>
+    <div style="margin-left:auto;display:flex;gap:9px;align-items:center">
+      <span id="quem" style="font-size:12px;color:var(--soft)"></span>
+      <button class="btn ghost sm" onclick="sb.auth.signOut().then(()=>location.reload())">sair</button>
+    </div>
+  </div>
+
+  <div class="shell">
+    <div>
+      <div class="grupo">
+        <div class="gtit">Pacotes prontos — mais vantajosos</div>
+        <div class="combos" id="combos"></div>
+      </div>
+      <div id="grupos"></div>
+    </div>
+
+    <div class="painel">
+      <h3>Proposta do cliente</h3>
+      <div style="font-size:11.5px;color:var(--soft)">Monte junto com ele e gere o PDF no fim.</div>
+      <div class="cli">
+        <input id="cliNome" placeholder="Nome do cliente"/>
+        <input id="cliWhats" placeholder="WhatsApp"/>
+        <input id="cliProd" placeholder="Produto / projeto (ex.: bolsa de couro)"/>
+      </div>
+      <div id="lista"></div>
+      <div id="regua"></div>
+      <div class="tot">
+        <div class="l"><span>Serviços escolhidos</span><span id="tSub">R$ 0,00</span></div>
+        <div class="l" id="lCombo" style="display:none;color:var(--green)"><span>Desconto de pacote</span><span id="tCombo">−</span></div>
+        <div class="l" id="lBrinde" style="display:none;color:var(--green)"><span>Brindes conquistados</span><span id="tBrinde">−</span></div>
+        <div class="l" id="lDesc" style="display:none;color:var(--green)"><span>Desconto de fechamento</span><span id="tDesc">−</span></div>
+        <div class="big"><span>Total</span><span><span class="risc" id="tRisc"></span> <span id="tFinal">R$ 0,00</span></span></div>
+        <div class="eco2 hidden" id="eco"></div>
+        <div class="desc">
+          <span style="font-size:12px;color:var(--soft)">Desconto de fechamento</span>
+          <input id="descPct" type="number" min="0" max="100" placeholder="%" oninput="calc()"/>
+        </div>
+        <textarea id="obs" placeholder="Observações do projeto (o que o cliente quer, referências, prazos)"></textarea>
+        <button class="btn p" style="width:100%;margin-top:10px" onclick="gerarPDF()">Gerar proposta em PDF</button>
+        <button class="btn ghost" style="width:100%;margin-top:7px" onclick="salvar()">Salvar no painel</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+const CFG=window.GARIMPO_CONFIG;
+const sb=supabase.createClient(CFG.SUPABASE_URL,CFG.SUPABASE_ANON);
+const $=id=>document.getElementById(id);
+const brl=n=>Number(n||0).toLocaleString("pt-BR",{minimumFractionDigits:2,maximumFractionDigits:2});
+let SRV=[],COMBOS=[],BRINDES=[],SEL=new Set(),COMBOSEL=new Set(),EU=null;
+
+async function entrar(){
+  const {error}=await sb.auth.signInWithPassword({email:$("gtEmail").value.trim(),password:$("gtSenha").value});
+  if(error){$("gtErr").textContent="Email ou senha incorretos.";return;}
+  boot();
+}
+function svById(id){return SRV.find(s=>s.id===id)||{};}
+function brindesAtivos(sub){return BRINDES.filter(b=>sub>=b.v).map(b=>b.id);}
+
+function render(){
+  $("combos").innerHTML=COMBOS.map(c=>{
+    const cheio=c.itens.reduce((s,i)=>s+(svById(i).p||0),0);
+    const eco=Math.round((1-c.p/cheio)*100);
+    const on=COMBOSEL.has(c.id);
+    return `<div class="cb" onclick="toggleCombo('${c.id}')" style="${on?'outline:3px solid var(--gold)':''}">
+      <span class="eco">−${eco}%</span>
+      <h4>${c.n}${on?' ✓':''}</h4><p>${c.d}</p>
+      <div class="de">R$ ${brl(cheio)}</div><div class="por">R$ ${brl(c.p)}</div>
+    </div>`;
+  }).join("");
+  const gs=[...new Set(SRV.map(s=>s.g))];
+  const sub=subtotal();
+  const brs=brindesAtivos(sub);
+  $("grupos").innerHTML=gs.map(g=>`<div class="grupo"><div class="gtit">${g}</div><div class="cards">${
+    SRV.filter(s=>s.g===g).map(s=>{
+      const on=SEL.has(s.id), br=brs.includes(s.id)&&!on;
+      return `<div class="sv ${on?'on':''} ${br?'brinde':''}" onclick="toggle('${s.id}')">
+        ${s.dest?'<span class="fita">MAIS PEDIDO</span>':''}${br?'<span class="fita">BRINDE</span>':''}
+        <span class="mk">${on?'✓':''}</span>
+        <div class="n">${s.n}</div><div class="d">${s.d}</div>
+        <div class="p">${s.consulta?'<small>sob consulta</small>':`${s.de?'<small>a partir de </small>':''}R$ ${brl(s.p)}`}${s.extra?`<small> ${s.extra}</small>`:''}</div>
+        <div class="pz">${s.prazo||''}${s.abate?' · abate na importação':''}</div>
+      </div>`;
+    }).join("")}</div></div>`).join("");
+  calc();
+}
+function toggle(id){SEL.has(id)?SEL.delete(id):SEL.add(id);render();}
+function toggleCombo(id){
+  const c=COMBOS.find(x=>x.id===id);
+  if(COMBOSEL.has(id)){COMBOSEL.delete(id);c.itens.forEach(i=>SEL.delete(i));}
+  else{COMBOSEL.add(id);c.itens.forEach(i=>SEL.add(i));}
+  render();
+}
+function subtotal(){
+  let s=0;
+  SEL.forEach(id=>{const v=svById(id);if(!v.consulta)s+=v.p||0;});
+  return s;
+}
+function calc(){
+  const itens=[...SEL].map(svById);
+  const sub=subtotal();
+  const brs=brindesAtivos(sub);
+  // desconto dos pacotes
+  let descCombo=0;
+  COMBOSEL.forEach(cid=>{const c=COMBOS.find(x=>x.id===cid);
+    const cheio=c.itens.reduce((s,i)=>s+(svById(i).p||0),0);descCombo+=cheio-c.p;});
+  // brindes: serviços marcados que viraram cortesia
+  let descBrinde=0;
+  brs.forEach(id=>{if(SEL.has(id))descBrinde+=svById(id).p||0;});
+  const pct=parseFloat($("descPct").value||"0")||0;
+  const base=Math.max(sub-descCombo-descBrinde,0);
+  const descPct=base*pct/100;
+  const final=Math.max(base-descPct,0);
+  $("lista").innerHTML=itens.length?itens.map(s=>{
+    const gratis=brs.includes(s.id);
+    return `<div class="lin ${gratis?'free':''}"><span>${s.n}${gratis?' · brinde':''}</span>
+      <span>${s.consulta?'sob consulta':(gratis?'grátis':'R$ '+brl(s.p))} <span class="x" onclick="toggle('${s.id}')">✕</span></span></div>`;
+  }).join(""):'<div style="font-size:12px;color:var(--faint);padding:10px 0">Nenhum serviço escolhido ainda — clique nos cartões ao lado.</div>';
+  // régua
+  const prox=BRINDES.find(b=>sub<b.v);
+  $("regua").innerHTML=prox
+    ? `<div class="reg"><b>Faltam R$ ${brl(prox.v-sub)} para ganhar: ${prox.n}</b>
+       <div class="bar"><div class="fill" style="width:${Math.min(100,sub/prox.v*100)}%"></div></div>
+       <small>Ao chegar em R$ ${brl(prox.v)} este serviço entra de cortesia.</small></div>`
+    : (BRINDES.length?`<div class="reg"><b>Todos os brindes conquistados</b><div class="bar"><div class="fill" style="width:100%"></div></div>
+       <small>${BRINDES.map(b=>b.n).join(" e ")} entram de cortesia.</small></div>`:"");
+  $("tSub").textContent="R$ "+brl(sub);
+  $("lCombo").style.display=descCombo?"flex":"none";$("tCombo").textContent="− R$ "+brl(descCombo);
+  $("lBrinde").style.display=descBrinde?"flex":"none";$("tBrinde").textContent="− R$ "+brl(descBrinde);
+  $("lDesc").style.display=descPct?"flex":"none";$("tDesc").textContent="− R$ "+brl(descPct);
+  $("tFinal").textContent="R$ "+brl(final);
+  $("tRisc").textContent=(sub>final&&sub)?"R$ "+brl(sub):"";
+  const eco=sub-final;
+  $("eco").classList.toggle("hidden",!eco);
+  if(eco)$("eco").textContent=`Você leva R$ ${brl(sub)} em serviços por R$ ${brl(final)} — economia de R$ ${brl(eco)}`;
+  window._prop={itens,sub,descCombo,descBrinde,descPct,final,brs};
+}
+
+async function salvar(){
+  const p=window._prop||{};
+  if(!p.itens||!p.itens.length){alert("Escolha pelo menos um serviço.");return;}
+  const nome=$("cliNome").value.trim();
+  if(nome.length<3){alert("Escreva o nome do cliente.");return;}
+  const {error}=await sb.from("cotacoes").insert({
+    lead_nome:nome,lead_whatsapp:$("cliWhats").value.replace(/\D/g,"")||null,
+    total_estimado:p.final,status:"em_cotacao",responsavel:EU,
+    obs_aluno:"COTAÇÃO PERSONALIZADA · "+$("cliProd").value+" · "+p.itens.map(i=>i.n).join(", ")+
+      ($("obs").value?" · "+$("obs").value:""),
+    lead_quiz:{tipo:"personalizada",produto:$("cliProd").value,servicos:p.itens.map(i=>i.id),total:p.final}
+  });
+  if(error){alert("Não consegui salvar: "+error.message);return;}
+  alert("Salvo no painel ✓");
+}
+
+function gerarPDF(){
+  const p=window._prop||{};
+  if(!p.itens||!p.itens.length){alert("Escolha pelo menos um serviço.");return;}
+  const nome=$("cliNome").value.trim()||"Cliente";
+  const prod=$("cliProd").value.trim();
+  const w=window.open("","_blank");
+  if(!w){alert("Libere os pop-ups deste site para gerar o PDF.");return;}
+  const linhas=p.itens.map(s=>{
+    const gratis=p.brs.includes(s.id);
+    return `<tr${gratis?' class="free"':''}><td><b>${s.n}</b><div class="dd">${s.d}</div></td><td>${s.prazo||"—"}</td>
+      <td class="r">${s.consulta?"sob consulta":(gratis?"<b>BRINDE</b>":"R$ "+brl(s.p))}</td></tr>`;
+  }).join("");
+  w.document.write(`<!doctype html><html><head><meta charset="utf-8"><title>Proposta personalizada — ${nome}</title><style>
+    @page{size:A4;margin:14mm}*{box-sizing:border-box}
+    body{font-family:'Segoe UI',Arial,sans-serif;color:#1A1A1A;font-size:12px;line-height:1.55;margin:0}
+    .top{display:flex;justify-content:space-between;align-items:flex-end;border-bottom:3px solid #D91F26;padding-bottom:9px;margin-bottom:14px}
+    .logo{font-family:Arial Black,Arial;font-size:19px}.logo i{color:#D91F26;font-style:normal}
+    .meta{text-align:right;font-size:10.5px;color:#666}
+    h2{font-size:14px;margin:16px 0 7px;padding-bottom:4px;border-bottom:1px solid #E7E0D6}
+    table{width:100%;border-collapse:collapse;font-size:11.5px}
+    th{text-align:left;color:#888;font-size:9.5px;text-transform:uppercase;padding:5px;border-bottom:1px solid #eee}
+    td{padding:7px 5px;border-bottom:1px solid #F4F1EC;vertical-align:top}
+    td.r{text-align:right;white-space:nowrap}
+    tr.free td{background:#FFFDF4}
+    .dd{font-size:10.5px;color:#777;margin-top:2px}
+    .tot{background:#1A1A1A;color:#fff;border-radius:11px;padding:14px 16px;display:flex;justify-content:space-between;align-items:center;margin-top:14px}
+    .tot b{font-size:22px}.tot small{color:#bbb;font-size:10.5px;display:block}
+    .eco{background:#F1F7F3;border:1px solid #CDE6D9;color:#1F6B4A;border-radius:10px;padding:10px;font-weight:700;text-align:center;margin-top:10px;font-size:12.5px}
+    .box{background:#FDF9F2;border:1px solid #F0D9B8;border-radius:10px;padding:11px;margin-top:12px;font-size:11.5px}
+    .foot{font-size:9.5px;color:#777;margin-top:16px;border-top:1px solid #E7E0D6;padding-top:8px}
+  </style></head><body>
+    <div class="top"><div class="logo">EFEITO VENDAS <i>na China</i></div>
+    <div class="meta">Proposta personalizada<br>${new Date().toLocaleDateString("pt-BR")} · válida por 7 dias</div></div>
+    <div><b>Olá, ${nome}!</b> Montamos o pacote de desenvolvimento ${prod?"do seu produto: <b>"+prod+"</b>":"do seu produto"} — cada etapa abaixo é feita pelo nosso time na China, com acompanhamento em português.</div>
+    <h2>O que está incluso</h2>
+    <table><tr><th>Serviço</th><th>Prazo</th><th class="r">Valor</th></tr>${linhas}</table>
+    ${p.descCombo?`<div style="text-align:right;font-size:11.5px;margin-top:6px">Desconto de pacote: <b>− R$ ${brl(p.descCombo)}</b></div>`:""}
+    ${p.descPct?`<div style="text-align:right;font-size:11.5px">Desconto de fechamento: <b>− R$ ${brl(p.descPct)}</b></div>`:""}
+    <div class="tot"><span>Investimento no desenvolvimento<small>serviços do nosso time na China</small></span><b>R$ ${brl(p.final)}</b></div>
+    ${(p.sub-p.final)?`<div class="eco">Você leva R$ ${brl(p.sub)} em serviços por R$ ${brl(p.final)} — economia de R$ ${brl(p.sub-p.final)}</div>`:""}
+    <div class="box"><b>Importante:</b> os serviços de pesquisa e amostra são <b>abatidos da sua importação</b> quando o pedido for fechado conosco. Personalização e ferramental são custos de produção e não abatem.
+    ${$("obs").value?`<br><br><b>Sobre o seu projeto:</b> ${$("obs").value}`:""}</div>
+    <h2>Próximo passo</h2>
+    <div>Confirme este pacote no WhatsApp e nosso time inicia imediatamente. Cada entrega chega a você dentro do prazo indicado, com relatório em português.</div>
+    <div class="foot">Efeito Vendas na China · efeitovendasnachina.com.br<br>Proposta montada por ${EU}. Valores válidos por 7 dias.</div>
+  </body></html>`);
+  w.document.close();
+  setTimeout(()=>{try{w.focus();w.print();}catch(e){}},800);
+}
+
+async function boot(){
+  const {data:{session}}=await sb.auth.getSession();
+  if(!session){$("gate").classList.remove("hidden");$("app").classList.add("hidden");return;}
+  const {data:pf}=await sb.from("perfis").select("nome,papel").eq("id",session.user.id).single();
+  if(!pf||!["admin","equipe"].includes(pf.papel)){$("gtErr").textContent="Esta área é do time.";await sb.auth.signOut();return;}
+  EU=pf.nome||session.user.email.split("@")[0];
+  $("quem").textContent=EU+" · "+pf.papel;
+  $("gate").classList.add("hidden");$("app").classList.remove("hidden");
+  const {data}=await sb.from("config").select("valor").eq("chave","servicos_personalizada").single();
+  const v=(data&&data.valor)||{};
+  SRV=v.servicos||[];COMBOS=v.combos||[];BRINDES=v.brindes||[];
+  render();
+}
+boot();
+</script></body></html>
