@@ -239,44 +239,83 @@ function gerarPDF(){
   const prod=$("cliProd").value.trim();
   const w=window.open("","_blank");
   if(!w){alert("Libere os pop-ups deste site para gerar o PDF.");return;}
-  const linhas=p.itens.map(s=>{
-    const gratis=p.brs.includes(s.id);
-    return `<tr${gratis?' class="free"':''}><td><b>${s.n}</b><div class="dd">${s.d}</div></td><td>${s.prazo||"—"}</td>
-      <td class="r">${s.consulta?"sob consulta":(gratis?"<b>BRINDE</b>":"R$ "+brl(s.p))}</td></tr>`;
-  }).join("");
-  w.document.write(`<!doctype html><html><head><meta charset="utf-8"><title>Proposta personalizada — ${nome}</title><style>
-    @page{size:A4;margin:14mm}*{box-sizing:border-box}
-    body{font-family:'Segoe UI',Arial,sans-serif;color:#1A1A1A;font-size:12px;line-height:1.55;margin:0}
-    .top{display:flex;justify-content:space-between;align-items:flex-end;border-bottom:3px solid #D91F26;padding-bottom:9px;margin-bottom:14px}
-    .logo{font-family:Arial Black,Arial;font-size:19px}.logo i{color:#D91F26;font-style:normal}
-    .meta{text-align:right;font-size:10.5px;color:#666}
-    h2{font-size:14px;margin:16px 0 7px;padding-bottom:4px;border-bottom:1px solid #E7E0D6}
-    table{width:100%;border-collapse:collapse;font-size:11.5px}
-    th{text-align:left;color:#888;font-size:9.5px;text-transform:uppercase;padding:5px;border-bottom:1px solid #eee}
-    td{padding:7px 5px;border-bottom:1px solid #F4F1EC;vertical-align:top}
-    td.r{text-align:right;white-space:nowrap}
-    tr.free td{background:#FFFDF4}
-    .dd{font-size:10.5px;color:#777;margin-top:2px}
-    .tot{background:#1A1A1A;color:#fff;border-radius:11px;padding:14px 16px;display:flex;justify-content:space-between;align-items:center;margin-top:14px}
-    .tot b{font-size:22px}.tot small{color:#bbb;font-size:10.5px;display:block}
-    .eco{background:#F1F7F3;border:1px solid #CDE6D9;color:#1F6B4A;border-radius:10px;padding:10px;font-weight:700;text-align:center;margin-top:10px;font-size:12.5px}
-    .box{background:#FDF9F2;border:1px solid #F0D9B8;border-radius:10px;padding:11px;margin-top:12px;font-size:11.5px}
-    .foot{font-size:9.5px;color:#777;margin-top:16px;border-top:1px solid #E7E0D6;padding-top:8px}
+  const porGrupo={};
+  p.itens.forEach(s=>{(porGrupo[s.g]=porGrupo[s.g]||[]).push(s);});
+  const secoes=Object.entries(porGrupo).map(([g,itens])=>`
+    <div class="sec">
+      <div class="sech">${g}</div>
+      ${itens.map(s=>{
+        const gratis=p.brs.includes(s.id);
+        return `<div class="it ${gratis?'free':''}">
+          <div class="ic">${gratis?'★':'✓'}</div>
+          <div class="txt"><b>${s.n}</b><div class="dd">${s.d}</div>
+            <div class="pz">${s.prazo||""}${s.abate?" · abatido na importação":""}</div></div>
+          <div class="vl">${s.consulta?'<span class="sc">sob consulta</span>':(gratis?'<span class="br">CORTESIA</span>':'R$ '+brl(s.p))}</div>
+        </div>`;}).join("")}
+    </div>`).join("");
+  w.document.write(`<!doctype html><html><head><meta charset="utf-8"><title>Proposta — ${nome}</title><style>
+    @page{size:A4;margin:0}*{box-sizing:border-box;margin:0;padding:0}
+    body{font-family:'Segoe UI',Arial,sans-serif;color:#1A1A1A;font-size:12px;line-height:1.5}
+    .capa{background:#1A1A1A;color:#fff;padding:26mm 16mm 20mm;position:relative;overflow:hidden}
+    .capa:after{content:"";position:absolute;right:-60px;top:-60px;width:260px;height:260px;border-radius:50%;background:rgba(217,31,38,.22)}
+    .lg{font-family:Arial Black,Arial;font-size:22px;letter-spacing:.5px}.lg i{color:#D91F26;font-style:normal}
+    .kick{font-size:10px;letter-spacing:.32em;color:#9A938A;text-transform:uppercase;margin-top:22px}
+    .capa h1{font-size:31px;line-height:1.12;margin:7px 0 4px;font-weight:800}
+    .capa .pr{font-size:15px;color:#F5C518;font-weight:700}
+    .capa .dt{position:absolute;right:16mm;bottom:20mm;text-align:right;font-size:10.5px;color:#9A938A}
+    .ct{padding:11mm 16mm 16mm}
+    .intro{font-size:12.5px;color:#444;border-left:3px solid #D91F26;padding-left:11px;margin-bottom:16px}
+    .sec{margin-bottom:13px;page-break-inside:avoid}
+    .sech{font-size:9.5px;letter-spacing:.16em;text-transform:uppercase;color:#A29C94;font-weight:800;padding-bottom:5px;border-bottom:1px solid #E7E0D6;margin-bottom:7px}
+    .it{display:grid;grid-template-columns:22px 1fr auto;gap:9px;align-items:start;padding:8px 0;border-bottom:1px solid #F4F1EC}
+    .it.free{background:#FFFDF4}
+    .ic{width:20px;height:20px;border-radius:50%;background:#F1F7F3;color:#1F6B4A;font-size:11px;display:flex;align-items:center;justify-content:center;font-weight:800}
+    .it.free .ic{background:#F5C518;color:#1A1A1A}
+    .txt b{font-size:12.5px}
+    .dd{font-size:10.5px;color:#777;margin-top:1px}
+    .pz{font-size:9.5px;color:#A29C94;margin-top:2px}
+    .vl{font-size:13px;font-weight:800;white-space:nowrap;text-align:right;padding-top:2px}
+    .sc{font-size:10.5px;color:#8A6100;font-weight:700}
+    .br{background:#F5C518;color:#1A1A1A;font-size:9.5px;font-weight:800;padding:3px 8px;border-radius:999px}
+    .resumo{display:grid;grid-template-columns:1fr auto;gap:4px;margin-top:14px;font-size:12px}
+    .resumo .lbl{color:#666}.resumo .v{text-align:right}
+    .resumo .verde{color:#1F6B4A;font-weight:700}
+    .total{background:#1A1A1A;color:#fff;border-radius:13px;padding:15px 18px;display:flex;justify-content:space-between;align-items:center;margin-top:12px}
+    .total small{display:block;color:#9A938A;font-size:10.5px;margin-top:2px}
+    .total b{font-size:25px;color:#F5C518}
+    .eco{background:#F1F7F3;border:1px solid #CDE6D9;color:#1F6B4A;border-radius:11px;padding:11px;text-align:center;font-weight:700;margin-top:9px;font-size:12.5px}
+    .cols{display:grid;grid-template-columns:1fr 1fr;gap:11px;margin-top:14px}
+    .bx{border:1px solid #E7E0D6;border-radius:11px;padding:11px;font-size:11px;line-height:1.55}
+    .bx b{display:block;margin-bottom:4px;font-size:11.5px}
+    .cta{background:#FDF9F2;border:1px solid #F0D9B8;border-radius:11px;padding:12px;margin-top:12px;font-size:12px}
+    .ft{margin-top:14px;padding-top:9px;border-top:1px solid #E7E0D6;font-size:9.5px;color:#888;display:flex;justify-content:space-between}
   </style></head><body>
-    <div class="top"><div class="logo">EFEITO VENDAS <i>na China</i></div>
-    <div class="meta">Proposta personalizada<br>${new Date().toLocaleDateString("pt-BR")} · válida por 7 dias</div></div>
-    <div><b>Olá, ${nome}!</b> Montamos o pacote de desenvolvimento ${prod?"do seu produto: <b>"+prod+"</b>":"do seu produto"} — cada etapa abaixo é feita pelo nosso time na China, com acompanhamento em português.</div>
-    <h2>O que está incluso</h2>
-    <table><tr><th>Serviço</th><th>Prazo</th><th class="r">Valor</th></tr>${linhas}</table>
-    ${p.descCombo?`<div style="text-align:right;font-size:11.5px;margin-top:6px">Desconto de pacote: <b>− R$ ${brl(p.descCombo)}</b></div>`:""}
-    ${p.descPct?`<div style="text-align:right;font-size:11.5px">Desconto de fechamento: <b>− R$ ${brl(p.descPct)}</b></div>`:""}
-    <div class="tot"><span>Investimento no desenvolvimento<small>serviços do nosso time na China</small></span><b>R$ ${brl(p.final)}</b></div>
-    ${(p.sub-p.final)?`<div class="eco">Você leva R$ ${brl(p.sub)} em serviços por R$ ${brl(p.final)} — economia de R$ ${brl(p.sub-p.final)}</div>`:""}
-    <div class="box"><b>Importante:</b> os serviços de pesquisa e amostra são <b>abatidos da sua importação</b> quando o pedido for fechado conosco. Personalização e ferramental são custos de produção e não abatem.
-    ${$("obs").value?`<br><br><b>Sobre o seu projeto:</b> ${$("obs").value}`:""}</div>
-    <h2>Próximo passo</h2>
-    <div>Confirme este pacote no WhatsApp e nosso time inicia imediatamente. Cada entrega chega a você dentro do prazo indicado, com relatório em português.</div>
-    <div class="foot">Efeito Vendas na China · efeitovendasnachina.com.br<br>Proposta montada por ${EU}. Valores válidos por 7 dias.</div>
+    <div class="capa">
+      <div class="lg">EFEITO VENDAS <i>na China</i></div>
+      <div class="kick">Proposta de desenvolvimento</div>
+      <h1>${nome}</h1>
+      ${prod?`<div class="pr">${prod}</div>`:""}
+      <div class="dt">${new Date().toLocaleDateString("pt-BR")}<br>válida por 7 dias</div>
+    </div>
+    <div class="ct">
+      <div class="intro">Montamos este pacote para tirar o seu produto do papel na China — cada etapa é executada pelo nosso time lá dentro, com acompanhamento em português e prazo definido.</div>
+      ${secoes}
+      <div class="resumo">
+        <div class="lbl">Serviços escolhidos</div><div class="v">R$ ${brl(p.sub)}</div>
+        ${p.descCombo?`<div class="lbl verde">Desconto de pacote</div><div class="v verde">− R$ ${brl(p.descCombo)}</div>`:""}
+        ${p.descBrinde?`<div class="lbl verde">Brindes conquistados</div><div class="v verde">− R$ ${brl(p.descBrinde)}</div>`:""}
+        ${p.descPct?`<div class="lbl verde">Desconto de fechamento</div><div class="v verde">− R$ ${brl(p.descPct)}</div>`:""}
+      </div>
+      <div class="total"><span>Investimento no desenvolvimento<small>serviços do nosso time na China</small></span><b>R$ ${brl(p.final)}</b></div>
+      ${(p.sub-p.final)?`<div class="eco">Você leva R$ ${brl(p.sub)} em serviços por R$ ${brl(p.final)} — economia de R$ ${brl(p.sub-p.final)}</div>`:""}
+      <div class="cols">
+        <div class="bx"><b>Como funciona o abatimento</b>Pesquisa e amostra são <b>descontados da sua importação</b> quando o pedido fecha conosco. Personalização e ferramental são custos de produção na fábrica e não abatem.</div>
+        <div class="bx"><b>O que você recebe em cada etapa</b>Relatório em português, fotos e vídeos reais quando aplicável, e retorno do nosso time dentro do prazo indicado em cada serviço.</div>
+      </div>
+      ${$("obs").value?`<div class="cta"><b>Sobre o seu projeto:</b> ${$("obs").value}</div>`:""}
+      <div class="cta"><b>Próximo passo:</b> confirme este pacote no WhatsApp e nosso time inicia hoje mesmo. Você acompanha cada entrega por lá.</div>
+      <div class="ft"><span>Efeito Vendas na China · efeitovendasnachina.com.br</span><span>Proposta montada por ${EU}</span></div>
+    </div>
   </body></html>`);
   w.document.close();
   setTimeout(()=>{try{w.focus();w.print();}catch(e){}},800);
