@@ -621,6 +621,17 @@ async function boot(){
 }
 // ---------- CATALOGO ----------
 const CARD_COLS="offer_id,nome,categoria,subcategoria,brl,brl_max,img,moq,vendas,destaque,forn_fabrica,forn_anos,eh_kit,grupo_id,nota_ia,certificacao,descricao";
+
+function podeAdicionar(offer_id){
+  const lim=Number(MINQ.max_produtos||2);
+  if(CART.find(c=>c.offer_id===offer_id))return true;      // já está no carrinho: só soma quantidade
+  if(CART.length>=lim){
+    showToast(`Máximo de ${lim} produto${lim>1?"s":""} por cotação — trabalhamos com até ${lim} por metro cúbico`);
+    return false;
+  }
+  return true;
+}
+
 let MINQ={un_item:10,un_pedido:50,m3:1,max_produtos:2};
 async function carregaMinimos(){try{const {data}=await sb.from("config").select("valor").eq("chave","minimos").single();if(data&&data.valor)MINQ={...MINQ,...data.valor};}catch(e){}}
 async function carregaCatalogo(){
@@ -773,8 +784,8 @@ function autoPag(){
 function add(id){
   const p=PROD.find(x=>x.offer_id===id);if(!p)return;
   const ex=CART.find(x=>x.offer_id===id);
-  if(ex)ex.qtd+=p.moq||1;else if(CART.length>=(MINQ.max_produtos||2)){
-    showToast(`Máximo de ${MINQ.max_produtos||2} produtos por cotação — trabalhamos com até 2 produtos por metro cúbico`);
+  if(!ex&&!podeAdicionar(id))return;
+  if(ex)ex.qtd+=p.moq||1;else if(false){
     return;
   }
   CART.push({offer_id:id,nome:p.nome,img:p.img,fabu:(fab(p)||p.brl/1.944),moq:p.moq||1,qtd:Math.max(p.moq||1,MINQ.un_item),brl:p.brl});
@@ -943,6 +954,10 @@ async function mostraLimite(){
 async function enviarCotacao(pos){
   if(_enviando)return;
   if(!CART.length){alert("Adicione produtos antes de enviar.");return;}
+  if(CART.length>(Number(MINQ.max_produtos)||2)){
+    alert(`Nossa cotação trabalha com até ${MINQ.max_produtos||2} produto(s) por vez — é assim que garantimos o melhor preço no metro cúbico.\n\nDeixe só ${MINQ.max_produtos||2} e envie; depois a gente cota o restante com você.`);
+    return;
+  }
   const unTot=CART.reduce((s,c)=>s+c.qtd,0);
   if(unTot<MINQ.un_pedido){
     alert(`Nosso mínimo de importação é ${MINQ.un_pedido} unidades no pedido.\n\nVocê está com ${unTot}. Aumente a quantidade ou adicione mais um produto — quanto mais unidades, menor o custo por peça.`);
@@ -1123,6 +1138,7 @@ function addDoModal(){
   if(!pmProd)return;
   const q=Math.max(pmProd.moq||1,parseInt($("pmQty").value)||1);
   const ex=CART.find(x=>x.offer_id===pmProd.offer_id);
+  if(!ex&&!podeAdicionar(pmProd.offer_id))return;
   if(ex)ex.qtd+=q;else CART.push({offer_id:pmProd.offer_id,nome:pmProd.nome,img:pmProd.img,moq:pmProd.moq||1,qtd:q,brl:pmProd.brl});
   updCart();fechaProd();irCarrinho();showToast("Adicionado à sua cotação");
 }
@@ -1184,6 +1200,7 @@ async function abrirOrcamento(){
 }
 function addFoto(p){
   const ex=CART.find(x=>x.offer_id===p.offer_id);
+  if(!ex&&!podeAdicionar(p.offer_id))return;
   if(ex)ex.qtd+=p.moq||1;else CART.push({offer_id:p.offer_id,nome:p.nome,img:p.img,moq:p.moq||1,qtd:p.moq||1,brl:p.brl});
   updCart();showToast("Adicionado à sua cotação");
 }
