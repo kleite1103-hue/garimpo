@@ -347,7 +347,7 @@ async function boot(){
 }
 function nav(el){
   document.querySelectorAll(".al").forEach(a=>a.classList.remove("on"));el.classList.add("on");
-  ["Geral","Cot","Ped","Cat","Cfg","Cur","Sol","Amo","Ver","Ouro"].forEach(v=>$("v"+v).classList.add("hidden"));
+  ["Geral","Cot","Ped","Cat","Cfg","Cur","Sol","Amo","Ver","Ouro","Usr"].forEach(v=>$("v"+v).classList.add("hidden"));
   const v=el.dataset.v;
   $("v"+v.charAt(0).toUpperCase()+v.slice(1)).classList.remove("hidden");
   if(v==="cat"&&!CATP.length)loadCat();
@@ -355,6 +355,7 @@ function nav(el){
   if(v==="sol")loadSol();
   if(v==="amo")loadAmo();
   if(v==="ouro")loadOuro();
+  if(v==="usr")loadUsr();
 }
 // ---------- LOADS ----------
 async function loadCots(){
