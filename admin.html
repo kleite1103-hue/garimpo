@@ -779,21 +779,90 @@ async function buscaFoto(){
 async function renderFotoRes(jc){
   const L=jc.resultados||[];
   if(!L.length){$("fRes").innerHTML=`<div class="fstatus">Nenhum fornecedor confiável pra essa foto.</div>`;return;}
-  // origem (¥ e link) — só o time enxerga estas tabelas
   let org={};
   try{
     const {data}=await sb.from("catalogo_origem").select("offer_id,rmb,url_origem,member_id,empresa").in("offer_id",L.map(p=>p.offer_id));
     (data||[]).forEach(o=>org[o.offer_id]=o);
   }catch(e){}
+  let vis={};
+  try{
+    const {data}=await sb.from("catalogo").select("offer_id,visivel").in("offer_id",L.map(p=>p.offer_id));
+    (data||[]).forEach(c=>vis[c.offer_id]=c.visivel);
+  }catch(e){}
+  window._fotoRes=L;window._fotoOrg=org;
   $("fRes").innerHTML=`<div style="font-size:13.5px;font-weight:700;margin-bottom:10px">Encontrado em <span style="color:var(--green)">${L.length} fornecedores confiáveis</span> · do mais barato pro mais caro</div>`+
-   L.map(p=>{const o=org[p.offer_id]||{};
-    return `<div class="fitem"><img src="${p.img}"/>
+   L.map((p,ix)=>{const o=org[p.offer_id]||{};
+    return `<div class="fitem" style="flex-wrap:wrap"><img src="${p.img}"/>
      <div class="fi"><div class="fn">${p.nome}</div>
-     <div class="fm">¥ ${o.rmb??"?"} na origem · MOQ ${p.moq} · ${p.anos} anos${p.fabrica?" · Fábrica":""}${p.vendas90?` · ${p.vendas90}/90d`:""}</div></div>
-     <div class="fp"><div class="v2">R$ ${brl(p.brl)}</div><div class="l2">chegada/un</div></div>
-     ${o.url_origem?`<a class="btn sm s" style="text-decoration:none" href="${o.url_origem}" target="_blank">origem ↗</a>`:""}
+     <div class="fm">¥ ${o.rmb??"?"} na origem · MOQ ${p.moq} · ${p.anos} anos${p.fabrica?" · Fábrica":""}${p.vendas90?` · ${p.vendas90}/90d`:""}${o.empresa?` · ${String(o.empresa).slice(0,26)}`:""}</div></div>
+     <div class="fp"><div class="v2">R$ ${brl(p.brl)}</div><div class="l2">na fábrica/un</div></div>
+     <div style="display:flex;gap:6px;flex-wrap:wrap;width:100%;margin-top:8px">
+       <button class="btn sm p" onclick="cotarDaFoto(${ix})">Criar cotação com este</button>
+       <button class="btn sm ghost" onclick="publicarDaFoto('${p.offer_id}',this)">${vis[p.offer_id]?"✓ já na vitrine":"Publicar na vitrine"}</button>
+       ${o.member_id?`<a class="btn sm ghost" style="text-decoration:none" href="https://air.1688.com/app/ctalk/index.html?memberId=${o.member_id}" target="_blank">Falar com a fábrica</a>`:""}
+       ${o.url_origem?`<a class="btn sm ghost" style="text-decoration:none" href="${o.url_origem}" target="_blank">Ver na origem ↗</a>`:""}
+     </div>
    </div>`}).join("");
 }
+
+async function publicarDaFoto(offer_id,btn){
+  const {error}=await sb.from("catalogo").update({visivel:true,curadoria:"karina_aprovou"}).eq("offer_id",offer_id);
+  if(error){alert("Não consegui publicar: "+error.message);return;}
+  btn.textContent="✓ já na vitrine";btn.disabled=true;
+  (typeof toast==='function'?toast:(m=>{}))("Produto publicado na vitrine ✓");
+}
+
+function cotarDaFoto(ix){
+  const p=(window._fotoRes||[])[ix];if(!p)return;
+  const o=(window._fotoOrg||{})[p.offer_id]||{};
+  document.getElementById("cfBox")?.remove();
+  const html=`<div id="cfBox" style="position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:120;display:flex;align-items:center;justify-content:center;padding:18px" onclick="if(event.target===this)this.remove()">
+    <div style="background:#fff;border-radius:16px;padding:20px;width:min(480px,95vw);max-height:90vh;overflow:auto">
+      <div style="display:flex;gap:11px;align-items:center;margin-bottom:12px">
+        <img src="${p.img}" style="width:56px;height:56px;border-radius:10px;object-fit:cover;border:1px solid var(--line)"/>
+        <div><b style="font-size:14px">${p.nome}</b>
+        <div style="font-size:11.5px;color:var(--soft)">R$ ${brl(p.brl)}/un na fábrica · MOQ ${p.moq}${o.empresa?` · ${String(o.empresa).slice(0,28)}`:""}</div></div>
+      </div>
+      <div class="hint">Para qual cliente é esta cotação?</div>
+      <input id="cfNome" placeholder="Nome do cliente" style="width:100%;border:1.5px solid var(--line);border-radius:10px;padding:10px;font-size:13px;margin:5px 0 8px"/>
+      <input id="cfWhats" placeholder="WhatsApp (só números)" style="width:100%;border:1.5px solid var(--line);border-radius:10px;padding:10px;font-size:13px;margin-bottom:8px"/>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+        <div><div class="hint">Quantidade</div><input id="cfQtd" type="number" value="${Math.max(p.moq||1,10)}" style="width:100%;border:1.5px solid var(--line);border-radius:10px;padding:10px;font-size:13px"/></div>
+        <div><div class="hint">Responsável</div><input id="cfResp" value="${(PERFIL&&PERFIL.nome)||""}" style="width:100%;border:1.5px solid var(--line);border-radius:10px;padding:10px;font-size:13px"/></div>
+      </div>
+      <textarea id="cfObs" placeholder="Observações (cor, personalização, prazo do cliente)" style="width:100%;border:1.5px solid var(--line);border-radius:10px;padding:10px;font-size:12.5px;min-height:56px;margin-top:8px;font-family:inherit"></textarea>
+      <div style="display:flex;gap:8px;margin-top:12px">
+        <button class="btn p" style="flex:1" onclick="salvaCotFoto('${p.offer_id}')">Criar cotação</button>
+        <button class="btn ghost" onclick="document.getElementById('cfBox').remove()">cancelar</button>
+      </div>
+      <div id="cfMsg" style="font-size:12.5px;margin-top:9px"></div>
+    </div></div>`;
+  document.body.insertAdjacentHTML("beforeend",html);
+}
+
+async function salvaCotFoto(offer_id){
+  const p=(window._fotoRes||[]).find(x=>x.offer_id===offer_id);if(!p)return;
+  const nome=$("cfNome").value.trim(), whats=$("cfWhats").value.replace(/\D/g,"");
+  const qtd=Math.max(parseInt($("cfQtd").value)||1,1);
+  if(nome.length<3){alert("Escreva o nome do cliente.");return;}
+  $("cfMsg").innerHTML='<span style="color:var(--soft)">criando…</span>';
+  const total=Number(p.brl)*qtd;
+  const {data:cot,error}=await sb.from("cotacoes").insert({
+    lead_nome:nome,lead_whatsapp:whats||null,total_estimado:total,status:"em_cotacao",
+    responsavel:$("cfResp").value.trim()||null,
+    obs_aluno:"VEIO DA BUSCA POR FOTO"+($("cfObs").value?" · "+$("cfObs").value:""),
+    lead_quiz:{tipo:"busca_foto",origem:"Busca por foto (time)"}
+  }).select().single();
+  if(error){$("cfMsg").innerHTML=`<span style="color:var(--orange)">${error.message}</span>`;return;}
+  const {error:e2}=await sb.from("cotacao_itens").insert({
+    cotacao_id:cot.id,offer_id:p.offer_id,nome:p.nome,img:p.img,qtd,moq:p.moq||1,brl_estimado_un:p.brl});
+  if(e2){$("cfMsg").innerHTML=`<span style="color:var(--orange)">${e2.message}</span>`;return;}
+  $("cfMsg").innerHTML=`<span style="color:var(--green);font-weight:700">Cotação ${cot.numero} criada ✓</span>`;
+  setTimeout(()=>{document.getElementById("cfBox")?.remove();
+    const el=document.querySelector('.al[data-v="cot"]');if(el)nav(el);
+    setTimeout(()=>{loadCots&&loadCots();setTimeout(()=>abreCot(cot.id),1200);},400);},900);
+}
+
 
 
 let CURP=[],curF="ia_duvida";
