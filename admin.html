@@ -347,9 +347,9 @@ async function boot(){
 }
 function nav(el){
   document.querySelectorAll(".al").forEach(a=>a.classList.remove("on"));el.classList.add("on");
-  ["Geral","Cot","Ped","Cat","Cfg","Cur","Sol","Amo","Ver","Ouro","Usr"].forEach(v=>$("v"+v).classList.add("hidden"));
+  ["Geral","Cot","Ped","Cat","Cfg","Cur","Sol","Amo","Ver","Ouro","Usr"].forEach(v=>{const e=$("v"+v);if(e)e.classList.add("hidden");});
   const v=el.dataset.v;
-  $("v"+v.charAt(0).toUpperCase()+v.slice(1)).classList.remove("hidden");
+  const _alvo=$("v"+v.charAt(0).toUpperCase()+v.slice(1));if(_alvo)_alvo.classList.remove("hidden");
   if(v==="cat"&&!CATP.length)loadCat();
   if(v==="cur")loadCur();
   if(v==="sol")loadSol();
