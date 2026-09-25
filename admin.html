@@ -355,6 +355,7 @@ async function boot(){
   }
   $("gate").classList.add("hidden");$("app").classList.remove("hidden");
   const nome=(p&&p.nome)||USER.email.split("@")[0];
+  window._euNome=nome;
   $("uNome").textContent=nome+" · "+PAPEL;$("uAv").textContent=nome.slice(0,2).toUpperCase();
   try{FX=(await (await fetch("https://api.frankfurter.app/latest?from=CNY&to=BRL")).json()).rates.BRL;}catch(e){}
   try{window._USD=(await (await fetch("https://api.frankfurter.app/latest?from=USD&to=BRL")).json()).rates.BRL;}catch(e){window._USD=5.4;}
@@ -828,7 +829,7 @@ function cotarDaFoto(ix){
       <input id="cfWhats" placeholder="WhatsApp (só números)" style="width:100%;border:1.5px solid var(--line);border-radius:10px;padding:10px;font-size:13px;margin-bottom:8px"/>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
         <div><div class="hint">Quantidade</div><input id="cfQtd" type="number" value="${Math.max(p.moq||1,10)}" style="width:100%;border:1.5px solid var(--line);border-radius:10px;padding:10px;font-size:13px"/></div>
-        <div><div class="hint">Responsável</div><input id="cfResp" value="${(PERFIL&&PERFIL.nome)||""}" style="width:100%;border:1.5px solid var(--line);border-radius:10px;padding:10px;font-size:13px"/></div>
+        <div><div class="hint">Responsável</div><input id="cfResp" value="${window._euNome||''}" style="width:100%;border:1.5px solid var(--line);border-radius:10px;padding:10px;font-size:13px"/></div>
       </div>
       <textarea id="cfObs" placeholder="Observações (cor, personalização, prazo do cliente)" style="width:100%;border:1.5px solid var(--line);border-radius:10px;padding:10px;font-size:12.5px;min-height:56px;margin-top:8px;font-family:inherit"></textarea>
       <div style="display:flex;gap:8px;margin-top:12px">
