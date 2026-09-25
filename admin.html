@@ -848,11 +848,13 @@ async function salvaCotFoto(offer_id){
   if(nome.length<3){alert("Escreva o nome do cliente.");return;}
   $("cfMsg").innerHTML='<span style="color:var(--soft)">criando…</span>';
   const total=Number(p.brl)*qtd;
+  const {data:{user}}=await sb.auth.getUser();
   const {data:cot,error}=await sb.from("cotacoes").insert({
+    user_id:user.id,
     lead_nome:nome,lead_whatsapp:whats||null,total_estimado:total,status:"em_cotacao",
     responsavel:$("cfResp").value.trim()||null,
-    obs_aluno:"VEIO DA BUSCA POR FOTO"+($("cfObs").value?" · "+$("cfObs").value:""),
-    lead_quiz:{tipo:"busca_foto",origem:"Busca por foto (time)"}
+    obs_aluno:"[ABERTA PELO TIME · BUSCA POR FOTO] cliente: "+nome+($("cfObs").value?" · "+$("cfObs").value:""),
+    lead_quiz:{tipo:"busca_foto",origem:"Busca por foto (time)",cliente_nome:nome,cliente_whats:whats}
   }).select().single();
   if(error){$("cfMsg").innerHTML=`<span style="color:var(--orange)">${error.message}</span>`;return;}
   const {error:e2}=await sb.from("cotacao_itens").insert({
