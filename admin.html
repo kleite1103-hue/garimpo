@@ -288,6 +288,22 @@ tr.click{cursor:pointer}tr.click:hover{background:#FAFAFB}
       <div id="curList"><div class="loading">Carregando…</div></div>
     </div>
     <!-- CONFIG -->
+    <div id="vUsr" class="hidden">
+      <div class="ahead"><h2>Usuários do time</h2><span class="sub">quem entra no painel e o que cada um pode ver</span></div>
+      <div class="panel" style="padding:15px;margin-bottom:12px">
+        <div class="ph2">Criar acesso</div>
+        <div style="display:grid;grid-template-columns:1.1fr 1.4fr 1fr .9fr auto;gap:8px;align-items:end;margin-top:9px">
+          <div><div class="hint">Nome</div><input id="uNome2" placeholder="Nome da pessoa" style="width:100%;border:1.5px solid var(--line);border-radius:9px;padding:9px;font-size:12.5px"/></div>
+          <div><div class="hint">Email</div><input id="uEmail2" placeholder="email@exemplo.com" style="width:100%;border:1.5px solid var(--line);border-radius:9px;padding:9px;font-size:12.5px"/></div>
+          <div><div class="hint">Senha inicial</div><input id="uSenha2" placeholder="mínimo 8 caracteres" style="width:100%;border:1.5px solid var(--line);border-radius:9px;padding:9px;font-size:12.5px"/></div>
+          <div><div class="hint">Acesso</div><select id="uPapel2" style="width:100%;border:1.5px solid var(--line);border-radius:9px;padding:9px;font-size:12.5px;background:#fff"><option value="equipe">Equipe</option><option value="admin">Administrador</option><option value="aluno">Aluno/cliente</option></select></div>
+          <button class="btn p" onclick="criarUsuario()">Criar acesso</button>
+        </div>
+        <div class="hint" style="margin-top:7px">A pessoa entra com esse email e senha em /admin.html e troca a senha no canto superior.</div>
+        <div id="uMsg" style="margin-top:9px;font-size:12.5px"></div>
+      </div>
+      <div id="usrList"><div class="loading">Carregando…</div></div>
+    </div>
     <div id="vCfg" class="hidden">
       <div class="ahead"><h2>Configurações</h2><span class="sub">salva direto na fundação</span></div>
       <div id="cfgSim" class="panel" style="padding:14px;margin-bottom:12px;border-color:#CDE6D9;background:#F7FBF8"></div>
