@@ -532,7 +532,7 @@ async function abreCot(id){
             <div class="sfrow"><span>Empresa</span><span>${f.empresa_pt||f.empresa||'—'}</span></div>
             <div class="sfrow"><span>Plataforma</span><span>${f.anos||'?'} anos · ${f.vendas_total||'?'} vendas${f.eh_fabrica?' · Fábrica':''}</span></div>
             <div class="sfrow"><span>Loja de origem</span><span>${f.url_loja?`<a href="${f.url_loja}" target="_blank">abrir ↗</a>`:'—'}</span></div>
-            ${(o.empresa||i.forn_nome)?`<div class="sfrow"><span>🏭 Fábrica</span><span><b>${o.empresa||i.forn_nome}</b></span></div>`:`<div class="sfrow"><span>🏭 Fábrica</span><span style="color:var(--faint)">ficha não disponível</span></div>`}
+            ${(o.empresa||i.forn_nome)?`<div class="sfrow"><span>🏭 Fábrica</span><span><b>${o.empresa||i.forn_nome}</b></span></div>`:`<div class="sfrow"><span>🏭 Fábrica</span><span><button class="btn sm p" onclick="buscaFabrica('${i.offer_id}',this)">Buscar dados da fábrica</button></span></div>`}
             ${o.url_origem?`<div class="sfrow"><span>Produto na origem</span><span><a href="${o.url_origem}" target="_blank">abrir ↗</a></span></div>`:''}
           </div>`}
         </div></div>`;
@@ -2111,6 +2111,31 @@ async function resetSenha(id,nome){
     body:JSON.stringify({action:"senha",id,senha:nova})});
   const j=await r.json();
   alert(j.error?("Não consegui: "+j.error):"Senha trocada ✓");
+}
+
+
+async function buscaFabrica(offer_id,btn){
+  btn.textContent="buscando…";btn.disabled=true;
+  try{
+    const {data:{session}}=await sb.auth.getSession();
+    const r=await fetch(CFG.SUPABASE_URL+"/functions/v1/buscafoto",{method:"POST",
+      headers:{"Content-Type":"application/json","apikey":CFG.SUPABASE_ANON,"Authorization":"Bearer "+session.access_token},
+      body:JSON.stringify({action:"verificar_fornecedor",url:"https://detail.1688.com/offer/"+offer_id+".html"})});
+    const j=await r.json();
+    if(j.error){btn.textContent="não achei — tentar de novo";btn.disabled=false;return;}
+    const f=j.ficha||{};
+    const up={};
+    if(f.empresa)up.empresa=f.empresa;
+    if(f.member_id)up.member_id=f.member_id;
+    up.url_origem="https://detail.1688.com/offer/"+offer_id+".html";
+    await sb.from("catalogo_origem").update(up).eq("offer_id",offer_id);
+    if(f.empresa){
+      const masc=(f.empresa.match(/[\u4e00-\u9fa5A-Za-z]{2,}/)||["Forn"])[0].slice(0,3)+"*** Fábrica";
+      await sb.from("catalogo").update({forn_nome:masc}).eq("offer_id",offer_id);
+    }
+    btn.parentElement.innerHTML=`<b>${f.empresa_pt||f.empresa||"—"}</b>${f.anos?` · ${f.anos} anos`:""}${j.veredito?` · <span style="color:${j.veredito==="aprovado"?"var(--green)":"var(--orange)"}">${j.veredito}</span>`:""}`;
+    (typeof toast==='function'?toast:(m=>{}))("Dados da fábrica preenchidos ✓");
+  }catch(e){btn.textContent="erro — tentar de novo";btn.disabled=false;}
 }
 
 boot();
