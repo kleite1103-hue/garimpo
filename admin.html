@@ -1753,7 +1753,11 @@ const VOL_CAT={"Óculos":0.35,"Relógios":0.4,"Joias prata/aço":0.08,"Beleza & 
 "Pet":4.0,"Casa & organização":3.0,"Cozinha funcional":1.5,"Bento & marmita":2.0,"Confeitaria":1.0,
 "Casa zen & aromas":1.2,"Decoração & sazonais":2.0,"Natal":2.0,"Festa":1.0,"Artesanato & DIY":0.8,
 "Pesca & outdoor":0.8,"Achados virais & gadgets":0.8,"Auto organização":2.0};
-const VOL_PADRAO=1.5;
+let VOL_PADRAO=0.9;
+(async()=>{try{
+  const {data}=await sb.from("config").select("valor").eq("chave","cubagem").single();
+  if(data&&data.valor){Object.assign(VOL_CAT,data.valor.litros_por_un||{});VOL_PADRAO=Number(data.valor.padrao)||0.9;}
+}catch(e){}})();
 function fabAdm2(p){const m=String(p.descricao||'').match(/\|FAB:([\d.]+)/);return m?parseFloat(m[1]):null;}
 async function cotacaoInstantanea(){
   const c=selCot;if(!c)return;
