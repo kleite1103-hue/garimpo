@@ -1025,7 +1025,8 @@ async function amoUpload(id,inp){
 }
 
 
-function abreCopiloto(){
+async function abreCopiloto(){
+  await garanteProps((selCot&&selCot.cotacao_itens)||[]);
   if(!selCot)return;
   window._cpDados=window._cpDados||{};
   const CP=(selCot.copiloto&&typeof selCot.copiloto==="object")?selCot.copiloto:{};
@@ -1278,6 +1279,7 @@ function msgCliente(){
 
 async function abreProposta(){
   const c=selCot;if(!c)return;
+  await garanteProps(c.cotacao_itens||[]);
   const its=c.cotacao_itens||[];
   if(!its.length){alert("Cotação sem itens.");return;}
   const ids=its.map(i=>i.offer_id);
@@ -1761,6 +1763,7 @@ let VOL_PADRAO=0.9;
 function fabAdm2(p){const m=String(p.descricao||'').match(/\|FAB:([\d.]+)/);return m?parseFloat(m[1]):null;}
 async function cotacaoInstantanea(){
   const c=selCot;if(!c)return;
+  await garanteProps(c.cotacao_itens||[]);
   const its=c.cotacao_itens||[];
   if(!its.length){alert("Cotação sem itens.");return;}
   const ids=its.map(i=>i.offer_id);
@@ -2053,6 +2056,7 @@ function ajusteCambio(){const a=Number(window._custoBrl)||0,b=Number(window._cus
 function qtdPorM3(offer_id,qtdCliente,moq){
   const p=(window._FBprop||{})[offer_id]||{};
   const vu=Number(p.volume_l)||VOL_CAT[p.categoria]||VOL_PADRAO;   // litros por unidade
+  if(!Number(p.volume_l))console.warn("sem volume próprio:",offer_id);
   let q=Math.floor(1000/vu);                                       // cabe em 1 m³
   if(moq&&q<moq)q=moq;
   if(q<(qtdCliente||0))q=qtdCliente;                               // nunca menos que o cliente pediu
@@ -2140,6 +2144,18 @@ async function buscaFabrica(offer_id,btn){
     btn.parentElement.innerHTML=`<b>${f.empresa_pt||f.empresa||"—"}</b>${f.anos?` · ${f.anos} anos`:""}${j.veredito?` · <span style="color:${j.veredito==="aprovado"?"var(--green)":"var(--orange)"}">${j.veredito}</span>`:""}`;
     (typeof toast==='function'?toast:(m=>{}))("Dados da fábrica preenchidos ✓");
   }catch(e){btn.textContent="erro — tentar de novo";btn.disabled=false;}
+}
+
+
+async function garanteProps(its){
+  const ids=(its||[]).map(i=>i.offer_id).filter(Boolean);
+  if(!ids.length)return window._FBprop||{};
+  const falta=ids.filter(id=>!((window._FBprop||{})[id]||{}).hasOwnProperty("volume_l"));
+  if(!falta.length)return window._FBprop;
+  const {data}=await sb.from("catalogo").select("offer_id,descricao,categoria,volume_l,moq,nome,forn_nome").in("offer_id",ids);
+  window._FBprop=window._FBprop||{};
+  (data||[]).forEach(x=>window._FBprop[x.offer_id]=x);
+  return window._FBprop;
 }
 
 boot();
