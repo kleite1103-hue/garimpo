@@ -63,7 +63,15 @@ async def painel(pg):
           return its.map(i=>((window._FBprop||{{}})[i.offer_id]||{{}}).volume_l||null);}})()""")
         ok("copiloto","mensagem em chinês montada","请告知" in txt or "您好" in txt)
         ok("copiloto","volume próprio de cada item carregado",all(v for v in vols),str(vols)[:60])
-        if len(qs)>1: ok("copiloto","produtos diferentes → quantidades diferentes",len(set(qs))>1,str(qs)[:60])
+        # confere se a quantidade exibida corresponde ao volume real de cada item
+        if qs and vols and len(qs)==len(vols):
+            esperado=[]
+            for v in vols:
+                q=int(1000/float(v)) if v else 0
+                q=round(q/50)*50 if q>=100 else (round(q/10)*10 if q>=20 else q)
+                esperado.append(str(q))
+            bate=all(abs(int(a)-int(b))<=max(50,int(b)*0.1) for a,b in zip(qs,esperado))
+            ok("copiloto","quantidade por m³ corresponde ao volume do item",bate,f"na tela {qs} · esperado {esperado}")
         await pg.evaluate("document.getElementById('cpmodal').classList.remove('show')");await pg.wait_for_timeout(600)
         # proposta
         await pg.evaluate("abreProposta()");await pg.wait_for_timeout(5000)
