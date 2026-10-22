@@ -791,6 +791,8 @@ async function renderFotoRes(jc){
     (data||[]).forEach(c=>vis[c.offer_id]=c.visivel);
   }catch(e){}
   window._fotoRes=L;window._fotoOrg=org;
+  const _faltam=L.filter(p=>!(org[p.offer_id]||{}).empresa).map(p=>p.offer_id);
+  if(_faltam.length)completaProdutos(_faltam).then(j=>{if(j&&j.ok)renderFotoRes({resultados:L});});
   $("fRes").innerHTML=`<div style="font-size:13.5px;font-weight:700;margin-bottom:10px">Encontrado em <span style="color:var(--green)">${L.length} fornecedores confiáveis</span> · do mais barato pro mais caro</div>`+
    L.map((p,ix)=>{const o=org[p.offer_id]||{};
     return `<div class="fitem" style="flex-wrap:wrap"><img src="${p.img}"/>
@@ -842,6 +844,7 @@ function cotarDaFoto(ix){
 }
 
 async function salvaCotFoto(offer_id){
+  await completaProdutos([offer_id]);
   const p=(window._fotoRes||[]).find(x=>x.offer_id===offer_id);if(!p)return;
   const nome=$("cfNome").value.trim(), whats=$("cfWhats").value.replace(/\D/g,"");
   const qtd=Math.max(parseInt($("cfQtd").value)||1,1);
@@ -2156,6 +2159,26 @@ async function garanteProps(its){
   window._FBprop=window._FBprop||{};
   (data||[]).forEach(x=>window._FBprop[x.offer_id]=x);
   return window._FBprop;
+}
+
+
+// completa produto novo (volume, nome em português e fábrica) logo após a busca por foto
+async function completaProdutos(ids){
+  if(!ids||!ids.length)return;
+  try{
+    const {data:{session}}=await sb.auth.getSession();
+    const r=await fetch(CFG.SUPABASE_URL+"/functions/v1/enriquecer",{method:"POST",
+      headers:{"Content-Type":"application/json","apikey":CFG.SUPABASE_ANON,"Authorization":"Bearer "+session.access_token},
+      body:JSON.stringify({offer_ids:ids})});
+    const j=await r.json();
+    if(j&&j.ok){
+      // recarrega os dados já completos
+      window._FBprop=window._FBprop||{};
+      const {data}=await sb.from("catalogo").select("offer_id,nome,descricao,categoria,volume_l,moq,forn_nome").in("offer_id",ids);
+      (data||[]).forEach(x=>window._FBprop[x.offer_id]=x);
+      return j;
+    }
+  }catch(e){}
 }
 
 boot();
