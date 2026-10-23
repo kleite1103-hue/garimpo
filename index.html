@@ -341,7 +341,7 @@ body{-webkit-font-smoothing:antialiased}
 <div id="aviso"><div id="avisoIn"><span id="avisoTxt"></span></div></div>
 <div class="top"><div class="topin">
   <div class="logo" onclick="irCatalogo()"><span class="ev">Efeito Vendas</span><span class="g" style="font-size:34px">na <i>China</i></span></div>
-  <div class="searchbar"><input id="q" placeholder="Buscar produto…" oninput="render()"/><button onclick="render()">Buscar</button></div>
+  <div class="searchbar"><input id="q" placeholder="Buscar produto…" oninput="buscaDigitando()"/><button onclick="buscaAgora()">Buscar</button></div>
   <div class="navbtns">
     <div class="nb" onclick="irMetodo()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="9"/><path d="M12 16v-4M12 8h.01"/></svg><span>Como funciona</span></div>
     <div class="nb" onclick="abreMeus()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 8.5L12 4l9 4.5v7L12 20l-9-4.5z"/><path d="M3 8.5L12 13l9-4.5M12 13v7"/></svg><span>Amostras</span></div>
@@ -634,15 +634,72 @@ function podeAdicionar(offer_id){
 
 let MINQ={un_item:10,un_pedido:50,m3:1,max_produtos:2};
 async function carregaMinimos(){try{const {data}=await sb.from("config").select("valor").eq("chave","minimos").single();if(data&&data.valor)MINQ={...MINQ,...data.valor};}catch(e){}}
+const PAG=60;
+let _tBusca=null;
+function buscaDigitando(){clearTimeout(_tBusca);_tBusca=setTimeout(buscaAgora,420);}
+function buscaAgora(){if(MODO_TUDO)render();else carregaPagina(true);}
+let CONTAGENS=null, FIMPAG=false, CARREGANDO=false, PAGOFF=0, MODO_TUDO=false;
+
+async function carregaContagens(){
+  try{
+    const {data,error}=await sb.rpc("catalogo_contagens");
+    if(error||!data)throw 0;
+    CONTAGENS=data;
+    renderCats();
+  }catch(e){ CONTAGENS=null; }
+}
+
+function consultaBase(){
+  let q=sb.from("catalogo").select(CARD_COLS).eq("visivel",true);
+  if(curCat!=="todas")q=q.eq("categoria",curCat);
+  if(curSub)q=q.eq("subcategoria",curSub);
+  const termo=(($("q")&&$("q").value)||"").trim();
+  if(termo)q=q.ilike("nome","%"+termo+"%");
+  if(curSort==="barato")q=q.order("brl",{ascending:true});
+  else if(curSort==="caro")q=q.order("brl",{ascending:false});
+  else q=q.order("destaque",{ascending:false}).order("nota_ia",{ascending:false,nullsFirst:false});
+  return q.order("offer_id",{ascending:true});
+}
+
+async function carregaPagina(reiniciar){
+  if(CARREGANDO)return;
+  CARREGANDO=true;
+  if(reiniciar){PROD=[];PAGOFF=0;FIMPAG=false;}
+  try{
+    const {data,error}=await consultaBase().range(PAGOFF,PAGOFF+PAG-1);
+    if(!error&&data){
+      const vistos=new Set(PROD.map(p=>p.offer_id));
+      PROD=PROD.concat(data.filter(p=>!vistos.has(p.offer_id)));
+      PAGOFF+=PAG;
+      if(data.length<PAG)FIMPAG=true;
+    } else FIMPAG=true;
+  }catch(e){FIMPAG=true;}
+  CARREGANDO=false;
+  render();
+}
+
+// rolagem infinita
+window.addEventListener("scroll",()=>{
+  if(FIMPAG||CARREGANDO)return;
+  if(window.innerHeight+window.scrollY>=document.body.offsetHeight-700)carregaPagina(false);
+},{passive:true});
+
 async function carregaCatalogo(){
-  let off=0;PROD=[];
-  while(true){
-    const {data,error}=await sb.from("catalogo").select(CARD_COLS).eq("visivel",true).order("destaque",{ascending:false}).order("nota_ia",{ascending:false,nullsFirst:false}).order("offer_id",{ascending:true}).range(off,off+499);
-    if(error||!data||!data.length)break;
-    const vistos=new Set(PROD.map(p=>p.offer_id));
-    PROD=PROD.concat(data.filter(p=>!vistos.has(p.offer_id)));
-    renderCats();render();            // pinta já na primeira página
-    off+=500;if(data.length<500)break;
+  await carregaContagens();
+  await carregaPagina(true);
+  if(!CONTAGENS){   // banco antigo, sem a função de contagem: usa o modo anterior
+    MODO_TUDO=true;
+    let off=PAGOFF;
+    while(true){
+      const {data,error}=await sb.from("catalogo").select(CARD_COLS).eq("visivel",true)
+        .order("destaque",{ascending:false}).order("nota_ia",{ascending:false,nullsFirst:false})
+        .order("offer_id",{ascending:true}).range(off,off+499);
+      if(error||!data||!data.length)break;
+      const vistos=new Set(PROD.map(p=>p.offer_id));
+      PROD=PROD.concat(data.filter(p=>!vistos.has(p.offer_id)));
+      renderCats();render();
+      off+=500;if(data.length<500)break;
+    }
   }
   fetch("https://api.frankfurter.app/latest?from=USD&to=BRL").then(r=>r.json()).then(j=>{USD=j.rates.BRL;}).catch(()=>{USD=5.4;});
 }
@@ -653,8 +710,13 @@ async function hidrataProduto(offer_id){
 function esc(x){return (x||'').replace(/'/g,"\\'");}
 function renderCats(){
   const tree={};
-  PROD.forEach(p=>{const c=p.categoria||"Outros",s=p.subcategoria||"Geral";tree[c]=tree[c]||{n:0,subs:{}};tree[c].n++;tree[c].subs[s]=(tree[c].subs[s]||0)+1;});
-  let h=`<div class="cat ${curCat==='todas'?'on':''}" onclick="setCat('todas')"><span>Todas</span><span class="num">${PROD.length}</span></div>`;
+  if(CONTAGENS){
+    CONTAGENS.forEach(r=>{const c=r.categoria||"Outros",sb_=r.subcategoria||"Geral";
+      tree[c]=tree[c]||{n:0,subs:{}};tree[c].n+=Number(r.total);tree[c].subs[sb_]=(tree[c].subs[sb_]||0)+Number(r.total);});
+  } else {
+    PROD.forEach(p=>{const c=p.categoria||"Outros",s=p.subcategoria||"Geral";tree[c]=tree[c]||{n:0,subs:{}};tree[c].n++;tree[c].subs[s]=(tree[c].subs[s]||0)+1;});
+  }
+  let h=`<div class="cat ${curCat==='todas'?'on':''}" onclick="setCat('todas')"><span>Todas</span><span class="num">${CONTAGENS?CONTAGENS.reduce((a,b)=>a+Number(b.total),0):PROD.length}</span></div>`;
   Object.keys(tree).sort((a,b)=>tree[b].n-tree[a].n).forEach(k=>{
     const on=curCat===k, aberta=(window._catAberta===k);
     const subs=Object.keys(tree[k].subs).filter(s=>s!=="Geral");
@@ -688,8 +750,8 @@ function toggleCat(k){
   if(window._catAberta===k&&curCat===k&&!curSub){window._catAberta=null;renderCats();return;}
   window._catAberta=k;setCat(k);
 }
-function setCat(k){fechaCats();rolaProdutos();fechaCats();curCat=k;curSub=null;$("q").value="";renderCats();render();irCatalogo();rolaProdutos();}
-function setSub(k,s){fechaCats();rolaProdutos();window._catAberta=k;fechaCats();curCat=k;curSub=s;$("q").value="";renderCats();render();irCatalogo();rolaProdutos();}
+function setCat(k){fechaCats();rolaProdutos();fechaCats();curCat=k;curSub=null;$("q").value="";renderCats();if(MODO_TUDO)render();else carregaPagina(true);irCatalogo();rolaProdutos();}
+function setSub(k,s){fechaCats();rolaProdutos();window._catAberta=k;fechaCats();curCat=k;curSub=s;$("q").value="";renderCats();if(MODO_TUDO)render();else carregaPagina(true);irCatalogo();rolaProdutos();}
 function toggleCats(){
   const s=document.getElementById("sideBox"),m=document.getElementById("catMask");
   if(!s)return;
@@ -711,7 +773,7 @@ function rolaProdutos(){
   setTimeout(()=>{const g=document.querySelector("#grid")||document.querySelector(".grid");
     if(g)window.scrollTo({top:g.getBoundingClientRect().top+window.scrollY-70,behavior:"smooth"});},120);
 }
-function setSort(el){document.querySelectorAll('.sp').forEach(x=>x.classList.remove('on'));el.classList.add('on');curSort=el.dataset.s;render();}
+function setSort(el){document.querySelectorAll('.sp').forEach(x=>x.classList.remove('on'));el.classList.add('on');curSort=el.dataset.s;if(MODO_TUDO)render();else carregaPagina(true);}
 function filtered(){
   const t=$("q").value.trim().toLowerCase();
   let L=PROD.slice();
@@ -761,8 +823,15 @@ function render(){
   window._L=L;
   const key=curCat+"|"+curSub+"|"+curSort+"|"+(($("q")&&$("q").value)||"");
   if(window._pagKey!==key){window._pag=60;window._pagKey=key;}
-  const vis=L.slice(0,window._pag||60);
-  $("count").innerHTML=`<b>${L.length}</b> produtos`;
+  const vis=MODO_TUDO?L.slice(0,window._pag||60):L;
+  (function(){
+    let tot=L.length;
+    if(!MODO_TUDO&&CONTAGENS&&!(($("q")&&$("q").value)||"").trim()){
+      tot=CONTAGENS.filter(r=>(curCat==="todas"||r.categoria===curCat)&&(!curSub||r.subcategoria===curSub))
+                   .reduce((a,b)=>a+Number(b.total),0);
+    }
+    $("count").innerHTML=`<b>${tot}</b> produtos`;
+  })();
   $("grid").innerHTML=L.length?vis.map(card).join(""):`<div class="empty" style="text-align:center;padding:34px 20px">
     <div style="font-size:15px;font-weight:800;margin-bottom:6px">Não encontramos esse produto na nossa base 🔍</div>
     <div style="font-size:13px;color:var(--soft);line-height:1.6;max-width:440px;margin:0 auto 16px">Mas a gente acha pra você na China! Nosso time procura o produto direto nas fábricas e te manda a cotação pelo WhatsApp.</div>
